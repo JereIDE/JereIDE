@@ -7,6 +7,8 @@ from ui.tabs import JereIDEBook
 from ui.menu import MenuBar
 from ui.welcomeFrame import WelcomeFrame
 from ui.bottomPanel import BottomPanel
+from ui.findReplaceDialog import FindReplaceDialog
+from utils.findReplace import FindReplace
 
 
 class MainWindow(QMainWindow):
@@ -54,6 +56,9 @@ class MainWindow(QMainWindow):
         self.notebook.page_close_requested.connect(self.on_tab_close_requested)
 
         self._tabs_data = []
+
+        self._find_replace = FindReplace(self)
+        self._find_dialog = None
 
         self._create_new_tab()
 
@@ -300,14 +305,23 @@ class MainWindow(QMainWindow):
         if editor:
             editor.selectAll()
 
-    def find(self):
-        editor = self._get_current_editor()
-        if editor:
-            # QPlainTextEdit has no built-in find dialog, trigger Ctrl+F on the editor
-            from PySide6.QtGui import QKeyEvent
-            from PySide6.QtCore import Qt
-            event = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key_F, Qt.ControlModifier, "")
-            editor.keyPressEvent(event)
+    def find_replace(self):
+        if not self._get_current_editor():
+            return
+
+        if self._find_dialog is None:
+            self._find_dialog = FindReplaceDialog(self)
+            self._find_dialog.findNext.connect(self._find_replace.on_find_next)
+            self._find_dialog.replaceOne.connect(self._find_replace.on_replace_one)
+            self._find_dialog.replaceAll.connect(self._find_replace.on_replace_all)
+            self._find_dialog.finished.connect(self._find_replace.clear_highlights)
+
+        cursor = self._get_current_editor().textCursor()
+        if cursor.hasSelection():
+            self._find_dialog.set_find_text(cursor.selectedText())
+
+        self._find_dialog.show()
+        self._find_dialog.find_input.setFocus()
 
     def _on_page_changed_for_cursor(self, index: int):
         if 0 <= index < len(self._tabs_data):
@@ -325,27 +339,16 @@ class MainWindow(QMainWindow):
         col = cursor.columnNumber() + 1
         self.status_bar.update_position(line, col)
 
-    def replace(self):
-        # Replace would require a custom dialog - for now just focus the editor
-        editor = self._get_current_editor()
-        if editor:
-            editor.setFocus()
-
     def toggle_bottom_panel(self):
         """Toggle the bottom panel (dock) visibility."""
         self.bottom_panel.toggle()
 
     def toggle_full_screen(self):
-        # Toggle the fullscreen state internally
         self.full_screen_enabled = not self.full_screen_enabled
-        
+
         if self.full_screen_enabled:
-            # Use native fullscreen method
             self.showFullScreen()
-            # On macOS, sometimes show() is needed after setting fullscreen
             self.show()
         else:
-            # Use native normal screen method
             self.showNormal()
-            # On macOS, sometimes show() is needed after setting normal
             self.show()

@@ -51,13 +51,9 @@ class MenuBar:
 
         edit_menu.addSeparator()
 
-        find_action = edit_menu.addAction("&Find...")
+        find_action = edit_menu.addAction("&Find/Replace...")
         find_action.setShortcut("Ctrl+F")
-        find_action.triggered.connect(self.window.find)
-
-        replace_action = edit_menu.addAction("&Replace...")
-        replace_action.setShortcut("Ctrl+H")
-        replace_action.triggered.connect(self.window.replace)
+        find_action.triggered.connect(self.window.find_replace)
 
     def _setup_file_menu(self, menu_bar):
         file_menu = menu_bar.addMenu("&File")
