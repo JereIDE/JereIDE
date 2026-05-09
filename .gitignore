@@ -50,3 +50,6 @@ Pipfile.lock
 poetry.lock
 
 *test.py
+
+src/config/theme.json
+src/config/editor.json
