@@ -1,6 +1,5 @@
 import os
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox
-from PySide6.QtCore import Qt
 from ui.codeEditor import QCodeEditor
 from ui.statusBar import StatusBar
 from ui.tabs import JereIDEBook
@@ -9,14 +8,18 @@ from ui.welcomeFrame import WelcomeFrame
 from ui.bottomPanel import BottomPanel
 from ui.findReplaceDialog import FindReplaceDialog
 from utils.findReplace import FindReplace
+from ui.nativeToolbar import attach_native_toolbar
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self._native_id = "JereIDEQ_MainWindow"
         self.setWindowTitle("JereIDE - untitled")
         self.setWindowFilePath("")
         self.resize(800, 600)
+
+        self._native_segmented = None
 
         container = QWidget()
         layout = QVBoxLayout(container)
@@ -62,6 +65,30 @@ class MainWindow(QMainWindow):
 
         self._create_new_tab()
 
+        self.winId()
+        self._attach_native_toolbar()
+
+    def _attach_native_toolbar(self):
+        old_title = self.windowTitle()
+        self.setWindowTitle(self._native_id)
+        self._native_toolbar_ctrl, native_segmented = attach_native_toolbar(self._native_id, self._on_view_changed)
+        self._native_segmented = native_segmented
+        self.setWindowTitle(old_title)
+        self._update_segmented_state()
+
+    def _update_segmented_state(self):
+        if self._native_segmented is None:
+            return
+        has_tabs = self.notebook.GetPageCount() > 0
+        self._native_segmented.setEnabled_forSegment_(has_tabs, 0)
+        self._native_segmented.setEnabled_forSegment_(has_tabs, 1)
+
+    def _on_view_changed(self, index):
+        if index == 0:
+            print("Gallery/Grid view selected")
+        else:
+            print("List view selected")
+
     def _create_new_tab(self, title: str = "untitled", file_path: str | None = None):
         if self.notebook.GetPageCount() == 0:
             self.notebook.show()
@@ -69,6 +96,7 @@ class MainWindow(QMainWindow):
 
         editor = QCodeEditor()
         self.notebook.AddPage(editor, title)
+        self._update_segmented_state()
         self._tabs_data.append({
             "editor": editor,
             "file_path": file_path,
@@ -135,6 +163,7 @@ class MainWindow(QMainWindow):
             self.notebook.hide()
             self.status_bar.update_position(1, 1)
             self.setWindowTitle("JereIDE")
+            self._update_segmented_state()
 
     def _get_tab_title(self, index: int):
         if 0 <= index < len(self._tabs_data):
@@ -214,6 +243,7 @@ class MainWindow(QMainWindow):
             title = os.path.basename(file_path)
             page_count = self.notebook.GetPageCount()
             self.notebook.AddPage(editor, title)
+            self._update_segmented_state()
             self.notebook.SelectTab(page_count)
             idx = page_count
             self._tabs_data.append({
