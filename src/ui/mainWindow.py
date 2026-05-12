@@ -94,10 +94,10 @@ class MainWindow(QMainWindow):
         if self.notebook.GetPageCount() == 0:
             self.notebook.show()
             self.welcome_frame.hide()
-            self._update_segmented_state()
 
         editor = QCodeEditor()
         self.notebook.AddPage(editor, title)
+        self._update_segmented_state()
         self._tabs_data.append({
             "editor": editor,
             "file_path": file_path,
@@ -239,12 +239,12 @@ class MainWindow(QMainWindow):
             if self.notebook.GetPageCount() == 0:
                 self.notebook.show()
                 self.welcome_frame.hide()
-                self._update_segmented_state()
 
             editor = QCodeEditor()
             title = os.path.basename(file_path)
             page_count = self.notebook.GetPageCount()
             self.notebook.AddPage(editor, title)
+            self._update_segmented_state()
             self.notebook.SelectTab(page_count)
             idx = page_count
             self._tabs_data.append({
