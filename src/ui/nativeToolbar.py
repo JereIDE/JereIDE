@@ -1,32 +1,21 @@
-import sys
 import objc
-from PySide6.QtCore import QTimer, Qt
-
-if sys.platform == "darwin":
-    from AppKit import (
-        NSApplication,
-        NSWindow,
-        NSToolbar,
-        NSToolbarItem,
-        NSImage,
-        NSObject,
-        NSSegmentedControl,
-        NSTitlebarAccessoryViewController,
-        NSView,
-        NSLayoutConstraint,
-        NSSegmentSwitchTrackingSelectOne,
-        NSSegmentStyleSeparated,
-        NSControlSizeRegular,
-        NSWindowStyleMaskTitled,
-        NSWindowStyleMaskClosable,
-        NSWindowStyleMaskMiniaturizable,
-        NSWindowStyleMaskResizable,
-        NSWindowStyleMaskFullSizeContentView,
-        NSBackingStoreBuffered,
-        NSToolbarDisplayModeIconOnly,
-        NSWindowTitleHidden,
-    )
-    from Foundation import NSObject as NSObj, NSRect
+from AppKit import (
+    NSApplication,
+    NSToolbar,
+    NSToolbarItem,
+    NSImage,
+    NSSegmentedControl,
+    NSTitlebarAccessoryViewController,
+    NSView,
+    NSLayoutConstraint,
+    NSSegmentSwitchTrackingSelectOne,
+    NSSegmentStyleSeparated,
+    NSControlSizeRegular,
+    NSWindowStyleMaskFullSizeContentView,
+    NSToolbarDisplayModeIconOnly,
+    NSWindowTitleHidden,
+)
+from Foundation import NSObject as NSObj
 
 
 class ViewOptionsController(NSObj):
@@ -119,9 +108,6 @@ class ToolbarDelegate(NSObj):
 
 
 def attach_native_toolbar(window_id: str, callback=None):
-    if sys.platform != "darwin":
-        return None, None
-
     app = NSApplication.sharedApplication()
     for window in app.windows():
         if window.title() == window_id:

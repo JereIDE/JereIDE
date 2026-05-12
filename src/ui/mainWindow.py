@@ -1,7 +1,6 @@
 import os
-import sys
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox
-from PySide6.QtCore import QTimer, Qt
+from PySide6.QtCore import QTimer
 from ui.codeEditor import QCodeEditor
 from ui.statusBar import StatusBar
 from ui.tabs import JereIDEBook
@@ -22,8 +21,7 @@ class MainWindow(QMainWindow):
         self.resize(800, 600)
 
         self._native_segmented = None
-        if sys.platform == "darwin":
-            QTimer.singleShot(200, self._attach_native_toolbar)
+        QTimer.singleShot(200, self._attach_native_toolbar)
 
         container = QWidget()
         layout = QVBoxLayout(container)
