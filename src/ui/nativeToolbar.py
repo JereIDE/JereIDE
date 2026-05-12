@@ -55,22 +55,22 @@ class ToolbarController(NSObj):
         segmented.setTrackingMode_(NSSegmentSwitchTrackingSelectOne)
         segmented.setSegmentCount_(2)
 
-        grid_symbol = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+        code_symbol = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
             "chevron.left.slash.chevron.right", None
         )
-        list_symbol = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+        command_symbol = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
             "wand.and.stars", None
         )
 
-        segmented.setImage_forSegment_(grid_symbol, 0)
+        segmented.setImage_forSegment_(code_symbol, 0)
         segmented.setWidth_forSegment_(36, 0)
-        segmented.setToolTip_forSegment_("Gallery View", 0)
+        segmented.setToolTip_forSegment_("Code View", 0)
 
-        segmented.setImage_forSegment_(list_symbol, 1)
+        segmented.setImage_forSegment_(command_symbol, 1)
         segmented.setWidth_forSegment_(36, 1)
-        segmented.setToolTip_forSegment_("List View", 1)
+        segmented.setToolTip_forSegment_("Command View", 1)
 
-        segmented.setSegmentStyle_(NSSegmentStyleSeparated)
+        #segmented.setSegmentStyle_(NSSegmentStyleSeparated)
         segmented.setControlSize_(NSControlSizeRegular)
         segmented.setSelectedSegment_(0)
 
