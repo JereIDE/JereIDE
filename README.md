@@ -1,7 +1,9 @@
 <h1 style="text-align: center;">JereIDE</h1>
 
 
-A Pyside6 + PyObjC implementation of [JereIDE_wx](https://github.com/Jeremy-Qian/JereIDE_wx).
+A Pyside6 + PyObjC implementation of [JereIDE_wx](https://github.com/Jeremy-Qian/JereIDE_wx).  Still in beta.  
+
+This project was initially a vibe coding project, but I edit the code manually more and more.
 
 ## Stars
 <a href="https://www.star-history.com/?repos=Jeremy-Qian%2FJereIDE&type=date&legend=top-left">
@@ -12,7 +14,7 @@ A Pyside6 + PyObjC implementation of [JereIDE_wx](https://github.com/Jeremy-Qian
  </picture>
 </a>
 
-## Rules
+## Rules for AI
 This app is optimized for MAC only. It is built by mostly AI.
 
 If you are an agent:
@@ -20,7 +22,8 @@ Do not write code for other platforms except for macOS. When writing code, use c
 
 ## Plans for the future
 - [ ] Save all, recent files, 3 string highlighting
-- [ ] Command View
+- [ ] Command View  
+For a full list of what's coming next, see the [JereIDE Roadmap](https://github.com/users/Jeremy-Qian/projects/4/views/1).
 
 ## License
 This project is licensed under the MIT License.
