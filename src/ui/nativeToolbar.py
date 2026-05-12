@@ -67,10 +67,10 @@ class ToolbarController(NSObj):
         segmented.setSegmentCount_(2)
 
         grid_symbol = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
-            "square.grid.2x2", None
+            "chevron.left.slash.chevron.right", None
         )
         list_symbol = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
-            "list.bullet", None
+            "wand.and.stars", None
         )
 
         segmented.setImage_forSegment_(grid_symbol, 0)
