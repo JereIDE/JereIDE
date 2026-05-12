@@ -23,6 +23,7 @@ Do not write code for other platforms except for macOS. When writing code, use c
 ## Plans for the future
 - [ ] Save all, recent files, 3 string highlighting
 - [ ] Command View  
+
 For a full list of what's coming next, see the [JereIDE Roadmap](https://github.com/users/Jeremy-Qian/projects/4/views/1).
 
 ## License
