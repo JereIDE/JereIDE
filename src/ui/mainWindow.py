@@ -71,7 +71,7 @@ class MainWindow(QMainWindow):
     def _attach_native_toolbar(self):
         old_title = self.windowTitle()
         self.setWindowTitle(self._native_id)
-        attach_native_toolbar(self._native_id, self._on_view_changed)
+        self._native_toolbar_ctrl = attach_native_toolbar(self._native_id, self._on_view_changed)
         self.setWindowTitle(old_title)
 
     def _on_view_changed(self, index):
