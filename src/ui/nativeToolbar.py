@@ -120,7 +120,7 @@ class ToolbarDelegate(NSObj):
 
 def attach_native_toolbar(window_id: str, callback=None):
     if sys.platform != "darwin":
-        return
+        return None, None
 
     app = NSApplication.sharedApplication()
     for window in app.windows():
@@ -158,5 +158,5 @@ def attach_native_toolbar(window_id: str, callback=None):
             toolbar.setDisplayMode_(NSToolbarDisplayModeIconOnly)
             window.setToolbar_(toolbar)
 
-            return toolbar_controller
-    return None
+            return toolbar_controller, segmented
+    return None, None

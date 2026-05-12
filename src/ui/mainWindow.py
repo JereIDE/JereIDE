@@ -21,6 +21,7 @@ class MainWindow(QMainWindow):
         self.setWindowFilePath("")
         self.resize(800, 600)
 
+        self._native_segmented = None
         if sys.platform == "darwin":
             QTimer.singleShot(200, self._attach_native_toolbar)
 
@@ -71,8 +72,17 @@ class MainWindow(QMainWindow):
     def _attach_native_toolbar(self):
         old_title = self.windowTitle()
         self.setWindowTitle(self._native_id)
-        self._native_toolbar_ctrl = attach_native_toolbar(self._native_id, self._on_view_changed)
+        self._native_toolbar_ctrl, native_segmented = attach_native_toolbar(self._native_id, self._on_view_changed)
+        self._native_segmented = native_segmented
         self.setWindowTitle(old_title)
+        self._update_segmented_state()
+
+    def _update_segmented_state(self):
+        if self._native_segmented is None:
+            return
+        has_tabs = self.notebook.GetPageCount() > 0
+        self._native_segmented.setEnabled_forSegment_(has_tabs, 0)
+        self._native_segmented.setEnabled_forSegment_(has_tabs, 1)
 
     def _on_view_changed(self, index):
         if index == 0:
@@ -84,6 +94,7 @@ class MainWindow(QMainWindow):
         if self.notebook.GetPageCount() == 0:
             self.notebook.show()
             self.welcome_frame.hide()
+            self._update_segmented_state()
 
         editor = QCodeEditor()
         self.notebook.AddPage(editor, title)
@@ -153,6 +164,7 @@ class MainWindow(QMainWindow):
             self.notebook.hide()
             self.status_bar.update_position(1, 1)
             self.setWindowTitle("JereIDE")
+            self._update_segmented_state()
 
     def _get_tab_title(self, index: int):
         if 0 <= index < len(self._tabs_data):
@@ -227,6 +239,7 @@ class MainWindow(QMainWindow):
             if self.notebook.GetPageCount() == 0:
                 self.notebook.show()
                 self.welcome_frame.hide()
+                self._update_segmented_state()
 
             editor = QCodeEditor()
             title = os.path.basename(file_path)
