@@ -1,6 +1,5 @@
 import os
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox
-from PySide6.QtCore import QTimer
 from ui.codeEditor import QCodeEditor
 from ui.statusBar import StatusBar
 from ui.tabs import JereIDEBook
@@ -21,7 +20,6 @@ class MainWindow(QMainWindow):
         self.resize(800, 600)
 
         self._native_segmented = None
-        QTimer.singleShot(200, self._attach_native_toolbar)
 
         container = QWidget()
         layout = QVBoxLayout(container)
@@ -66,6 +64,9 @@ class MainWindow(QMainWindow):
         self._find_dialog = None
 
         self._create_new_tab()
+
+        self.winId()
+        self._attach_native_toolbar()
 
     def _attach_native_toolbar(self):
         old_title = self.windowTitle()
