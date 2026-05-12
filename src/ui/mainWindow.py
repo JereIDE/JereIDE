@@ -76,9 +76,9 @@ class MainWindow(QMainWindow):
 
     def _on_view_changed(self, index):
         if index == 0:
-            self.status_bar.show_message("Gallery view selected")
+            print("Gallery/Grid view selected")
         else:
-            self.status_bar.show_message("List view selected")
+            print("List view selected")
 
     def _create_new_tab(self, title: str = "untitled", file_path: str | None = None):
         if self.notebook.GetPageCount() == 0:
