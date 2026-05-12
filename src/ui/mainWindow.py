@@ -1,6 +1,7 @@
 import os
+import sys
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QTimer, Qt
 from ui.codeEditor import QCodeEditor
 from ui.statusBar import StatusBar
 from ui.tabs import JereIDEBook
@@ -9,14 +10,19 @@ from ui.welcomeFrame import WelcomeFrame
 from ui.bottomPanel import BottomPanel
 from ui.findReplaceDialog import FindReplaceDialog
 from utils.findReplace import FindReplace
+from ui.nativeToolbar import attach_native_toolbar
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self._native_id = "JereIDEQ_MainWindow"
         self.setWindowTitle("JereIDE - untitled")
         self.setWindowFilePath("")
         self.resize(800, 600)
+
+        if sys.platform == "darwin":
+            QTimer.singleShot(200, self._attach_native_toolbar)
 
         container = QWidget()
         layout = QVBoxLayout(container)
@@ -61,6 +67,18 @@ class MainWindow(QMainWindow):
         self._find_dialog = None
 
         self._create_new_tab()
+
+    def _attach_native_toolbar(self):
+        old_title = self.windowTitle()
+        self.setWindowTitle(self._native_id)
+        attach_native_toolbar(self._native_id, self._on_view_changed)
+        self.setWindowTitle(old_title)
+
+    def _on_view_changed(self, index):
+        if index == 0:
+            self.status_bar.show_message("Gallery view selected")
+        else:
+            self.status_bar.show_message("List view selected")
 
     def _create_new_tab(self, title: str = "untitled", file_path: str | None = None):
         if self.notebook.GetPageCount() == 0:

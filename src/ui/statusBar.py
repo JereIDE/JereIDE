@@ -1,5 +1,5 @@
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton
-from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QLabel
+from PySide6.QtCore import QSize, QTimer
 from icons.sfSymbols import get_sf_qicon
 from const.theme import STATUS_BAR_BG, STATUS_BAR_HEIGHT
 
@@ -23,6 +23,12 @@ class StatusBar(QFrame):
         layout.setContentsMargins(5, 0, 5, 0)
         layout.setSpacing(5)
 
+        self._message_label = QLabel("")
+        self._message_label.setStyleSheet(
+            "color: #666; font-size: 12px; padding: 0 5px;"
+        )
+        layout.addWidget(self._message_label)
+
         self._position_button = QPushButton("1:1")
         self._position_button.setFixedHeight(STATUS_BAR_HEIGHT - 4)
         self._position_button.setStyleSheet(
@@ -34,6 +40,10 @@ class StatusBar(QFrame):
         layout.addWidget(self._position_button)
         layout.addStretch()
         layout.addWidget(self._dock_button)
+
+    def show_message(self, text, timeout=3000):
+        self._message_label.setText(text)
+        QTimer.singleShot(timeout, lambda: self._message_label.setText("") if self._message_label.text() == text else None)
 
     def update_position(self, line: int, column: int):
         self._position_button.setText(f"{line}:{column}")
