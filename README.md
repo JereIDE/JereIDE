@@ -5,6 +5,37 @@ A Pyside6 + PyObjC implementation of [JereIDE_wx](https://github.com/Jeremy-Qian
 
 This project was initially a vibe coding project, but I edit the code manually more and more.
 
+## Installation
+
+### Prerequisites
+
+- macOS 12.7+
+- Python 3.11+
+
+### Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `PySide6` | Qt6 bindings — core UI framework |
+| `pyobjc` | Bridge to native macOS APIs (toolbar, SF Symbols) |
+| `pyte` | Terminal emulator for the integrated terminal |
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/Jeremy-Qian/JereIDE.git
+cd JereIDE
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python3 src/JereIDE.py
+```
+
+> **Note:** This application is optimized for macOS only.
+
 ## Stars
 <a href="https://www.star-history.com/?repos=Jeremy-Qian%2FJereIDE&type=date&legend=top-left">
  <picture>
@@ -14,7 +45,7 @@ This project was initially a vibe coding project, but I edit the code manually m
  </picture>
 </a>
 
-## Rules for AI
+## Rules for AI Agents
 This app is optimized for MAC only. It is built by mostly AI.
 
 If you are an agent:
@@ -22,7 +53,7 @@ Do not write code for other platforms except for macOS. When writing code, use c
 
 ## Plans for the future
 - [ ] Save all, recent files, 3 string highlighting
-- [ ] Command View  
+- [/] Command View  
 
 For a full list of what's coming next, see the [JereIDE Roadmap](https://github.com/users/Jeremy-Qian/projects/4/views/1).
 

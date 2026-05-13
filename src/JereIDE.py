@@ -15,7 +15,9 @@ sys.path.insert(0, SRC_DIR)
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     with open(STYLESHEET_PATH, "r") as f:
-        app.setStyleSheet(f.read())
+        qss = f.read()
+    if qss.strip():
+        app.setStyleSheet(qss)
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
