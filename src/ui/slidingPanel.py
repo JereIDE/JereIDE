@@ -11,7 +11,7 @@ class SlidingPanel(QScrollArea):
         self._current_index = 0
         self._animation = QPropertyAnimation()
 
-        self.setWidgetResizable(False)
+        self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setFrameShape(QFrame.Shape.NoFrame)
@@ -33,8 +33,9 @@ class SlidingPanel(QScrollArea):
     def addPage(self, widget: QWidget):
         self._pages.append(widget)
         self._layout.addWidget(widget)
-        if len(self._pages) == 1:
-            widget.setFixedWidth(self.viewport().width())
+        vp_width = self.viewport().width()
+        if vp_width > 0 and len(self._pages) == 1:
+            widget.setFixedWidth(vp_width)
 
     def currentIndex(self) -> int:
         return self._current_index
@@ -56,9 +57,12 @@ class SlidingPanel(QScrollArea):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         width = event.size().width()
+        height = event.size().height()
+        page_count = max(len(self._pages), 1)
         for page in self._pages:
             page.setFixedWidth(width)
-        self._container.setMinimumWidth(width * max(len(self._pages), 1))
+        self._container.setMinimumWidth(width * page_count)
+        self._container.setMinimumHeight(height)
         scroll_bar = self.horizontalScrollBar()
         scroll_bar.setValue(self._current_index * width)
 
