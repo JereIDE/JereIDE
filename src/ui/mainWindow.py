@@ -102,10 +102,10 @@ class MainWindow(QMainWindow):
         self._attach_native_toolbar()
 
         QShortcut(QKeySequence("Shift+Meta+C"), self).activated.connect(
-            lambda: self.sliding_panel.slideTo(0)
+            lambda: self._switch_page(0)
         )
         QShortcut(QKeySequence("Shift+Meta+P"), self).activated.connect(
-            lambda: self.sliding_panel.slideTo(1)
+            lambda: self._switch_page(1)
         )
 
     def _attach_native_toolbar(self):
@@ -123,6 +123,11 @@ class MainWindow(QMainWindow):
         self._native_segmented.setEnabled_forSegment_(True, 1)
 
     def _on_view_changed(self, index):
+        self.sliding_panel.slideTo(index)
+
+    def _switch_page(self, index):
+        if self._native_segmented:
+            self._native_segmented.setSelectedSegment_(index)
         self.sliding_panel.slideTo(index)
 
     def _create_new_tab(self, title: str = "untitled", file_path: str | None = None):
