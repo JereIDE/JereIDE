@@ -8,7 +8,6 @@ from config.config_manager import config_manager
 class PythonSyntaxHighlighter(QSyntaxHighlighter):
     def __init__(self, parent):
         super().__init__(parent)
-        # Load syntax highlighting configuration
         self.syntax_highlighting_enabled = config_manager.get_config_value('editor', 'syntax_highlighting.enabled', True)
         self.PYTHON_KEYWORDS = config_manager.get_config_value('editor', 'syntax_highlighting.keywords', [
             'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await',
@@ -29,6 +28,7 @@ class PythonSyntaxHighlighter(QSyntaxHighlighter):
             'type', 'vars', 'zip', '__import__'
         ])
 
+        self._triple_quote_fmt = self._create_format(SYNTAX_STRING)
         self._highlighting_rules = []
         self._build_highlighting_rules()
 
@@ -68,12 +68,6 @@ class PythonSyntaxHighlighter(QSyntaxHighlighter):
         pattern = QRegularExpression(r'#.*')
         self._highlighting_rules.append((pattern, comment_fmt))
 
-        triple_quote_fmt = self._create_format(SYNTAX_STRING)
-        pattern = QRegularExpression(r'""".*"""')
-        self._highlighting_rules.append((pattern, triple_quote_fmt))
-        pattern = QRegularExpression(r"'''.*'''")
-        self._highlighting_rules.append((pattern, triple_quote_fmt))
-
         string_fmt = self._create_format(SYNTAX_STRING)
         pattern = QRegularExpression(r'"(?:[^"\\]|\\.)*"')
         self._highlighting_rules.append((pattern, string_fmt))
@@ -86,8 +80,54 @@ class PythonSyntaxHighlighter(QSyntaxHighlighter):
         self._highlighting_rules.append((pattern, number_fmt))
 
     def highlightBlock(self, text):
+        self.setCurrentBlockState(0)
+
         for pattern, fmt in self._highlighting_rules:
             iterator = pattern.globalMatch(text)
             while iterator.hasNext():
                 match = iterator.next()
                 self.setFormat(match.capturedStart(), match.capturedLength(), fmt)
+
+        self._highlight_multiline_strings(text)
+
+    def _highlight_multiline_strings(self, text):
+        state = self.previousBlockState()
+        if state == 1:
+            self._continue_triple(text, '"""', 1)
+            return
+        elif state == 2:
+            self._continue_triple(text, "'''", 2)
+            return
+        self._find_triples(text, 0)
+
+    def _continue_triple(self, text, delim, next_state):
+        end = text.find(delim)
+        if end >= 0:
+            self.setFormat(0, end + 3, self._triple_quote_fmt)
+            self.setCurrentBlockState(0)
+            self._find_triples(text[end + 3:], end + 3)
+        else:
+            self.setFormat(0, len(text), self._triple_quote_fmt)
+            self.setCurrentBlockState(next_state)
+
+    def _find_triples(self, text, offset):
+        pos = 0
+        while True:
+            dd = text.find('"""', pos)
+            sd = text.find("'''", pos)
+            if dd < 0 and sd < 0:
+                break
+            if dd >= 0 and (sd < 0 or dd < sd):
+                delim = '"""'
+                idx = dd
+            else:
+                delim = "'''"
+                idx = sd
+            close = text.find(delim, idx + 3)
+            if close >= 0:
+                self.setFormat(offset + idx, close - idx + 3, self._triple_quote_fmt)
+                pos = close + 3
+            else:
+                self.setFormat(offset + idx, len(text) - idx, self._triple_quote_fmt)
+                self.setCurrentBlockState(1 if delim == '"""' else 2)
+                break

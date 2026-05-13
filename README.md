@@ -55,7 +55,8 @@ Do not write code for other platforms except for macOS. When writing code, use c
 - Find/Replace: "Regex", "Whole Words", and "Wrap Around" options are not yet implemented and are disabled in the UI.
 
 ## Plans for the future
-- [ ] Save all, recent files, 3 string highlighting
+- [x] Docstring highlighting
+- [ ] Save all, recent files
 - [ ] Command View  
 - [ ] Find/Replace: regex, whole words, wrap options
 
