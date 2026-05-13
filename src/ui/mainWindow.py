@@ -1,5 +1,6 @@
 import os
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QShortcut, QKeySequence
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox, QLabel
 from ui.codeEditor import QCodeEditor
 from ui.statusBar import StatusBar
@@ -99,6 +100,13 @@ class MainWindow(QMainWindow):
 
         self.winId()
         self._attach_native_toolbar()
+
+        QShortcut(QKeySequence("Shift+Meta+C"), self).activated.connect(
+            lambda: self.sliding_panel.slideTo(0)
+        )
+        QShortcut(QKeySequence("Shift+Meta+P"), self).activated.connect(
+            lambda: self.sliding_panel.slideTo(1)
+        )
 
     def _attach_native_toolbar(self):
         old_title = self.windowTitle()
