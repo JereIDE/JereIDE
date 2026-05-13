@@ -1,5 +1,6 @@
 import os
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox, QLabel
 from ui.codeEditor import QCodeEditor
 from ui.statusBar import StatusBar
 from ui.tabs import JereIDEBook
@@ -9,6 +10,8 @@ from ui.bottomPanel import BottomPanel
 from ui.findReplaceDialog import FindReplaceDialog
 from utils.findReplace import FindReplace
 from ui.nativeToolbar import attach_native_toolbar
+from ui.slidingPanel import SlidingPanel
+from const.theme import WELCOME_TEXT_SECONDARY
 
 
 class MainWindow(QMainWindow):
@@ -26,15 +29,34 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+        self.sliding_panel = SlidingPanel()
+        layout.addWidget(self.sliding_panel, 1)
+
+        page1 = QWidget()
+        page1_layout = QVBoxLayout(page1)
+        page1_layout.setContentsMargins(0, 0, 0, 0)
+        page1_layout.setSpacing(0)
+
         self.notebook = JereIDEBook(None)
-        layout.addWidget(self.notebook)
+        page1_layout.addWidget(self.notebook)
         self.notebook.hide()
 
         self.welcome_frame = WelcomeFrame()
-        layout.addWidget(self.welcome_frame)
+        page1_layout.addWidget(self.welcome_frame)
 
         self.welcome_frame.newFileRequested.connect(self._create_new_tab)
         self.welcome_frame.openFileRequested.connect(self.open_file)
+
+        self.sliding_panel.addPage(page1)
+
+        page2 = QWidget()
+        page2_layout = QVBoxLayout(page2)
+        page2_layout.setContentsMargins(0, 0, 0, 0)
+        placeholder = QLabel("Leads implementation")
+        placeholder.setAlignment(Qt.AlignCenter)
+        placeholder.setStyleSheet(f"color: {WELCOME_TEXT_SECONDARY}; font-size: 18px;")
+        page2_layout.addWidget(placeholder)
+        self.sliding_panel.addPage(page2)
 
         self.syntax_highlighting_enabled = True
         self.auto_indent_enabled = True
@@ -79,15 +101,11 @@ class MainWindow(QMainWindow):
     def _update_segmented_state(self):
         if self._native_segmented is None:
             return
-        has_tabs = self.notebook.GetPageCount() > 0
-        self._native_segmented.setEnabled_forSegment_(has_tabs, 0)
-        self._native_segmented.setEnabled_forSegment_(has_tabs, 1)
+        self._native_segmented.setEnabled_forSegment_(True, 0)
+        self._native_segmented.setEnabled_forSegment_(True, 1)
 
     def _on_view_changed(self, index):
-        if index == 0:
-            print("Gallery/Grid view selected")
-        else:
-            print("List view selected")
+        self.sliding_panel.slideTo(index)
 
     def _create_new_tab(self, title: str = "untitled", file_path: str | None = None):
         if self.notebook.GetPageCount() == 0:
