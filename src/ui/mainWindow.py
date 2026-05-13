@@ -11,6 +11,7 @@ from ui.findReplaceDialog import FindReplaceDialog
 from utils.findReplace import FindReplace
 from ui.nativeToolbar import attach_native_toolbar
 from ui.slidingPanel import SlidingPanel
+from utils.focusManager import FocusManager
 from const.theme import WELCOME_TEXT_SECONDARY
 
 
@@ -73,6 +74,15 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.bottom_panel)
 
         self.setCentralWidget(container)
+
+        self._focus_manager = FocusManager(self)
+        self._focus_manager.setup(
+            get_current_editor=self._get_current_editor,
+            terminal=self.bottom_panel.terminal,
+            page2_focus_target=page2,
+            bottom_panel=self.bottom_panel
+        )
+        self.sliding_panel.pageChanged.connect(self._focus_manager.on_page_changed)
 
         self.setup_menu()
 
