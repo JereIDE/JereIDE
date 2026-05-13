@@ -47,12 +47,16 @@ class MainWindow(QMainWindow):
         self.welcome_frame.newFileRequested.connect(self._create_new_tab)
         self.welcome_frame.openFileRequested.connect(self.open_file)
 
+        self.status_bar = StatusBar()
+        self.status_bar._dock_button.clicked.connect(self.toggle_bottom_panel)
+        page1_layout.addWidget(self.status_bar)
+
         self.sliding_panel.addPage(page1)
 
         page2 = QWidget()
         page2_layout = QVBoxLayout(page2)
         page2_layout.setContentsMargins(0, 0, 0, 0)
-        placeholder = QLabel("Leads implementation")
+        placeholder = QLabel("Needs implementation")
         placeholder.setAlignment(Qt.AlignCenter)
         placeholder.setStyleSheet(f"color: {WELCOME_TEXT_SECONDARY}; font-size: 18px;")
         page2_layout.addWidget(placeholder)
@@ -67,10 +71,6 @@ class MainWindow(QMainWindow):
 
         self.bottom_panel = BottomPanel()
         layout.addWidget(self.bottom_panel)
-
-        self.status_bar = StatusBar()
-        self.status_bar._dock_button.clicked.connect(self.toggle_bottom_panel)
-        layout.addWidget(self.status_bar)
 
         self.setCentralWidget(container)
 
