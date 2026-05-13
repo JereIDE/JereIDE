@@ -15,10 +15,8 @@ class SlidingPanel(QScrollArea):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setFrameShape(QFrame.Shape.NoFrame)
-        self.setStyleSheet("QScrollArea { border: none; background: transparent; }")
 
         self._container = QWidget()
-        self._container.setStyleSheet("background: transparent;")
         self._layout = QHBoxLayout(self._container)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.setSpacing(0)
