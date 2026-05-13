@@ -20,8 +20,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self._native_id = "JereIDEQ_MainWindow"
-        self.setWindowTitle("JereIDE - untitled")
-        self.setWindowFilePath("")
+        # self.setWindowTitle("JereIDE - untitled")
+        # self.setWindowFilePath("")
         self.resize(800, 600)
 
         self._native_segmented = None
@@ -165,10 +165,10 @@ class MainWindow(QMainWindow):
             file_path = data["file_path"]
             file_name = os.path.basename(file_path) if file_path else "untitled"
             is_modified = data["editor"].toPlainText() != data["original_content"]
-            title = f"JereIDE - {file_name}{' *' if is_modified else ''}"
-            self.setWindowTitle(title)
-            self.setWindowFilePath(file_path if file_path else "")
-            self.setWindowModified(is_modified)
+            # title = f"JereIDE - {file_name}{' *' if is_modified else ''}"
+            # self.setWindowTitle(title)
+            # self.setWindowFilePath(file_path if file_path else "")
+            # self.setWindowModified(is_modified)
             self.notebook.SetPageModified(index, is_modified)
 
     def on_tab_close_requested(self, index: int):
@@ -203,7 +203,7 @@ class MainWindow(QMainWindow):
             self.welcome_frame.show()
             self.notebook.hide()
             self.status_bar.update_position(1, 1)
-            self.setWindowTitle("JereIDE")
+            # self.setWindowTitle("JereIDE")
             self._update_segmented_state()
 
     def _get_tab_title(self, index: int):
@@ -256,10 +256,10 @@ class MainWindow(QMainWindow):
         if 0 <= index < len(self._tabs_data):
             data = self._tabs_data[index]
             is_modified = data["editor"].toPlainText() != data["original_content"]
-            self.setWindowModified(is_modified)
+            # self.setWindowModified(is_modified)
             file_name = os.path.basename(data["file_path"]) if data["file_path"] else "untitled"
-            title = f"JereIDE - {file_name}{' *' if is_modified else ''}"
-            self.setWindowTitle(title)
+            # title = f"JereIDE - {file_name}{' *' if is_modified else ''}"
+            # self.setWindowTitle(title)
             self.notebook.SetPageText(index, file_name)
             self.notebook.SetPageModified(index, is_modified)
 
