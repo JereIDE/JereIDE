@@ -71,6 +71,7 @@ class MenuBar:
         save_action.triggered.connect(self.window.save_file)
 
         save_as_action = file_menu.addAction("Save &As...")
+        save_as_action.setShortcut("Shift+Ctrl+S")
         save_as_action.triggered.connect(self.window.save_as_file)
 
         file_menu.addSeparator()
