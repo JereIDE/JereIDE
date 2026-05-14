@@ -19,11 +19,4 @@ jobs:
         python-version: '3.x'
     
     - name: Check Python syntax
-      run: |
-        python -m py_compile src/ui/codeEditor.py
-        python -m py_compile src/ui/lineNumber.py
-        python -m py_compile src/ui/mainWindow.py
-        python -m py_compile src/ui/statusBar.py
-        python -m py_compile src/JereIDE.py
-        python -m py_compile src/const/theme.py
-        echo "All Python files passed syntax check"
+      run: python -m compileall src/
