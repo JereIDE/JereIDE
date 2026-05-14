@@ -2,6 +2,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QShortcut, QKeySequence
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
 
+from const.constants import MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT
 from ui.menu import MenuBar
 from ui.code.bottomPanel import BottomPanel
 from ui.nativeToolbar import attach_native_toolbar
@@ -16,7 +17,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._native_id = "JereIDEQ_MainWindow"
         self.resize(800, 600)
-        self.setMinimumSize(412, 309)
+        self.setMinimumSize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
         self._native_segmented = None
         self.full_screen_enabled = False
 
