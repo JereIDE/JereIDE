@@ -1,7 +1,7 @@
 import os
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QShortcut, QKeySequence
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox, QLabel
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QMessageBox, QLabel
 from ui.codeEditor import QCodeEditor
 from ui.statusBar import StatusBar
 from ui.tabs import JereIDEBook
@@ -13,6 +13,7 @@ from utils.findReplace import FindReplace
 from ui.nativeToolbar import attach_native_toolbar
 from ui.slidingPanel import SlidingPanel
 from utils.focusManager import FocusManager
+from utils.fileManager import FileManager
 from config.theme import WELCOME_TEXT_SECONDARY
 
 
@@ -93,6 +94,7 @@ class MainWindow(QMainWindow):
 
         self._tabs_data = []
 
+        self._file_manager = FileManager(self)
         self._find_replace = FindReplace(self)
         self._find_dialog = None
 
@@ -130,7 +132,7 @@ class MainWindow(QMainWindow):
             self._native_segmented.setSelectedSegment_(index)
         self.sliding_panel.slideTo(index)
 
-    def _create_new_tab(self, title: str = "untitled", file_path: str | None = None):
+    def _create_new_tab(self, title: str = "untitled", file_path: str | None = None, content: str = ""):
         if self.notebook.GetPageCount() == 0:
             self.notebook.show()
             self.welcome_frame.hide()
@@ -141,11 +143,12 @@ class MainWindow(QMainWindow):
         self._tabs_data.append({
             "editor": editor,
             "file_path": file_path,
-            "is_untitled": file_path is None,
-            "original_content": ""
+            "original_content": content
         })
         editor.textChanged.connect(lambda: self.on_text_changed(editor))
         editor.cursorPositionChanged.connect(self._on_cursor_position_changed)
+        if content:
+            editor.setPlainText(content)
 
     def _get_current_tab_data(self):
         idx = self.notebook.GetSelection()
@@ -216,31 +219,21 @@ class MainWindow(QMainWindow):
     def _save_current_tab(self, index: int):
         if 0 <= index < len(self._tabs_data):
             data = self._tabs_data[index]
-            if data["file_path"]:
-                try:
-                    with open(data["file_path"], 'w', encoding='utf-8') as f:
-                        f.write(data["editor"].toPlainText())
-                    data["original_content"] = data["editor"].toPlainText()
-                    file_name = os.path.basename(data["file_path"])
-                    self.notebook.SetPageText(index, file_name)
-                    self.notebook.SetPageModified(index, False)
-                except Exception as e:
-                    QMessageBox.critical(self, "Error", f"Could not save file: {e}")
-            else:
-                self._save_as_current_tab(index)
+            path = self._file_manager.write_or_save_as(data["file_path"], data["editor"].toPlainText())
+            if path:
+                data["file_path"] = path
+                data["original_content"] = data["editor"].toPlainText()
+                self.notebook.SetPageText(index, os.path.basename(path))
+                self.notebook.SetPageModified(index, False)
 
     def _save_as_current_tab(self, index: int):
         if 0 <= index < len(self._tabs_data):
             data = self._tabs_data[index]
-            file_path, _ = QFileDialog.getSaveFileName(
-                self, "Save File As", "",
-                "Text Files (*.txt);;Python Files (*.py);;All Files (*)"
-            )
-            if file_path:
-                data["file_path"] = file_path
-                data["is_untitled"] = False
-                self._save_current_tab(index)
-                self.notebook.SetPageText(index, os.path.basename(file_path))
+            old_path = data["file_path"]
+            data["file_path"] = None
+            self._save_current_tab(index)
+            if not data["file_path"]:
+                data["file_path"] = old_path
 
     def setup_menu(self):
         self.menu_bar = MenuBar(self)
@@ -264,39 +257,12 @@ class MainWindow(QMainWindow):
             self.notebook.SetPageModified(index, is_modified)
 
     def open_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Open File", "",
-            "All Files (*)"
-        )
-        if file_path:
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Could not open file: {e}")
-                return
-
-            if self.notebook.GetPageCount() == 0:
-                self.notebook.show()
-                self.welcome_frame.hide()
-
-            editor = QCodeEditor()
-            title = os.path.basename(file_path)
-            page_count = self.notebook.GetPageCount()
-            self.notebook.AddPage(editor, title)
-            self._update_segmented_state()
-            self.notebook.SelectTab(page_count)
-            idx = page_count
-            self._tabs_data.append({
-                "editor": editor,
-                "file_path": file_path,
-                "is_untitled": False,
-                "original_content": content
-            })
-            editor.textChanged.connect(lambda: self.on_text_changed(editor))
-            editor.cursorPositionChanged.connect(self._on_cursor_position_changed)
-            editor.setPlainText(content)
-            self.on_tab_changed(idx)
+        result = self._file_manager.open_with_dialog()
+        if not result:
+            return
+        file_path, content = result
+        self._create_new_tab(os.path.basename(file_path), file_path, content)
+        self.on_tab_changed(self.notebook.GetSelection())
 
     def save_file(self):
         idx = self.notebook.GetSelection()
