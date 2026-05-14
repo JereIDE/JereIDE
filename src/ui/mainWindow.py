@@ -49,6 +49,7 @@ class MainWindow(QMainWindow):
 
         self.code_view.tabCountChanged.connect(self._update_segmented_state)
         self.code_view.dockToggled.connect(self.toggle_bottom_panel)
+        self.code_view.commandViewRequested.connect(lambda: self._switch_page(1))
 
         self.setup_menu()
 

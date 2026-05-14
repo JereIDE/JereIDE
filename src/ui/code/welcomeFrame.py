@@ -14,7 +14,7 @@ from const.paths import LOGO_PATH
 class WelcomeFrame(QFrame):
     newFileRequested = Signal()
     openFileRequested = Signal()
-    commandPaletteRequested = Signal()
+    commandViewRequested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -101,7 +101,7 @@ class WelcomeFrame(QFrame):
             "Open File", "⌘O", "folder", self._on_open_file
         )
         self._add_action(
-            "Open Command Palette\t  ", "⌘⇧P", "cmd", self._on_command_palette, enabled=False
+            "Open Command View\t  ", "⌘⇧P", "cmd", self._on_command_view
         )
 
         actions_layout.addWidget(section_label)
@@ -164,5 +164,6 @@ class WelcomeFrame(QFrame):
     def _on_open_file(self):
         self.openFileRequested.emit()
 
-    def _on_command_palette(self):
-        self.commandPaletteRequested.emit()
+    def _on_command_view(self):
+        self.commandViewRequested.emit()
+        print("Command View")

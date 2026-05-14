@@ -13,6 +13,7 @@ from utils.fileManager import FileManager
 class CodeView(QWidget):
     tabCountChanged = Signal(int)
     dockToggled = Signal()
+    commandViewRequested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -29,6 +30,7 @@ class CodeView(QWidget):
 
         self._welcome_frame.newFileRequested.connect(self._create_new_tab)
         self._welcome_frame.openFileRequested.connect(self.open_file)
+        self._welcome_frame.commandViewRequested.connect(self.commandViewRequested.emit)
 
         self._status_bar = StatusBar()
         self._status_bar._dock_button.clicked.connect(self._on_dock_clicked)
