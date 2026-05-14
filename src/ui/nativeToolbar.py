@@ -4,11 +4,13 @@ from AppKit import (
     NSToolbar,
     NSToolbarItem,
     NSImage,
+    NSImageSymbolConfiguration,
     NSSegmentedControl,
     NSTitlebarAccessoryViewController,
     NSView,
     NSLayoutConstraint,
     NSSegmentSwitchTrackingSelectOne,
+    NSSegmentSwitchTrackingMomentary,
     NSSegmentStyleSeparated,
     NSControlSizeRegular,
     NSWindowStyleMaskFullSizeContentView,
@@ -35,6 +37,18 @@ class ViewOptionsController(NSObj):
         selected = sender.selectedSegment()
         if self._callback:
             self._callback(selected)
+
+
+class RunButtonController(NSObj):
+
+    def init(self):
+        self = objc.super(RunButtonController, self).init()
+        if self is None:
+            return None
+        return self
+
+    def runAction_(self, sender):
+        print("Run button clicked (dummy action)")
 
 
 class ToolbarController(NSObj):
@@ -122,14 +136,37 @@ def attach_native_toolbar(window_id: str, callback=None):
 
             segmented = toolbar_controller.create_segmented_control()
 
-            accessory_view = NSView.alloc().initWithFrame_(((0, 0), (84, 40)))
+            run_image = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+                "play.fill", None
+            )
+            config = NSImageSymbolConfiguration.configurationWithPointSize_weight_scale_(14, 4, 1)
+            run_image = run_image.imageWithSymbolConfiguration_(config)
+
+            run_seg = NSSegmentedControl.alloc().initWithFrame_(((0, 0), (36, 28)))
+            run_seg.setTrackingMode_(NSSegmentSwitchTrackingMomentary)
+            run_seg.setSegmentCount_(1)
+            run_seg.setImage_forSegment_(run_image, 0)
+            run_seg.setWidth_forSegment_(36, 0)
+            run_seg.setToolTip_forSegment_("Run script", 0)
+            run_seg.setControlSize_(NSControlSizeRegular)
+            run_seg.setTarget_(RunButtonController.alloc().init())
+            run_seg.setAction_("runAction:")
+            run_seg.setTranslatesAutoresizingMaskIntoConstraints_(False)
+
+            accessory_view = NSView.alloc().initWithFrame_(((0, 0), (132, 40)))
             accessory_view.addSubview_(segmented)
+            accessory_view.addSubview_(run_seg)
 
             NSLayoutConstraint.activateConstraints_([
-                segmented.centerXAnchor().constraintEqualToAnchor_(accessory_view.centerXAnchor()),
+                segmented.leadingAnchor().constraintEqualToAnchor_constant_(accessory_view.leadingAnchor(), 12),
                 segmented.centerYAnchor().constraintEqualToAnchor_(accessory_view.centerYAnchor()),
                 segmented.widthAnchor().constraintEqualToConstant_(72),
                 segmented.heightAnchor().constraintEqualToConstant_(28),
+
+                run_seg.leadingAnchor().constraintEqualToAnchor_constant_(segmented.trailingAnchor(), 8),
+                run_seg.centerYAnchor().constraintEqualToAnchor_(accessory_view.centerYAnchor()),
+                run_seg.widthAnchor().constraintEqualToConstant_(36),
+                run_seg.heightAnchor().constraintEqualToConstant_(28),
             ])
 
             accessory_controller = NSTitlebarAccessoryViewController.alloc().init()
