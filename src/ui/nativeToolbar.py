@@ -1,17 +1,18 @@
 import objc
 from AppKit import (
     NSApplication,
+    NSBezelStyleTexturedRounded,
+    NSButton,
+    NSImage,
+    NSImageOnly,
+    NSImageSymbolConfiguration,
     NSToolbar,
     NSToolbarItem,
-    NSImage,
-    NSImageSymbolConfiguration,
     NSSegmentedControl,
     NSTitlebarAccessoryViewController,
     NSView,
     NSLayoutConstraint,
     NSSegmentSwitchTrackingSelectOne,
-    NSSegmentSwitchTrackingMomentary,
-    NSSegmentStyleSeparated,
     NSControlSizeRegular,
     NSWindowStyleMaskFullSizeContentView,
     NSToolbarDisplayModeIconOnly,
@@ -147,20 +148,18 @@ def attach_native_toolbar(window_id: str, callback=None):
             config = NSImageSymbolConfiguration.configurationWithPointSize_weight_scale_(14, 4, 1)
             run_image = run_image.imageWithSymbolConfiguration_(config)
 
-            run_seg = NSSegmentedControl.alloc().initWithFrame_(((0, 0), (36, 28)))
-            run_seg.setTrackingMode_(NSSegmentSwitchTrackingMomentary)
-            run_seg.setSegmentCount_(1)
-            run_seg.setImage_forSegment_(run_image, 0)
-            run_seg.setWidth_forSegment_(36, 0)
-            run_seg.setToolTip_forSegment_("Run script", 0)
-            run_seg.setControlSize_(NSControlSizeRegular)
-            run_seg.setTarget_(toolbar_controller.get_run_controller())
-            run_seg.setAction_("runAction:")
-            run_seg.setTranslatesAutoresizingMaskIntoConstraints_(False)
+            run_button = NSButton.alloc().initWithFrame_(((0, 0), (36, 28)))
+            run_button.setBezelStyle_(NSBezelStyleTexturedRounded)
+            run_button.setImage_(run_image)
+            run_button.setImagePosition_(NSImageOnly)
+            run_button.setToolTip_("Run script")
+            run_button.setTarget_(toolbar_controller.get_run_controller())
+            run_button.setAction_("runAction:")
+            run_button.setTranslatesAutoresizingMaskIntoConstraints_(False)
 
             accessory_view = NSView.alloc().initWithFrame_(((0, 0), (132, 40)))
             accessory_view.addSubview_(segmented)
-            accessory_view.addSubview_(run_seg)
+            accessory_view.addSubview_(run_button)
 
             NSLayoutConstraint.activateConstraints_([
                 segmented.leadingAnchor().constraintEqualToAnchor_constant_(accessory_view.leadingAnchor(), 12),
@@ -168,10 +167,10 @@ def attach_native_toolbar(window_id: str, callback=None):
                 segmented.widthAnchor().constraintEqualToConstant_(72),
                 segmented.heightAnchor().constraintEqualToConstant_(28),
 
-                run_seg.leadingAnchor().constraintEqualToAnchor_constant_(segmented.trailingAnchor(), 8),
-                run_seg.centerYAnchor().constraintEqualToAnchor_(accessory_view.centerYAnchor()),
-                run_seg.widthAnchor().constraintEqualToConstant_(36),
-                run_seg.heightAnchor().constraintEqualToConstant_(28),
+                run_button.leadingAnchor().constraintEqualToAnchor_constant_(segmented.trailingAnchor(), 8),
+                run_button.centerYAnchor().constraintEqualToAnchor_(accessory_view.centerYAnchor()),
+                run_button.widthAnchor().constraintEqualToConstant_(36),
+                run_button.heightAnchor().constraintEqualToConstant_(28),
             ])
 
             accessory_controller = NSTitlebarAccessoryViewController.alloc().init()
