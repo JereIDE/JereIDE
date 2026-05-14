@@ -55,10 +55,10 @@ class MainWindow(QMainWindow):
         self.winId()
         self._attach_native_toolbar()
 
-        QShortcut(QKeySequence("Shift+Meta+C"), self).activated.connect(
+        QShortcut(QKeySequence("Shift+Ctrl+C"), self).activated.connect(
             lambda: self._switch_page(0)
         )
-        QShortcut(QKeySequence("Shift+Meta+P"), self).activated.connect(
+        QShortcut(QKeySequence("Shift+Ctrl+P"), self).activated.connect(
             lambda: self._switch_page(1)
         )
 
