@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QPlainTextEdit, QTextEdit
 from PySide6.QtCore import Qt, QRect
 from PySide6.QtGui import QPainter, QFont, QColor, QTextCursor, QTextFormat
-from ui.lineNumber import LineNumberArea
+from .lineNumber import LineNumberArea
 from utils.syntaxHighlight import PythonSyntaxHighlighter
 from utils.autoIndent import AutoIndent
 from utils.autoPairing import AutoPairingMixin

@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout
 from PySide6.QtCore import Qt
 from config.theme import EDITOR_BG, STATUS_BAR_BG
-from ui.terminalWidget import TerminalWidget
+from .terminalWidget import TerminalWidget
 
 
 class BottomPanel(QWidget):
