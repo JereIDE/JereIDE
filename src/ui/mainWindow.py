@@ -34,35 +34,35 @@ class MainWindow(QMainWindow):
         self.sliding_panel = SlidingPanel()
         layout.addWidget(self.sliding_panel, 1)
 
-        page1 = QWidget()
-        page1_layout = QVBoxLayout(page1)
-        page1_layout.setContentsMargins(0, 0, 0, 0)
-        page1_layout.setSpacing(0)
+        codeview = QWidget()
+        codeview_layout = QVBoxLayout(codeview)
+        codeview_layout.setContentsMargins(0, 0, 0, 0)
+        codeview_layout.setSpacing(0)
 
         self.notebook = JereIDEBook(None)
-        page1_layout.addWidget(self.notebook)
+        codeview_layout.addWidget(self.notebook)
         self.notebook.hide()
 
         self.welcome_frame = WelcomeFrame()
-        page1_layout.addWidget(self.welcome_frame)
+        codeview_layout.addWidget(self.welcome_frame)
 
         self.welcome_frame.newFileRequested.connect(self._create_new_tab)
         self.welcome_frame.openFileRequested.connect(self.open_file)
 
         self.status_bar = StatusBar()
         self.status_bar._dock_button.clicked.connect(self.toggle_bottom_panel)
-        page1_layout.addWidget(self.status_bar)
+        codeview_layout.addWidget(self.status_bar)
 
-        self.sliding_panel.addPage(page1)
+        self.sliding_panel.addPage(codeview)
 
-        page2 = QWidget()
-        page2_layout = QVBoxLayout(page2)
-        page2_layout.setContentsMargins(0, 0, 0, 0)
+        commandview = QWidget()
+        commandview_layout = QVBoxLayout(commandview)
+        commandview_layout.setContentsMargins(0, 0, 0, 0)
         placeholder = QLabel("Needs implementation")
         placeholder.setAlignment(Qt.AlignCenter)
         placeholder.setStyleSheet(f"color: {WELCOME_TEXT_SECONDARY}; font-size: 18px;")
-        page2_layout.addWidget(placeholder)
-        self.sliding_panel.addPage(page2)
+        commandview_layout.addWidget(placeholder)
+        self.sliding_panel.addPage(commandview)
 
         self.syntax_highlighting_enabled = True
         self.auto_indent_enabled = True
@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
         self._focus_manager.setup(
             get_current_editor=self._get_current_editor,
             terminal=self.bottom_panel.terminal,
-            page2_focus_target=page2,
+            commandview_focus_target=commandview,
             bottom_panel=self.bottom_panel
         )
         self.sliding_panel.pageChanged.connect(self._focus_manager.on_page_changed)

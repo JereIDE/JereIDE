@@ -6,13 +6,13 @@ class FocusManager(QObject):
         super().__init__(parent)
         self._get_current_editor = None
         self._terminal = None
-        self._page2_focus_target = None
+        self._commandview_focus_target = None
         self._bottom_panel = None
 
-    def setup(self, get_current_editor, terminal, page2_focus_target, bottom_panel):
+    def setup(self, get_current_editor, terminal, commandview_focus_target, bottom_panel):
         self._get_current_editor = get_current_editor
         self._terminal = terminal
-        self._page2_focus_target = page2_focus_target
+        self._commandview_focus_target = commandview_focus_target
         self._bottom_panel = bottom_panel
         bottom_panel.installEventFilter(self)
 
@@ -20,8 +20,8 @@ class FocusManager(QObject):
         if index == 0:
             self._focus_code()
         elif index == 1:
-            if self._page2_focus_target:
-                self._page2_focus_target.setFocus()
+            if self._commandview_focus_target:
+                self._commandview_focus_target.setFocus()
 
     def eventFilter(self, obj, event):
         if obj == self._bottom_panel:
