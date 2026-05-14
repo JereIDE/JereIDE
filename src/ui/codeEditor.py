@@ -32,6 +32,8 @@ class QCodeEditor(QPlainTextEdit, AutoPairingMixin):
         self.syntax_highlighter_enabled = True
         self.syntax_highlighter = PythonSyntaxHighlighter(self.document())
 
+        self._find_highlights: list[QTextEdit.ExtraSelection] = []
+
         self.blockCountChanged.connect(self.update_line_number_area_width)
         self.updateRequest.connect(self.update_line_number_area)
         self.cursorPositionChanged.connect(self.highlight_current_line)
@@ -93,19 +95,24 @@ class QCodeEditor(QPlainTextEdit, AutoPairingMixin):
         cr = self.contentsRect()
         self.line_number_area.setGeometry(QRect(cr.left(), cr.top(), self.line_number_area_width(), cr.height()))
 
-    def highlight_current_line(self):
-        extra_selections = []
+    def refresh_extra_selections(self):
+        selections = list(self._find_highlights)
         if not self.isReadOnly():
-            selection = QTextEdit.ExtraSelection()
-            selection.format.setBackground(QColor(CURRENT_LINE_BG))
-            selection.format.setProperty(QTextFormat.FullWidthSelection, True)
-            selection.cursor = self.textCursor()
-            selection.cursor.clearSelection()
-            extra_selections.append(selection)
+            current = QTextEdit.ExtraSelection()
+            current.format.setBackground(QColor(CURRENT_LINE_BG))
+            current.format.setProperty(QTextFormat.FullWidthSelection, True)
+            current.cursor = self.textCursor()
+            current.cursor.clearSelection()
+            selections.append(current)
+            self.apply_pair_highlighting(selections)
+        self.setExtraSelections(selections)
 
-            self.apply_pair_highlighting(extra_selections)
+    def set_find_highlights(self, selections: list[QTextEdit.ExtraSelection]):
+        self._find_highlights = selections
+        self.refresh_extra_selections()
 
-        self.setExtraSelections(extra_selections)
+    def highlight_current_line(self):
+        self.refresh_extra_selections()
 
     def lineNumberAreaPaintEvent(self, event):
         painter = QPainter(self.line_number_area)

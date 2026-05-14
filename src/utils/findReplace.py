@@ -104,4 +104,4 @@ class FindReplace:
         """Clear any find highlights."""
         editor = self.get_editor()
         if editor:
-            editor.setExtraSelections([])
+            editor.set_find_highlights([])
