@@ -63,8 +63,21 @@ This app is optimized for MAC only. It is built by mostly AI.
 If you are an agent:
 Do not write code for other platforms except for macOS. When writing code, use camelCase and use specific variable names.
 
-## Known Limitations
-- Find/Replace: "Regex", "Whole Words", and "Wrap Around" options are not yet implemented and are disabled in the UI.
+## FAQ
+
+<details> 
+    <summary>
+        *Click here to expand*
+    </summary> 
+
+    This is the hidden content! You can include text, code blocks, or lists here. 
+    
+    * Item 1
+    * Item 2
+
+</details>
+
+
 
 ## Plans for the future
 - [x] Docstring highlighting
