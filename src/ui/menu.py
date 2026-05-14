@@ -74,6 +74,10 @@ class MenuBar:
         save_as_action.setShortcut("Shift+Ctrl+S")
         save_as_action.triggered.connect(self.window.save_as_file)
 
+        save_all_action = file_menu.addAction("Save A&ll")
+        save_all_action.setShortcut("Alt+Ctrl+S")
+        save_all_action.triggered.connect(self.window.save_all)
+
         file_menu.addSeparator()
 
         exit_action = file_menu.addAction("E&xit")

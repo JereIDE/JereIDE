@@ -191,6 +191,13 @@ class CodeView(QWidget):
         if 0 <= idx < len(self._tabs_data):
             self._save_as_current_tab(idx)
 
+    def save_all(self):
+        for i in range(len(self._tabs_data)):
+            self._save_current_tab(i)
+        if self._tabs_data:
+            current = self._notebook.GetSelection()
+            self.on_tab_changed(current)
+
     def on_text_changed(self, editor):
         index = self._get_tab_index_by_editor(editor)
         if 0 <= index < len(self._tabs_data):

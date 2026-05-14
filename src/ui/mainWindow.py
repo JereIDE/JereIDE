@@ -125,6 +125,9 @@ class MainWindow(QMainWindow):
     def save_as_file(self):
         self.code_view.save_as_file()
 
+    def save_all(self):
+        self.code_view.save_all()
+
     def undo(self):
         self.code_view.undo()
 
