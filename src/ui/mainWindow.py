@@ -113,19 +113,28 @@ class MainWindow(QMainWindow):
     def wrap_enabled(self):
         return self.code_view.wrap_enabled
 
+    def _switch_to_code_view(self):
+        if self.sliding_panel.currentIndex() != 0:
+            self._switch_page(0)
+
     def new_file(self):
+        self._switch_to_code_view()
         self.code_view.new_file()
 
     def open_file(self):
+        self._switch_to_code_view()
         self.code_view.open_file()
 
     def save_file(self):
+        self._switch_to_code_view()
         self.code_view.save_file()
 
     def save_as_file(self):
+        self._switch_to_code_view()
         self.code_view.save_as_file()
 
     def save_all(self):
+        self._switch_to_code_view()
         self.code_view.save_all()
 
     def undo(self):
