@@ -1,7 +1,8 @@
 <div align="center">
+    <img src="src/icons/logo.svg" width="200" height="100">
 
 # JereIDE
-
+  
 **the fast simple code editor**
 
 ![](https://img.shields.io/badge/Built_in-PySide6-turquoise)
