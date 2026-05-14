@@ -100,11 +100,7 @@ class AutoPairingMixin:
             if ch in self.PAIRS:
                 stack.append(ch)
             elif ch in self.PAIRS.values():
-                if stack and ((ch == ')' and stack[-1] == '(') or
-                          (ch == ']' and stack[-1] == '[') or
-                          (ch == '}' and stack[-1] == '{') or
-                          (ch == '"' and stack[-1] == '"') or
-                          (ch == "'" and stack[-1] == "'")):
+                if stack and self.PAIRS.get(stack[-1]) == ch:
                     stack.pop()
         return opening_char not in stack
 
