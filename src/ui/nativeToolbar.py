@@ -7,6 +7,7 @@ from AppKit import (
     NSImageOnly,
     NSImageSymbolConfiguration,
     NSToolbar,
+    NSToolbarFlexibleSpaceItemIdentifier,
     NSToolbarItem,
     NSSegmentedControl,
     NSTitlebarAccessoryViewController,
@@ -104,26 +105,49 @@ class ToolbarController(NSObj):
 
 class ToolbarDelegate(NSObj):
 
-    def init(self):
+    def initWithToolbarController_(self, controller):
         self = objc.super(ToolbarDelegate, self).init()
         if self is None:
             return None
-        self._toolbar_identifiers = ["FlexibleSpace"]
+        self._toolbar_controller = controller
+        self._identifiers = [NSToolbarFlexibleSpaceItemIdentifier, "RunScript"]
+        self._run_item = None
         return self
 
     def toolbarAllowedItemIdentifiers_(self, toolbar):
-        return self._toolbar_identifiers
+        return self._identifiers
 
     def toolbarDefaultItemIdentifiers_(self, toolbar):
-        return self._toolbar_identifiers
+        return [NSToolbarFlexibleSpaceItemIdentifier, "RunScript"]
 
     def toolbarSelectableItemIdentifiers_(self, toolbar):
-        return self._toolbar_identifiers
+        return []
 
     def toolbar_itemForItemIdentifier_willBeInsertedIntoToolbar_(self, toolbar, item_identifier, flag):
-        if item_identifier == "FlexibleSpace":
-            space_item = NSToolbarItem.alloc().initWithItemIdentifier_(item_identifier)
-            return space_item
+        if item_identifier == "RunScript":
+            if self._run_item is None:
+                run_image = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+                    "play.fill", None
+                )
+                config = NSImageSymbolConfiguration.configurationWithPointSize_weight_scale_(14, 4, 1)
+                run_image = run_image.imageWithSymbolConfiguration_(config)
+
+                button = NSButton.alloc().initWithFrame_(((0, 0), (36, 28)))
+                button.setBezelStyle_(NSBezelStyleTexturedRounded)
+                button.setImage_(run_image)
+                button.setImagePosition_(NSImageOnly)
+                button.setToolTip_("Run script")
+                button.setTarget_(self._toolbar_controller.get_run_controller())
+                button.setAction_("runAction:")
+
+                self._run_item = NSToolbarItem.alloc().initWithItemIdentifier_(item_identifier)
+                self._run_item.setLabel_("Run")
+                self._run_item.setPaletteLabel_("Run Script")
+                self._run_item.setToolTip_("Run the current script")
+                self._run_item.setView_(button)
+                self._run_item.setMinSize_((36, 28))
+                self._run_item.setMaxSize_((36, 28))
+            return self._run_item
         return None
 
 
@@ -142,35 +166,14 @@ def attach_native_toolbar(window_id: str, callback=None):
 
             segmented = toolbar_controller.create_segmented_control()
 
-            run_image = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
-                "play.fill", None
-            )
-            config = NSImageSymbolConfiguration.configurationWithPointSize_weight_scale_(14, 4, 1)
-            run_image = run_image.imageWithSymbolConfiguration_(config)
-
-            run_button = NSButton.alloc().initWithFrame_(((0, 0), (36, 28)))
-            run_button.setBezelStyle_(NSBezelStyleTexturedRounded)
-            run_button.setImage_(run_image)
-            run_button.setImagePosition_(NSImageOnly)
-            run_button.setToolTip_("Run script")
-            run_button.setTarget_(toolbar_controller.get_run_controller())
-            run_button.setAction_("runAction:")
-            run_button.setTranslatesAutoresizingMaskIntoConstraints_(False)
-
-            accessory_view = NSView.alloc().initWithFrame_(((0, 0), (132, 40)))
+            accessory_view = NSView.alloc().initWithFrame_(((0, 0), (96, 40)))
             accessory_view.addSubview_(segmented)
-            accessory_view.addSubview_(run_button)
 
             NSLayoutConstraint.activateConstraints_([
                 segmented.leadingAnchor().constraintEqualToAnchor_constant_(accessory_view.leadingAnchor(), 12),
                 segmented.centerYAnchor().constraintEqualToAnchor_(accessory_view.centerYAnchor()),
                 segmented.widthAnchor().constraintEqualToConstant_(72),
                 segmented.heightAnchor().constraintEqualToConstant_(28),
-
-                run_button.leadingAnchor().constraintEqualToAnchor_constant_(segmented.trailingAnchor(), 8),
-                run_button.centerYAnchor().constraintEqualToAnchor_(accessory_view.centerYAnchor()),
-                run_button.widthAnchor().constraintEqualToConstant_(36),
-                run_button.heightAnchor().constraintEqualToConstant_(28),
             ])
 
             accessory_controller = NSTitlebarAccessoryViewController.alloc().init()
@@ -180,9 +183,10 @@ def attach_native_toolbar(window_id: str, callback=None):
             window.addTitlebarAccessoryViewController_(accessory_controller)
 
             toolbar = NSToolbar.alloc().initWithIdentifier_("MainToolbar")
-            delegate = ToolbarDelegate.alloc().init()
+            delegate = ToolbarDelegate.alloc().initWithToolbarController_(toolbar_controller)
             toolbar.setDelegate_(delegate)
             toolbar.setDisplayMode_(NSToolbarDisplayModeIconOnly)
+            toolbar.setAllowsUserCustomization_(True)
             window.setToolbar_(toolbar)
 
             return toolbar_controller, segmented
