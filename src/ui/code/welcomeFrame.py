@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QPixmap, QPainter, QFont
 from PySide6.QtSvg import QSvgRenderer
-from const.theme import (
+from config.theme import (
     EDITOR_BG, WELCOME_TEXT_PRIMARY,
     WELCOME_TEXT_SECONDARY, WELCOME_DIVIDER
 )

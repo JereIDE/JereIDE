@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextCursor, QColor
 from PySide6.QtWidgets import QTextEdit
 
-from const.theme import PAIR_HIGHLIGHT
+from config.theme import PAIR_HIGHLIGHT
 from config.config_manager import config_manager
 
 

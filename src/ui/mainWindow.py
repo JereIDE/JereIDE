@@ -1,30 +1,23 @@
-import os
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QShortcut, QKeySequence
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox, QLabel
-from ui.codeEditor import QCodeEditor
-from ui.statusBar import StatusBar
-from ui.tabs import JereIDEBook
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
+
 from ui.menu import MenuBar
-from ui.welcomeFrame import WelcomeFrame
-from ui.bottomPanel import BottomPanel
-from ui.findReplaceDialog import FindReplaceDialog
-from utils.findReplace import FindReplace
+from ui.code.bottomPanel import BottomPanel
 from ui.nativeToolbar import attach_native_toolbar
 from ui.slidingPanel import SlidingPanel
+from ui.code import CodeView
+from ui.command import CommandView
 from utils.focusManager import FocusManager
-from const.theme import WELCOME_TEXT_SECONDARY
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self._native_id = "JereIDEQ_MainWindow"
-        # self.setWindowTitle("JereIDE - untitled")
-        # self.setWindowFilePath("")
         self.resize(800, 600)
-
         self._native_segmented = None
+        self.full_screen_enabled = False
 
         container = QWidget()
         layout = QVBoxLayout(container)
@@ -34,42 +27,11 @@ class MainWindow(QMainWindow):
         self.sliding_panel = SlidingPanel()
         layout.addWidget(self.sliding_panel, 1)
 
-        codeview = QWidget()
-        codeview_layout = QVBoxLayout(codeview)
-        codeview_layout.setContentsMargins(0, 0, 0, 0)
-        codeview_layout.setSpacing(0)
+        self.code_view = CodeView()
+        self.sliding_panel.addPage(self.code_view)
 
-        self.notebook = JereIDEBook(None)
-        codeview_layout.addWidget(self.notebook)
-        self.notebook.hide()
-
-        self.welcome_frame = WelcomeFrame()
-        codeview_layout.addWidget(self.welcome_frame)
-
-        self.welcome_frame.newFileRequested.connect(self._create_new_tab)
-        self.welcome_frame.openFileRequested.connect(self.open_file)
-
-        self.status_bar = StatusBar()
-        self.status_bar._dock_button.clicked.connect(self.toggle_bottom_panel)
-        codeview_layout.addWidget(self.status_bar)
-
-        self.sliding_panel.addPage(codeview)
-
-        commandview = QWidget()
-        commandview_layout = QVBoxLayout(commandview)
-        commandview_layout.setContentsMargins(0, 0, 0, 0)
-        placeholder = QLabel("Needs implementation")
-        placeholder.setAlignment(Qt.AlignCenter)
-        placeholder.setStyleSheet(f"color: {WELCOME_TEXT_SECONDARY}; font-size: 18px;")
-        commandview_layout.addWidget(placeholder)
-        self.sliding_panel.addPage(commandview)
-
-        self.syntax_highlighting_enabled = True
-        self.auto_indent_enabled = True
-        self.line_numbers_enabled = True
-        self.auto_pairing_enabled = True
-        self.wrap_enabled = False
-        self.full_screen_enabled = False
+        self.command_view = CommandView()
+        self.sliding_panel.addPage(self.command_view)
 
         self.bottom_panel = BottomPanel()
         layout.addWidget(self.bottom_panel)
@@ -78,25 +40,17 @@ class MainWindow(QMainWindow):
 
         self._focus_manager = FocusManager(self)
         self._focus_manager.setup(
-            get_current_editor=self._get_current_editor,
+            get_current_editor=lambda: self.code_view.current_editor,
             terminal=self.bottom_panel.terminal,
-            commandview_focus_target=commandview,
+            commandview_focus_target=self.command_view,
             bottom_panel=self.bottom_panel
         )
         self.sliding_panel.pageChanged.connect(self._focus_manager.on_page_changed)
 
+        self.code_view.tabCountChanged.connect(self._update_segmented_state)
+        self.code_view.dockToggled.connect(self.toggle_bottom_panel)
+
         self.setup_menu()
-
-        self.notebook.page_changed.connect(self.on_tab_changed)
-        self.notebook.page_changed.connect(self._on_page_changed_for_cursor)
-        self.notebook.page_close_requested.connect(self.on_tab_close_requested)
-
-        self._tabs_data = []
-
-        self._find_replace = FindReplace(self)
-        self._find_dialog = None
-
-        self._create_new_tab()
 
         self.winId()
         self._attach_native_toolbar()
@@ -108,6 +62,8 @@ class MainWindow(QMainWindow):
             lambda: self._switch_page(1)
         )
 
+    # --- Native toolbar ---
+
     def _attach_native_toolbar(self):
         old_title = self.windowTitle()
         self.setWindowTitle(self._native_id)
@@ -116,7 +72,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(old_title)
         self._update_segmented_state()
 
-    def _update_segmented_state(self):
+    def _update_segmented_state(self, _count=None):
         if self._native_segmented is None:
             return
         self._native_segmented.setEnabled_forSegment_(True, 0)
@@ -130,293 +86,87 @@ class MainWindow(QMainWindow):
             self._native_segmented.setSelectedSegment_(index)
         self.sliding_panel.slideTo(index)
 
-    def _create_new_tab(self, title: str = "untitled", file_path: str | None = None):
-        if self.notebook.GetPageCount() == 0:
-            self.notebook.show()
-            self.welcome_frame.hide()
-
-        editor = QCodeEditor()
-        self.notebook.AddPage(editor, title)
-        self._update_segmented_state()
-        self._tabs_data.append({
-            "editor": editor,
-            "file_path": file_path,
-            "is_untitled": file_path is None,
-            "original_content": ""
-        })
-        editor.textChanged.connect(lambda: self.on_text_changed(editor))
-        editor.cursorPositionChanged.connect(self._on_cursor_position_changed)
-
-    def _get_current_tab_data(self):
-        idx = self.notebook.GetSelection()
-        if 0 <= idx < len(self._tabs_data):
-            return idx, self._tabs_data[idx]
-        return -1, None
-
-    def _get_tab_index_by_editor(self, editor):
-        for i, data in enumerate(self._tabs_data):
-            if data["editor"] == editor:
-                return i
-        return -1
-
-    def on_tab_changed(self, index: int):
-        if 0 <= index < len(self._tabs_data):
-            data = self._tabs_data[index]
-            file_path = data["file_path"]
-            file_name = os.path.basename(file_path) if file_path else "untitled"
-            is_modified = data["editor"].toPlainText() != data["original_content"]
-            # title = f"JereIDE - {file_name}{' *' if is_modified else ''}"
-            # self.setWindowTitle(title)
-            # self.setWindowFilePath(file_path if file_path else "")
-            # self.setWindowModified(is_modified)
-            self.notebook.SetPageModified(index, is_modified)
-
-    def on_tab_close_requested(self, index: int):
-        if 0 <= index < len(self._tabs_data):
-            data = self._tabs_data[index]
-            is_modified = data["editor"].toPlainText() != data["original_content"]
-            if is_modified:
-                file_name = os.path.basename(data["file_path"]) if data["file_path"] else "untitled"
-                reply = QMessageBox.question(
-                    self, "Unsaved Changes",
-                    f"Save changes to {file_name}?",
-                    QMessageBox.StandardButton.Save |
-                    QMessageBox.StandardButton.Discard |
-                    QMessageBox.StandardButton.Cancel
-                )
-                if reply == QMessageBox.StandardButton.Save:
-                    self._save_current_tab(index)
-                    self._close_tab(index)
-                elif reply == QMessageBox.StandardButton.Discard:
-                    self._close_tab(index)
-            else:
-                self._close_tab(index)
-
-    def _close_tab(self, index: int):
-        self.notebook.CloseTab(index)
-        if 0 <= index < len(self._tabs_data):
-            self._tabs_data.pop(index)
-        for i in range(len(self._tabs_data)):
-            self.notebook.SetPageText(i, self._get_tab_title(i))
-
-        if self.notebook.GetPageCount() == 0:
-            self.welcome_frame.show()
-            self.notebook.hide()
-            self.status_bar.update_position(1, 1)
-            # self.setWindowTitle("JereIDE")
-            self._update_segmented_state()
-
-    def _get_tab_title(self, index: int):
-        if 0 <= index < len(self._tabs_data):
-            data = self._tabs_data[index]
-            file_path = data["file_path"]
-            return os.path.basename(file_path) if file_path else "untitled"
-        return "untitled"
-
-    def _save_current_tab(self, index: int):
-        if 0 <= index < len(self._tabs_data):
-            data = self._tabs_data[index]
-            if data["file_path"]:
-                try:
-                    with open(data["file_path"], 'w', encoding='utf-8') as f:
-                        f.write(data["editor"].toPlainText())
-                    data["original_content"] = data["editor"].toPlainText()
-                    file_name = os.path.basename(data["file_path"])
-                    self.notebook.SetPageText(index, file_name)
-                    self.notebook.SetPageModified(index, False)
-                except Exception as e:
-                    QMessageBox.critical(self, "Error", f"Could not save file: {e}")
-            else:
-                self._save_as_current_tab(index)
-
-    def _save_as_current_tab(self, index: int):
-        if 0 <= index < len(self._tabs_data):
-            data = self._tabs_data[index]
-            file_path, _ = QFileDialog.getSaveFileName(
-                self, "Save File As", "",
-                "Text Files (*.txt);;Python Files (*.py);;All Files (*)"
-            )
-            if file_path:
-                data["file_path"] = file_path
-                data["is_untitled"] = False
-                self._save_current_tab(index)
-                self.notebook.SetPageText(index, os.path.basename(file_path))
+    # --- Menu ---
 
     def setup_menu(self):
         self.menu_bar = MenuBar(self)
         self.menu_bar.setup()
 
-    def new_file(self):
-        self._create_new_tab()
-        idx = self.notebook.GetSelection()
-        self.on_tab_changed(idx)
+    @property
+    def syntax_highlighting_enabled(self):
+        return self.code_view.syntax_highlighting_enabled
 
-    def on_text_changed(self, editor):
-        index = self._get_tab_index_by_editor(editor)
-        if 0 <= index < len(self._tabs_data):
-            data = self._tabs_data[index]
-            is_modified = data["editor"].toPlainText() != data["original_content"]
-            # self.setWindowModified(is_modified)
-            file_name = os.path.basename(data["file_path"]) if data["file_path"] else "untitled"
-            # title = f"JereIDE - {file_name}{' *' if is_modified else ''}"
-            # self.setWindowTitle(title)
-            self.notebook.SetPageText(index, file_name)
-            self.notebook.SetPageModified(index, is_modified)
+    @property
+    def auto_indent_enabled(self):
+        return self.code_view.auto_indent_enabled
+
+    @property
+    def line_numbers_enabled(self):
+        return self.code_view.line_numbers_enabled
+
+    @property
+    def auto_pairing_enabled(self):
+        return self.code_view.auto_pairing_enabled
+
+    @property
+    def wrap_enabled(self):
+        return self.code_view.wrap_enabled
+
+    def new_file(self):
+        self.code_view.new_file()
 
     def open_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Open File", "",
-            "All Files (*)"
-        )
-        if file_path:
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Could not open file: {e}")
-                return
-
-            if self.notebook.GetPageCount() == 0:
-                self.notebook.show()
-                self.welcome_frame.hide()
-
-            editor = QCodeEditor()
-            title = os.path.basename(file_path)
-            page_count = self.notebook.GetPageCount()
-            self.notebook.AddPage(editor, title)
-            self._update_segmented_state()
-            self.notebook.SelectTab(page_count)
-            idx = page_count
-            self._tabs_data.append({
-                "editor": editor,
-                "file_path": file_path,
-                "is_untitled": False,
-                "original_content": content
-            })
-            editor.textChanged.connect(lambda: self.on_text_changed(editor))
-            editor.cursorPositionChanged.connect(self._on_cursor_position_changed)
-            editor.setPlainText(content)
-            self.on_tab_changed(idx)
+        self.code_view.open_file()
 
     def save_file(self):
-        idx = self.notebook.GetSelection()
-        if 0 <= idx < len(self._tabs_data):
-            self._save_current_tab(idx)
-            self.on_tab_changed(idx)
+        self.code_view.save_file()
 
     def save_as_file(self):
-        idx = self.notebook.GetSelection()
-        if 0 <= idx < len(self._tabs_data):
-            self._save_as_current_tab(idx)
-
-    def toggle_auto_indent(self):
-        self.auto_indent_enabled = self.menu_bar.auto_indent_action.isChecked()
-        idx = self.notebook.GetSelection()
-        if 0 <= idx < len(self._tabs_data):
-            self._tabs_data[idx]["editor"].auto_indent_enabled = self.auto_indent_enabled
-
-    def toggle_line_numbers(self):
-        self.line_numbers_enabled = self.menu_bar.line_numbers_action.isChecked()
-        idx = self.notebook.GetSelection()
-        if 0 <= idx < len(self._tabs_data):
-            self._tabs_data[idx]["editor"].set_line_numbers_enabled(self.line_numbers_enabled)
-
-    def toggle_auto_pairing(self):
-        self.auto_pairing_enabled = self.menu_bar.auto_pairing_action.isChecked()
-        idx = self.notebook.GetSelection()
-        if 0 <= idx < len(self._tabs_data):
-            self._tabs_data[idx]["editor"].auto_pairing_enabled = self.auto_pairing_enabled
-            self.on_tab_changed(idx)
-
-    def toggle_wrap(self):
-        self.wrap_enabled = self.menu_bar.wrap_action.isChecked()
-        idx = self.notebook.GetSelection()
-        if 0 <= idx < len(self._tabs_data):
-            self._tabs_data[idx]["editor"].set_word_wrap(self.wrap_enabled)
-
-    def toggle_syntax_highlighting(self):
-        self.syntax_highlighting_enabled = self.menu_bar.syntax_highlighting_action.isChecked()
-        idx = self.notebook.GetSelection()
-        if 0 <= idx < len(self._tabs_data):
-            self._tabs_data[idx]["editor"].set_syntax_highlighting_enabled(self.syntax_highlighting_enabled)
-
-    def _get_current_editor(self):
-        idx = self.notebook.GetSelection()
-        if 0 <= idx < len(self._tabs_data):
-            return self._tabs_data[idx]["editor"]
-        return None
+        self.code_view.save_as_file()
 
     def undo(self):
-        editor = self._get_current_editor()
-        if editor:
-            editor.undo()
+        self.code_view.undo()
 
     def redo(self):
-        editor = self._get_current_editor()
-        if editor:
-            editor.redo()
+        self.code_view.redo()
 
     def cut(self):
-        editor = self._get_current_editor()
-        if editor:
-            editor.cut()
+        self.code_view.cut()
 
     def copy(self):
-        editor = self._get_current_editor()
-        if editor:
-            editor.copy()
+        self.code_view.copy()
 
     def paste(self):
-        editor = self._get_current_editor()
-        if editor:
-            editor.paste()
+        self.code_view.paste()
 
     def select_all(self):
-        editor = self._get_current_editor()
-        if editor:
-            editor.selectAll()
+        self.code_view.select_all()
 
     def find_replace(self):
-        if not self._get_current_editor():
-            return
+        self.code_view.find_replace()
 
-        if self._find_dialog is None:
-            self._find_dialog = FindReplaceDialog(self)
-            self._find_dialog.findNext.connect(self._find_replace.on_find_next)
-            self._find_dialog.replaceOne.connect(self._find_replace.on_replace_one)
-            self._find_dialog.replaceAll.connect(self._find_replace.on_replace_all)
-            self._find_dialog.finished.connect(self._find_replace.clear_highlights)
+    def toggle_syntax_highlighting(self):
+        self.code_view.toggle_syntax_highlighting()
 
-        cursor = self._get_current_editor().textCursor()
-        if cursor.hasSelection():
-            self._find_dialog.set_find_text(cursor.selectedText())
+    def toggle_auto_indent(self):
+        self.code_view.toggle_auto_indent()
 
-        self._find_dialog.show()
-        self._find_dialog.find_input.setFocus()
+    def toggle_line_numbers(self):
+        self.code_view.toggle_line_numbers()
 
-    def _on_page_changed_for_cursor(self, index: int):
-        if 0 <= index < len(self._tabs_data):
-            editor = self._tabs_data[index]["editor"]
-            self._update_cursor_position(editor)
+    def toggle_auto_pairing(self):
+        self.code_view.toggle_auto_pairing()
 
-    def _on_cursor_position_changed(self):
-        editor = self.sender()
-        if editor:
-            self._update_cursor_position(editor)
+    def toggle_wrap(self):
+        self.code_view.toggle_wrap()
 
-    def _update_cursor_position(self, editor):
-        cursor = editor.textCursor()
-        line = cursor.blockNumber() + 1
-        col = cursor.columnNumber() + 1
-        self.status_bar.update_position(line, col)
+    # --- Panel toggles ---
 
     def toggle_bottom_panel(self):
-        """Toggle the bottom panel (dock) visibility."""
         self.bottom_panel.toggle()
 
     def toggle_full_screen(self):
         self.full_screen_enabled = not self.full_screen_enabled
-
         if self.full_screen_enabled:
             self.showFullScreen()
             self.show()

@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton
 from PySide6.QtCore import QSize
-from icons.sfSymbols import get_sf_qicon
-from const.theme import STATUS_BAR_BG, STATUS_BAR_HEIGHT
+from utils.sfSymbols import get_sf_qicon
+from config.theme import STATUS_BAR_BG, STATUS_BAR_HEIGHT
 
 
 class StatusBar(QFrame):
