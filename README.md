@@ -1,6 +1,7 @@
 <div align="center"><h1>JereIDE</h1></div>
-
-
+<span style="background-image: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet); -webkit-background-clip: text; color: transparent; font-weight: bold; display: inline-block;">
+    Your Gradient Text Here
+</span>
 
 A Pyside6 + PyObjC implementation of [JereIDE_wx](https://github.com/Jeremy-Qian/JereIDE_wx).  Still in beta.  
 
