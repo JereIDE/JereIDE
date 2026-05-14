@@ -14,6 +14,7 @@ class CodeView(QWidget):
     tabCountChanged = Signal(int)
     dockToggled = Signal()
     commandViewRequested = Signal()
+    modifiedStateChanged = Signal(bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -107,6 +108,7 @@ class CodeView(QWidget):
             data = self._tabs_data[index]
             is_modified = data["editor"].toPlainText() != data["original_content"]
             self._notebook.SetPageModified(index, is_modified)
+            self.modifiedStateChanged.emit(is_modified)
 
     def on_tab_close_requested(self, index):
         if 0 <= index < len(self._tabs_data):
@@ -140,6 +142,7 @@ class CodeView(QWidget):
             self._welcome_frame.show()
             self._notebook.hide()
             self._status_bar.update_position(1, 1)
+            self.modifiedStateChanged.emit(False)
 
     def _get_tab_title(self, index):
         if 0 <= index < len(self._tabs_data):
@@ -206,6 +209,7 @@ class CodeView(QWidget):
             file_name = os.path.basename(data["file_path"]) if data["file_path"] else "untitled"
             self._notebook.SetPageText(index, file_name)
             self._notebook.SetPageModified(index, is_modified)
+            self.modifiedStateChanged.emit(is_modified)
 
     def undo(self):
         editor = self.current_editor
