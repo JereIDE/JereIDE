@@ -16,6 +16,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._native_id = "JereIDEQ_MainWindow"
         self.resize(800, 600)
+        self.setMinimumSize(412, 309)
         self._native_segmented = None
         self.full_screen_enabled = False
 
