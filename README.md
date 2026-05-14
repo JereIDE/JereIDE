@@ -1,4 +1,17 @@
-<div align="center"><h1>JereIDE</h1></div>
+<div align="center">
+
+# JereIDE
+
+**the fast simple code editor**
+
+![](https://img.shields.io/badge/Built_in-PySide6-turquoise)
+![](https://img.shields.io/badge/Python-3.11+-green?logo=python&logoColor=white)
+![](https://img.shields.io/badge/macOS-12+-skyblue)
+
+
+*Python code editor, in progress and in beta*
+
+</div>
 
 A Pyside6 + PyObjC implementation of [JereIDE_wx](https://github.com/Jeremy-Qian/JereIDE_wx).  Still in beta.  
 
