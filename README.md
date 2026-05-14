@@ -1,4 +1,5 @@
-<h1 style="text-align: center;">JereIDE</h1>
+<div style="text-align: center;"><h1 style="text-align: center;">JereIDE</h1></div>
+
 
 
 A Pyside6 + PyObjC implementation of [JereIDE_wx](https://github.com/Jeremy-Qian/JereIDE_wx).  Still in beta.  
