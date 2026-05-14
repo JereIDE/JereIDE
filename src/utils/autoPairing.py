@@ -38,7 +38,20 @@ class AutoPairingMixin:
         key = event.text()
         if self.auto_pairing_enabled and key in self.PAIRS:
             cursor = self.textCursor()
-            cursor.insertText(key + self.PAIRS[key])
+            pair = self.PAIRS[key]
+
+            if key == pair:
+                pos = cursor.position()
+                text = self.toPlainText()
+                if pos < len(text) and text[pos] == key:
+                    cursor.movePosition(QTextCursor.NextCharacter)
+                    self.setTextCursor(cursor)
+                    self._highlight_pair_at_cursor()
+                    return True
+                if pos > 0 and (text[pos - 1].isalnum() or text[pos - 1] == key):
+                    return False
+
+            cursor.insertText(key + pair)
             cursor.movePosition(QTextCursor.PreviousCharacter, QTextCursor.MoveAnchor, 1)
             self.setTextCursor(cursor)
             self._highlight_pair_at_cursor()
