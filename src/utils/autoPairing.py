@@ -38,7 +38,20 @@ class AutoPairingMixin:
         key = event.text()
         if self.auto_pairing_enabled and key in self.PAIRS:
             cursor = self.textCursor()
-            cursor.insertText(key + self.PAIRS[key])
+            pair = self.PAIRS[key]
+
+            if key == pair:
+                pos = cursor.position()
+                text = self.toPlainText()
+                if pos < len(text) and text[pos] == key:
+                    cursor.movePosition(QTextCursor.NextCharacter)
+                    self.setTextCursor(cursor)
+                    self._highlight_pair_at_cursor()
+                    return True
+                if pos > 0 and (text[pos - 1].isalnum() or text[pos - 1] == key):
+                    return False
+
+            cursor.insertText(key + pair)
             cursor.movePosition(QTextCursor.PreviousCharacter, QTextCursor.MoveAnchor, 1)
             self.setTextCursor(cursor)
             self._highlight_pair_at_cursor()
@@ -59,15 +72,42 @@ class AutoPairingMixin:
                 self._find_opening_pair(pos, char)
         self.highlight_current_line()
 
+    def _find_unescaped_forward(self, text, char, start):
+        i = start
+        while i < len(text):
+            if text[i] == '\\':
+                i += 2
+                continue
+            if text[i] == char:
+                return i
+            i += 1
+        return -1
+
+    def _find_unescaped_backward(self, text, char, start):
+        i = start
+        while i >= 0:
+            if text[i] == char:
+                count = 0
+                j = i - 1
+                while j >= 0 and text[j] == '\\':
+                    count += 1
+                    j -= 1
+                if count % 2 == 1:
+                    i -= 1
+                    continue
+                return i
+            i -= 1
+        return -1
+
     def _find_opening_pair(self, pos, opening_char):
         closing_char = self.PAIRS[opening_char]
         text = self.toPlainText()
-        close_pos = text.find(closing_char, pos + 1)
+        close_pos = self._find_unescaped_forward(text, closing_char, pos + 1)
 
         while close_pos >= 0:
             if self._is_unnested(text, pos, close_pos, closing_char, opening_char):
                 break
-            close_pos = text.find(closing_char, close_pos + 1)
+            close_pos = self._find_unescaped_forward(text, closing_char, close_pos + 1)
 
         if close_pos >= 0:
             self._highlighted_pair = (pos, close_pos)
@@ -83,29 +123,30 @@ class AutoPairingMixin:
             return
 
         text = self.toPlainText()
-        open_pos = text.rfind(opening_char, 0, pos)
+        open_pos = self._find_unescaped_backward(text, opening_char, pos - 1)
 
         while open_pos >= 0:
             if self._is_unnested(text, open_pos, pos, closing_char, opening_char):
                 break
-            open_pos = text.rfind(opening_char, 0, open_pos)
+            open_pos = self._find_unescaped_backward(text, opening_char, open_pos - 1)
 
         if open_pos >= 0:
             self._highlighted_pair = (open_pos, pos)
 
     def _is_unnested(self, text, open_pos, close_pos, closing_char, opening_char):
         stack = []
-        for i in range(open_pos + 1, close_pos):
+        i = open_pos + 1
+        while i < close_pos:
             ch = text[i]
+            if ch == '\\':
+                i += 2
+                continue
             if ch in self.PAIRS:
                 stack.append(ch)
             elif ch in self.PAIRS.values():
-                if stack and ((ch == ')' and stack[-1] == '(') or
-                          (ch == ']' and stack[-1] == '[') or
-                          (ch == '}' and stack[-1] == '{') or
-                          (ch == '"' and stack[-1] == '"') or
-                          (ch == "'" and stack[-1] == "'")):
+                if stack and self.PAIRS.get(stack[-1]) == ch:
                     stack.pop()
+            i += 1
         return opening_char not in stack
 
     def apply_pair_highlighting(self, extra_selections):

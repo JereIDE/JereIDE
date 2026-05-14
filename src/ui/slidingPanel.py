@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QScrollArea, QWidget, QHBoxLayout, QFrame
 from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve
+from PySide6.QtGui import QWheelEvent
 
 
 class SlidingPanel(QScrollArea):
@@ -27,6 +28,12 @@ class SlidingPanel(QScrollArea):
         self._animation.setDuration(300)
         self._animation.setEasingCurve(QEasingCurve.Type.OutCubic)
         self._animation.finished.connect(self._on_animation_finished)
+
+    def wheelEvent(self, event: QWheelEvent):
+        if abs(event.angleDelta().x()) > abs(event.angleDelta().y()):
+            event.ignore()
+            return
+        super().wheelEvent(event)
 
     def addPage(self, widget: QWidget):
         self._pages.append(widget)

@@ -51,9 +51,14 @@ This app is optimized for MAC only. It is built by mostly AI.
 If you are an agent:
 Do not write code for other platforms except for macOS. When writing code, use camelCase and use specific variable names.
 
+## Known Limitations
+- Find/Replace: "Regex", "Whole Words", and "Wrap Around" options are not yet implemented and are disabled in the UI.
+
 ## Plans for the future
-- [ ] Save all, recent files, 3 string highlighting
-- [/] Command View  
+- [x] Docstring highlighting
+- [ ] Save all, recent files
+- [ ] Command View  
+- [ ] Find/Replace: regex, whole words, wrap options
 
 For a full list of what's coming next, see the [JereIDE Roadmap](https://github.com/users/Jeremy-Qian/projects/4/views/1).
 

@@ -35,9 +35,16 @@ class FindReplace:
         cursor = editor.textCursor()
         start = cursor.position() + 1 if cursor.hasSelection() else cursor.position()
 
-        pos = content.find(text, start)
-        if pos == -1 and wrap:
-            pos = content.find(text, 0)
+        if case_sensitive:
+            pos = content.find(text, start)
+            if pos == -1 and wrap:
+                pos = content.find(text, 0)
+        else:
+            lower_content = content.lower()
+            lower_text = text.lower()
+            pos = lower_content.find(lower_text, start)
+            if pos == -1 and wrap:
+                pos = lower_content.find(lower_text, 0)
 
         if pos != -1:
             return pos, len(text)
@@ -97,4 +104,4 @@ class FindReplace:
         """Clear any find highlights."""
         editor = self.get_editor()
         if editor:
-            editor.setExtraSelections([])
+            editor.set_find_highlights([])
