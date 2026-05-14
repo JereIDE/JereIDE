@@ -1,4 +1,4 @@
-<div style="text-align: center;"><h1 style="text-align: center;">JereIDE</h1></div>
+<div align="center"><h1>JereIDE</h1></div>
 
 
 
