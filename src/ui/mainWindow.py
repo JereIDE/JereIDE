@@ -13,7 +13,7 @@ from utils.findReplace import FindReplace
 from ui.nativeToolbar import attach_native_toolbar
 from ui.slidingPanel import SlidingPanel
 from utils.focusManager import FocusManager
-from const.theme import WELCOME_TEXT_SECONDARY
+from config.theme import WELCOME_TEXT_SECONDARY
 
 
 class MainWindow(QMainWindow):

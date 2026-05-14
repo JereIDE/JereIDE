@@ -4,7 +4,7 @@ from PySide6.QtCore import Qt, Signal, QRect
 from PySide6.QtGui import QPainter, QColor, QMouseEvent, QPaintEvent, QFontMetrics
 from PySide6.QtWidgets import QWidget
 
-from const.theme import (
+from config.theme import (
     TAB_SELECTED_BG,
     TAB_UNSELECTED_BG,
     TAB_SELECTED_TEXT,
