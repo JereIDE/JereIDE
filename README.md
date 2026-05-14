@@ -49,14 +49,8 @@ python3 src/JereIDE.py
 
 > **Note:** This application is optimized for macOS only.
 
-## Stars
-<a href="https://www.star-history.com/?repos=Jeremy-Qian%2FJereIDE&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Jeremy-Qian/JereIDE&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Jeremy-Qian/JereIDE&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Jeremy-Qian/JereIDE&type=date&legend=top-left" />
- </picture>
-</a>
+## Development
+![Alt](https://repobeats.axiom.co/api/embed/4b9ba1d427bcb75b2305ae0f004b264fb65d016f.svg "Repobeats analytics image")
 
 ## Rules for AI Agents
 This app is optimized for MAC only. It is built by mostly AI.
