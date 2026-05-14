@@ -67,14 +67,12 @@ Do not write code for other platforms except for macOS. When writing code, use c
 
 <details> 
     <summary>
-        *Click here to expand*
+        How is this different from other editors?
     </summary> 
 
-    This is the hidden content! You can include text, code blocks, or lists here. 
-    
-    * Item 1
-    * Item 2
-
+    * JereIDE has a unique "Command View" that is in progress. 
+    * JereIDE also has an integrated terminal that allows you to run shell commands right in the IDE. 
+    * JereIDE uses PyObjC to interact with the macOS API, creating a native Xcode-like look that looks great.
 </details>
 
 
