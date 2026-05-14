@@ -58,11 +58,16 @@ class ToolbarController(NSObj):
         if self is None:
             return None
         self._view_options_controller = ViewOptionsController.alloc().init()
+        self._run_controller = RunButtonController.alloc().init()
         return self
 
     @objc.python_method
     def set_view_callback(self, func):
         self._view_options_controller.set_callback(func)
+
+    @objc.python_method
+    def get_run_controller(self):
+        return self._run_controller
 
     def create_segmented_control(self):
         segmented = NSSegmentedControl.alloc().initWithFrame_(((0, 0), (72, 28)))
@@ -149,7 +154,7 @@ def attach_native_toolbar(window_id: str, callback=None):
             run_seg.setWidth_forSegment_(36, 0)
             run_seg.setToolTip_forSegment_("Run script", 0)
             run_seg.setControlSize_(NSControlSizeRegular)
-            run_seg.setTarget_(RunButtonController.alloc().init())
+            run_seg.setTarget_(toolbar_controller.get_run_controller())
             run_seg.setAction_("runAction:")
             run_seg.setTranslatesAutoresizingMaskIntoConstraints_(False)
 
