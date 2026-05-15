@@ -80,7 +80,7 @@ class TerminalWidget(QPlainTextEdit):
         self.setReadOnly(True)
         self.setFrameStyle(0)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 
         self.terminal_font = QFont("Menlo", 14)
         self.terminal_font.setStyleHint(QFont.Monospace)
