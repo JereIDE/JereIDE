@@ -1,6 +1,6 @@
 import os
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QMessageBox
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QSplitter, QMessageBox
 from .codeEditor import QCodeEditor
 from ui.tabs import JereIDEBook
 from .statusBar import StatusBar
@@ -23,12 +23,23 @@ class CodeView(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+        self._splitter = QSplitter(Qt.Vertical)
+        self._splitter.setHandleWidth(1)
+        self._splitter.setChildrenCollapsible(False)
+        self._splitter.setStyleSheet("QSplitter::handle { background: transparent; }")
+        layout.addWidget(self._splitter, 1)
+
+        top_container = QWidget()
+        top_layout = QVBoxLayout(top_container)
+        top_layout.setContentsMargins(0, 0, 0, 0)
+        top_layout.setSpacing(0)
+
         self._notebook = JereIDEBook(None)
-        layout.addWidget(self._notebook)
+        top_layout.addWidget(self._notebook)
         self._notebook.hide()
 
         self._welcome_frame = WelcomeFrame()
-        layout.addWidget(self._welcome_frame)
+        top_layout.addWidget(self._welcome_frame)
 
         self._welcome_frame.newFileRequested.connect(self._create_new_tab)
         self._welcome_frame.openFileRequested.connect(self.open_file)
@@ -36,10 +47,14 @@ class CodeView(QWidget):
 
         self._status_bar = StatusBar()
         self._status_bar._dock_button.clicked.connect(self._on_dock_clicked)
-        layout.addWidget(self._status_bar)
+        self._status_bar.setCursor(Qt.SizeVerCursor)
+        top_layout.addWidget(self._status_bar)
+
+        self._splitter.addWidget(top_container)
 
         self._bottom_panel = BottomPanel()
-        layout.addWidget(self._bottom_panel)
+        self._splitter.addWidget(self._bottom_panel)
+        self._splitter.setSizes([400, 150])
 
         self._tabs_data = []
 

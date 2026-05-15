@@ -9,7 +9,7 @@ class BottomPanel(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedHeight(150)
+        self.setMinimumHeight(50)
         self.setStyleSheet(
             f"QWidget {{ background-color: {EDITOR_BG}; border-top: 1px solid #ccc; }}"
         )
