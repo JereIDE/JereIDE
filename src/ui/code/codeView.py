@@ -47,7 +47,6 @@ class CodeView(QWidget):
 
         self._status_bar = StatusBar()
         self._status_bar._dock_button.clicked.connect(self._on_dock_clicked)
-        self._status_bar.setCursor(Qt.SizeVerCursor)
         top_layout.addWidget(self._status_bar)
 
         self._splitter.addWidget(top_container)
