@@ -4,7 +4,6 @@ from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
 
 from const.constants import MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT
 from ui.menu import MenuBar
-from ui.code.bottomPanel import BottomPanel
 from ui.nativeToolbar import attach_native_toolbar
 from ui.slidingPanel import SlidingPanel
 from ui.code import CodeView
@@ -35,22 +34,18 @@ class MainWindow(QMainWindow):
         self.command_view = CommandView()
         self.sliding_panel.addPage(self.command_view)
 
-        self.bottom_panel = BottomPanel()
-        layout.addWidget(self.bottom_panel)
-
         self.setCentralWidget(container)
 
         self._focus_manager = FocusManager(self)
         self._focus_manager.setup(
             get_current_editor=lambda: self.code_view.current_editor,
-            terminal=self.bottom_panel.terminal,
+            terminal=self.code_view.terminal,
             commandview_focus_target=self.command_view,
-            bottom_panel=self.bottom_panel
+            bottom_panel=self.code_view.bottom_panel
         )
         self.sliding_panel.pageChanged.connect(self._focus_manager.on_page_changed)
 
         self.code_view.tabCountChanged.connect(self._update_segmented_state)
-        self.code_view.dockToggled.connect(self.toggle_bottom_panel)
         self.code_view.commandViewRequested.connect(lambda: self._switch_page(1))
         self.code_view.modifiedStateChanged.connect(self.setWindowModified)
 
@@ -179,7 +174,7 @@ class MainWindow(QMainWindow):
     # --- Panel toggles ---
 
     def toggle_bottom_panel(self):
-        self.bottom_panel.toggle()
+        self.code_view.bottom_panel.toggle()
 
     def toggle_full_screen(self):
         self.full_screen_enabled = not self.full_screen_enabled

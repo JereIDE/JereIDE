@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QMessageBox
 from .codeEditor import QCodeEditor
 from ui.tabs import JereIDEBook
 from .statusBar import StatusBar
+from .bottomPanel import BottomPanel
 from .welcomeFrame import WelcomeFrame
 from .findReplaceDialog import FindReplaceDialog
 from utils.findReplace import FindReplace
@@ -36,6 +37,9 @@ class CodeView(QWidget):
         self._status_bar = StatusBar()
         self._status_bar._dock_button.clicked.connect(self._on_dock_clicked)
         layout.addWidget(self._status_bar)
+
+        self._bottom_panel = BottomPanel()
+        layout.addWidget(self._bottom_panel)
 
         self._tabs_data = []
 
@@ -71,7 +75,15 @@ class CodeView(QWidget):
         return None
 
     def _on_dock_clicked(self):
-        self.dockToggled.emit()
+        self._bottom_panel.toggle()
+
+    @property
+    def bottom_panel(self):
+        return self._bottom_panel
+
+    @property
+    def terminal(self):
+        return self._bottom_panel.terminal
 
     def _create_new_tab(self, title="untitled", file_path=None, content=""):
         if self._notebook.GetPageCount() == 0:
