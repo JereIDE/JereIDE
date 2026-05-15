@@ -105,9 +105,8 @@ class TerminalWidget(QPlainTextEdit):
         self._render_timer.timeout.connect(self._render)
         self._at_bottom = True
 
-        self._resize_timer = QTimer(self)
-        self._resize_timer.setSingleShot(True)
-        self._resize_timer.timeout.connect(self._apply_resize)
+        self._pending_rows = None
+        self._pending_cols = None
 
         self.pid, self.fd = pty.fork()
         if self.pid == 0:
@@ -119,6 +118,7 @@ class TerminalWidget(QPlainTextEdit):
             os._exit(1)
         else:
             self._update_size()
+            self._apply_pending_resize()
             self.notifier = QSocketNotifier(self.fd, QSocketNotifier.Read)
             self.notifier.activated.connect(self._read_data)
 
@@ -160,17 +160,22 @@ class TerminalWidget(QPlainTextEdit):
         rows = max(1, vr.height() // ch)
 
         if cols != self.columns or rows != self.lines:
-            self.columns = cols
-            self.lines = rows
-            self.screen.resize(rows, cols)
-            self._invalidate()
             self._pending_cols = cols
             self._pending_rows = rows
-            self._resize_timer.start(150)
 
-    def _apply_resize(self):
-        buf = struct.pack('HHHH', self._pending_rows, self._pending_cols, 0, 0)
+    def _apply_pending_resize(self):
+        if self._pending_rows is None:
+            return
+        rows = self._pending_rows
+        cols = self._pending_cols
+        self.columns = cols
+        self.lines = rows
+        self.screen.resize(rows, cols)
+        self._invalidate()
+        buf = struct.pack('HHHH', rows, cols, 0, 0)
         fcntl.ioctl(self.fd, termios.TIOCSWINSZ, buf)
+        self._pending_rows = None
+        self._pending_cols = None
 
     def _resolve_color(self, color_str):
         if not color_str or color_str == 'default':
@@ -293,6 +298,8 @@ class TerminalWidget(QPlainTextEdit):
         self._update_size()
 
     def keyPressEvent(self, event: QKeyEvent):
+        self._apply_pending_resize()
+
         self._cursor_visible = True
         self._cursor_timer.start(500)
 
