@@ -105,6 +105,10 @@ class TerminalWidget(QPlainTextEdit):
         self._render_timer.timeout.connect(self._render)
         self._at_bottom = True
 
+        self._resize_timer = QTimer(self)
+        self._resize_timer.setSingleShot(True)
+        self._resize_timer.timeout.connect(self._apply_resize)
+
         self.pid, self.fd = pty.fork()
         if self.pid == 0:
             os.environ['TERM'] = 'xterm-256color'
@@ -158,10 +162,15 @@ class TerminalWidget(QPlainTextEdit):
         if cols != self.columns or rows != self.lines:
             self.columns = cols
             self.lines = rows
-            buf = struct.pack('HHHH', rows, cols, 0, 0)
-            fcntl.ioctl(self.fd, termios.TIOCSWINSZ, buf)
             self.screen.resize(rows, cols)
             self._invalidate()
+            self._pending_cols = cols
+            self._pending_rows = rows
+            self._resize_timer.start(150)
+
+    def _apply_resize(self):
+        buf = struct.pack('HHHH', self._pending_rows, self._pending_cols, 0, 0)
+        fcntl.ioctl(self.fd, termios.TIOCSWINSZ, buf)
 
     def _resolve_color(self, color_str):
         if not color_str or color_str == 'default':
