@@ -19,7 +19,6 @@ class StatusBar(QFrame):
         self._dock_button.setStyleSheet(
             "QPushButton { background-color: transparent; border: none; }"
         )
-        self._dock_button.clicked.connect(self._dummy_dock_action)
         layout.setContentsMargins(5, 0, 5, 0)
         layout.setSpacing(5)
 
@@ -37,7 +36,3 @@ class StatusBar(QFrame):
 
     def update_position(self, line: int, column: int):
         self._position_button.setText(f"{line}:{column}")
-
-    def _dummy_dock_action(self):
-        # Dummy function triggered by the dock button – does nothing substantial
-        print("Dock button clicked (dummy action)")

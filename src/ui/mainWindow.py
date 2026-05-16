@@ -173,9 +173,6 @@ class MainWindow(QMainWindow):
 
     # --- Panel toggles ---
 
-    def toggle_bottom_panel(self):
-        self.code_view.bottom_panel.toggle()
-
     def toggle_full_screen(self):
         self.full_screen_enabled = not self.full_screen_enabled
         if self.full_screen_enabled:
