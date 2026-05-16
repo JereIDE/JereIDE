@@ -1,6 +1,6 @@
 import os
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QSplitter, QMessageBox
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSplitter, QMessageBox
 from .codeEditor import QCodeEditor
 from ui.tabs import JereIDEBook
 from .statusBar import StatusBar
@@ -90,6 +90,11 @@ class CodeView(QWidget):
 
     def _on_dock_clicked(self):
         self._bottom_panel.toggle()
+
+    def show_terminal(self):
+        if not self._bottom_panel.isVisible():
+            self._bottom_panel.setVisible(True)
+            QApplication.processEvents()
 
     @property
     def bottom_panel(self):

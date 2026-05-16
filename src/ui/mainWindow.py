@@ -96,10 +96,9 @@ class MainWindow(QMainWindow):
         )
 
     def _execute_task(self, command, file_path):
-        if not file_path:
-            return
+        self.code_view.show_terminal()
         terminal = self.code_view.terminal
-        cmd = f"{command} {file_path}\n"
+        cmd = f"{command} {file_path}".strip() + "\r"
         os.write(terminal.fd, cmd.encode("utf-8"))
 
     def _update_segmented_state(self, _count=None):
