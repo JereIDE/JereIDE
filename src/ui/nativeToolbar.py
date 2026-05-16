@@ -28,17 +28,17 @@ class ViewOptionsController(NSObj):
         self = objc.super(ViewOptionsController, self).init()
         if self is None:
             return None
-        self._callback = None
+        self._viewCallback = None
         return self
 
     @objc.python_method
-    def set_callback(self, func):
-        self._callback = func
+    def set_callback(self, viewCallback):
+        self._viewCallback = viewCallback
 
     def viewOptionSelected_(self, sender):
-        selected = sender.selectedSegment()
-        if self._callback:
-            self._callback(selected)
+        selectedSegment = sender.selectedSegment()
+        if self._viewCallback:
+            self._viewCallback(selectedSegment)
 
 
 class RunButtonController(NSObj):
@@ -47,16 +47,16 @@ class RunButtonController(NSObj):
         self = objc.super(RunButtonController, self).init()
         if self is None:
             return None
-        self._callback = None
+        self._runCallback = None
         return self
 
     @objc.python_method
-    def set_callback(self, func):
-        self._callback = func
+    def set_callback(self, runCallback):
+        self._runCallback = runCallback
 
     def runAction_(self, sender):
-        if self._callback:
-            self._callback()
+        if self._runCallback:
+            self._runCallback()
 
 
 class ToolbarController(NSObj):
@@ -65,143 +65,142 @@ class ToolbarController(NSObj):
         self = objc.super(ToolbarController, self).init()
         if self is None:
             return None
-        self._view_options_controller = ViewOptionsController.alloc().init()
-        self._run_controller = RunButtonController.alloc().init()
+        self._viewOptionsController = ViewOptionsController.alloc().init()
+        self._runButtonController = RunButtonController.alloc().init()
         return self
 
     @objc.python_method
-    def set_view_callback(self, func):
-        self._view_options_controller.set_callback(func)
+    def set_view_callback(self, viewCallback):
+        self._viewOptionsController.set_callback(viewCallback)
 
     @objc.python_method
-    def set_run_callback(self, func):
-        self._run_controller.set_callback(func)
+    def set_run_callback(self, runCallback):
+        self._runButtonController.set_callback(runCallback)
 
     @objc.python_method
     def get_run_controller(self):
-        return self._run_controller
+        return self._runButtonController
 
 
 
     def create_segmented_control(self):
-        segmented = NSSegmentedControl.alloc().initWithFrame_(((0, 0), (72, 28)))
-        segmented.setTrackingMode_(NSSegmentSwitchTrackingSelectOne)
-        segmented.setSegmentCount_(2)
+        viewSegmentedControl = NSSegmentedControl.alloc().initWithFrame_(((0, 0), (72, 28)))
+        viewSegmentedControl.setTrackingMode_(NSSegmentSwitchTrackingSelectOne)
+        viewSegmentedControl.setSegmentCount_(2)
 
-        code_symbol = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+        codeViewSymbol = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
             "chevron.left.slash.chevron.right", None
         )
-        command_symbol = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+        commandViewSymbol = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
             "wand.and.stars", None
         )
 
-        segmented.setImage_forSegment_(code_symbol, 0)
-        segmented.setWidth_forSegment_(36, 0)
-        segmented.setToolTip_forSegment_("Code View", 0)
+        viewSegmentedControl.setImage_forSegment_(codeViewSymbol, 0)
+        viewSegmentedControl.setWidth_forSegment_(36, 0)
+        viewSegmentedControl.setToolTip_forSegment_("Code View", 0)
 
-        segmented.setImage_forSegment_(command_symbol, 1)
-        segmented.setWidth_forSegment_(36, 1)
-        segmented.setToolTip_forSegment_("Command View", 1)
+        viewSegmentedControl.setImage_forSegment_(commandViewSymbol, 1)
+        viewSegmentedControl.setWidth_forSegment_(36, 1)
+        viewSegmentedControl.setToolTip_forSegment_("Command View", 1)
 
-        #segmented.setSegmentStyle_(NSSegmentStyleSeparated)
-        segmented.setControlSize_(NSControlSizeRegular)
-        segmented.setSelectedSegment_(0)
+        viewSegmentedControl.setControlSize_(NSControlSizeRegular)
+        viewSegmentedControl.setSelectedSegment_(0)
 
-        segmented.setTarget_(self._view_options_controller)
-        segmented.setAction_("viewOptionSelected:")
+        viewSegmentedControl.setTarget_(self._viewOptionsController)
+        viewSegmentedControl.setAction_("viewOptionSelected:")
 
-        segmented.setTranslatesAutoresizingMaskIntoConstraints_(False)
+        viewSegmentedControl.setTranslatesAutoresizingMaskIntoConstraints_(False)
 
-        return segmented
+        return viewSegmentedControl
 
 
 class ToolbarDelegate(NSObj):
 
-    def initWithToolbarController_(self, controller):
+    def initWithToolbarController_(self, toolbarController):
         self = objc.super(ToolbarDelegate, self).init()
         if self is None:
             return None
-        self._toolbar_controller = controller
-        self._identifiers = [NSToolbarFlexibleSpaceItemIdentifier, "RunScript"]
-        self._run_item = None
+        self._toolbarController = toolbarController
+        self._toolbarItemIdentifiers = [NSToolbarFlexibleSpaceItemIdentifier, "RunScript"]
+        self._runItem = None
         return self
 
-    def toolbarAllowedItemIdentifiers_(self, toolbar):
-        return self._identifiers
+    def toolbarAllowedItemIdentifiers_(self, mainToolbar):
+        return self._toolbarItemIdentifiers
 
-    def toolbarDefaultItemIdentifiers_(self, toolbar):
+    def toolbarDefaultItemIdentifiers_(self, mainToolbar):
         return [NSToolbarFlexibleSpaceItemIdentifier, "RunScript"]
 
-    def toolbarSelectableItemIdentifiers_(self, toolbar):
+    def toolbarSelectableItemIdentifiers_(self, mainToolbar):
         return []
 
-    def toolbar_itemForItemIdentifier_willBeInsertedIntoToolbar_(self, toolbar, item_identifier, flag):
-        if item_identifier == "RunScript":
-            if self._run_item is None:
-                run_image = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+    def toolbar_itemForItemIdentifier_willBeInsertedIntoToolbar_(self, mainToolbar, itemIdentifier, flag):
+        if itemIdentifier == "RunScript":
+            if self._runItem is None:
+                runButtonImage = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
                     "play.fill", None
                 )
-                config = NSImageSymbolConfiguration.configurationWithPointSize_weight_scale_(14, 4, 1)
-                run_image = run_image.imageWithSymbolConfiguration_(config)
+                symbolConfiguration = NSImageSymbolConfiguration.configurationWithPointSize_weight_scale_(14, 4, 1)
+                runButtonImage = runButtonImage.imageWithSymbolConfiguration_(symbolConfiguration)
 
-                button = NSButton.alloc().initWithFrame_(((0, 0), (36, 28)))
-                button.setBezelStyle_(NSBezelStyleTexturedRounded)
-                button.setImage_(run_image)
-                button.setImagePosition_(NSImageOnly)
-                button.setToolTip_("Run script")
-                button.setTarget_(self._toolbar_controller.get_run_controller())
-                button.setAction_("runAction:")
+                runButton = NSButton.alloc().initWithFrame_(((0, 0), (36, 28)))
+                runButton.setBezelStyle_(NSBezelStyleTexturedRounded)
+                runButton.setImage_(runButtonImage)
+                runButton.setImagePosition_(NSImageOnly)
+                runButton.setToolTip_("Run script")
+                runButton.setTarget_(self._toolbarController.get_run_controller())
+                runButton.setAction_("runAction:")
 
-                self._run_item = NSToolbarItem.alloc().initWithItemIdentifier_(item_identifier)
-                self._run_item.setLabel_("Run")
-                self._run_item.setPaletteLabel_("Run Script")
-                self._run_item.setToolTip_("Run the current script")
-                self._run_item.setView_(button)
-                self._run_item.setMinSize_((36, 28))
-                self._run_item.setMaxSize_((36, 28))
-            return self._run_item
+                self._runItem = NSToolbarItem.alloc().initWithItemIdentifier_(itemIdentifier)
+                self._runItem.setLabel_("Run")
+                self._runItem.setPaletteLabel_("Run Script")
+                self._runItem.setToolTip_("Run the current script")
+                self._runItem.setView_(runButton)
+                self._runItem.setMinSize_((36, 28))
+                self._runItem.setMaxSize_((36, 28))
+            return self._runItem
         return None
 
 
-def attach_native_toolbar(window_id: str, callback=None, run_callback=None):
+def attach_native_toolbar(windowId: str, viewCallback=None, runCallback=None):
     app = NSApplication.sharedApplication()
-    for window in app.windows():
-        if window.title() == window_id:
-            window.setTitleVisibility_(NSWindowTitleHidden)
-            window.setStyleMask_(
-                window.styleMask() | NSWindowStyleMaskFullSizeContentView
+    for mainWindow in app.windows():
+        if mainWindow.title() == windowId:
+            mainWindow.setTitleVisibility_(NSWindowTitleHidden)
+            mainWindow.setStyleMask_(
+                mainWindow.styleMask() | NSWindowStyleMaskFullSizeContentView
             )
 
-            toolbar_controller = ToolbarController.alloc().init()
-            if callback:
-                toolbar_controller.set_view_callback(callback)
-            if run_callback:
-                toolbar_controller.set_run_callback(run_callback)
+            toolbarController = ToolbarController.alloc().init()
+            if viewCallback:
+                toolbarController.set_view_callback(viewCallback)
+            if runCallback:
+                toolbarController.set_run_callback(runCallback)
 
-            segmented = toolbar_controller.create_segmented_control()
+            viewSegmentedControl = toolbarController.create_segmented_control()
 
-            accessory_view = NSView.alloc().initWithFrame_(((0, 0), (96, 40)))
-            accessory_view.addSubview_(segmented)
+            titlebarAccessoryView = NSView.alloc().initWithFrame_(((0, 0), (96, 40)))
+            titlebarAccessoryView.addSubview_(viewSegmentedControl)
 
             NSLayoutConstraint.activateConstraints_([
-                segmented.leadingAnchor().constraintEqualToAnchor_constant_(accessory_view.leadingAnchor(), 12),
-                segmented.centerYAnchor().constraintEqualToAnchor_(accessory_view.centerYAnchor()),
-                segmented.widthAnchor().constraintEqualToConstant_(72),
-                segmented.heightAnchor().constraintEqualToConstant_(28),
+                viewSegmentedControl.leadingAnchor().constraintEqualToAnchor_constant_(titlebarAccessoryView.leadingAnchor(), 12),
+                viewSegmentedControl.centerYAnchor().constraintEqualToAnchor_(titlebarAccessoryView.centerYAnchor()),
+                viewSegmentedControl.widthAnchor().constraintEqualToConstant_(72),
+                viewSegmentedControl.heightAnchor().constraintEqualToConstant_(28),
             ])
 
-            accessory_controller = NSTitlebarAccessoryViewController.alloc().init()
-            accessory_controller.setView_(accessory_view)
-            accessory_controller.setLayoutAttribute_(1)
+            accessoryViewController = NSTitlebarAccessoryViewController.alloc().init()
+            accessoryViewController.setView_(titlebarAccessoryView)
+            accessoryViewController.setLayoutAttribute_(1)
 
-            window.addTitlebarAccessoryViewController_(accessory_controller)
+            mainWindow.addTitlebarAccessoryViewController_(accessoryViewController)
 
-            toolbar = NSToolbar.alloc().initWithIdentifier_("MainToolbar")
-            delegate = ToolbarDelegate.alloc().initWithToolbarController_(toolbar_controller)
-            toolbar.setDelegate_(delegate)
-            toolbar.setDisplayMode_(NSToolbarDisplayModeIconOnly)
-            toolbar.setAllowsUserCustomization_(True)
-            window.setToolbar_(toolbar)
+            mainToolbar = NSToolbar.alloc().initWithIdentifier_("MainToolbar")
+            toolbarDelegate = ToolbarDelegate.alloc().initWithToolbarController_(toolbarController)
+            mainToolbar.setDelegate_(toolbarDelegate)
+            mainToolbar.setDisplayMode_(NSToolbarDisplayModeIconOnly)
+            mainToolbar.setAllowsUserCustomization_(True)
+            mainWindow.setToolbar_(mainToolbar)
 
-            return toolbar_controller, segmented
+            return toolbarController, viewSegmentedControl
     return None, None

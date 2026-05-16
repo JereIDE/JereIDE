@@ -18,18 +18,18 @@ class MainWindow(QMainWindow):
         self._native_id = "JereIDEQ_MainWindow"
         self.resize(800, 600)
         self.setMinimumSize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
-        self._native_segmented = None
-        self.full_screen_enabled = False
-        self._run_file_dialog = RunFileDialog(self)
-        self._run_file_dialog.runRequested.connect(self._on_run_requested)
+        self._nativeSegmentedControl = None
+        self.fullScreenEnabled = False
+        self._runFileDialog = RunFileDialog(self)
+        self._runFileDialog.runRequested.connect(self._on_run_requested)
 
-        container = QWidget()
-        layout = QVBoxLayout(container)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        centralContainer = QWidget()
+        centralLayout = QVBoxLayout(centralContainer)
+        centralLayout.setContentsMargins(0, 0, 0, 0)
+        centralLayout.setSpacing(0)
 
         self.sliding_panel = SlidingPanel()
-        layout.addWidget(self.sliding_panel, 1)
+        centralLayout.addWidget(self.sliding_panel, 1)
 
         self.code_view = CodeView()
         self.sliding_panel.addPage(self.code_view)
@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
         self.command_view = CommandView()
         self.sliding_panel.addPage(self.command_view)
 
-        self.setCentralWidget(container)
+        self.setCentralWidget(centralContainer)
 
         self._focus_manager = FocusManager(self)
         self._focus_manager.setup(
@@ -67,29 +67,29 @@ class MainWindow(QMainWindow):
     # --- Native toolbar ---
 
     def _attach_native_toolbar(self):
-        old_title = self.windowTitle()
+        originalWindowTitle = self.windowTitle()
         self.setWindowTitle(self._native_id)
-        self._native_toolbar_ctrl, native_segmented = attach_native_toolbar(
+        self._native_toolbar_ctrl, nativeSegmentedControl = attach_native_toolbar(
             self._native_id,
-            callback=self._on_view_changed,
-            run_callback=self._show_run_dialog
+            viewCallback=self._on_view_changed,
+            runCallback=self._show_run_dialog
         )
-        self._native_segmented = native_segmented
-        self.setWindowTitle(old_title)
+        self._nativeSegmentedControl = nativeSegmentedControl
+        self.setWindowTitle(originalWindowTitle)
         self._update_segmented_state()
 
     def _update_segmented_state(self, _count=None):
-        if self._native_segmented is None:
+        if self._nativeSegmentedControl is None:
             return
-        self._native_segmented.setEnabled_forSegment_(True, 0)
-        self._native_segmented.setEnabled_forSegment_(True, 1)
+        self._nativeSegmentedControl.setEnabled_forSegment_(True, 0)
+        self._nativeSegmentedControl.setEnabled_forSegment_(True, 1)
 
     def _on_view_changed(self, index):
         self.sliding_panel.slideTo(index)
 
     def _switch_page(self, index):
-        if self._native_segmented:
-            self._native_segmented.setSelectedSegment_(index)
+        if self._nativeSegmentedControl:
+            self._nativeSegmentedControl.setSelectedSegment_(index)
         self.sliding_panel.slideTo(index)
 
     # --- Menu ---
@@ -181,8 +181,8 @@ class MainWindow(QMainWindow):
     # --- Panel toggles ---
 
     def toggle_full_screen(self):
-        self.full_screen_enabled = not self.full_screen_enabled
-        if self.full_screen_enabled:
+        self.fullScreenEnabled = not self.fullScreenEnabled
+        if self.fullScreenEnabled:
             self.showFullScreen()
             self.show()
         else:
@@ -190,9 +190,9 @@ class MainWindow(QMainWindow):
             self.show()
 
     def _show_run_dialog(self):
-        self._run_file_dialog.show()
-        self._run_file_dialog.raise_()
-        self._run_file_dialog.activateWindow()
+        self._runFileDialog.show()
+        self._runFileDialog.raise_()
+        self._runFileDialog.activateWindow()
 
     def _on_run_requested(self, runtime: str):
         print(f"Run requested: {runtime}")

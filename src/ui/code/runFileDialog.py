@@ -17,39 +17,39 @@ class RunFileDialog(QWidget):
         self._setup_ui()
 
     def _setup_ui(self):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(10)
+        dialogLayout = QVBoxLayout(self)
+        dialogLayout.setContentsMargins(20, 20, 20, 20)
+        dialogLayout.setSpacing(10)
 
-        label = QLabel("Run file")
-        layout.addWidget(label)
+        titleLabel = QLabel("Run file")
+        dialogLayout.addWidget(titleLabel)
 
-        self.python_btn = QPushButton("Run file with Python")
-        self.python_btn.setFocusPolicy(Qt.NoFocus)
-        self.python_btn.clicked.connect(self._on_python)
-        layout.addWidget(self.python_btn)
+        self.pythonButton = QPushButton("Run file with Python")
+        self.pythonButton.setFocusPolicy(Qt.NoFocus)
+        self.pythonButton.clicked.connect(self._on_python)
+        dialogLayout.addWidget(self.pythonButton)
 
-        self.cpp_btn = QPushButton("Run file with C++")
-        self.cpp_btn.setFocusPolicy(Qt.NoFocus)
-        self.cpp_btn.clicked.connect(self._on_cpp)
-        layout.addWidget(self.cpp_btn)
+        self.cppButton = QPushButton("Run file with C++")
+        self.cppButton.setFocusPolicy(Qt.NoFocus)
+        self.cppButton.clicked.connect(self._on_cpp)
+        dialogLayout.addWidget(self.cppButton)
 
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.setFocusPolicy(Qt.NoFocus)
-        cancel_btn.clicked.connect(self.close)
-        layout.addWidget(cancel_btn, alignment=Qt.AlignCenter)
+        cancelButton = QPushButton("Cancel")
+        cancelButton.setFocusPolicy(Qt.NoFocus)
+        cancelButton.clicked.connect(self.close)
+        dialogLayout.addWidget(cancelButton, alignment=Qt.AlignCenter)
 
     def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        dialogPainter = QPainter(self)
+        dialogPainter.setRenderHint(QPainter.Antialiasing)
 
-        rect = self.rect().adjusted(1, 1, -1, -1)
-        path = QPainterPath()
-        path.addRoundedRect(QRectF(rect), 12, 12)
+        dialogRect = self.rect().adjusted(1, 1, -1, -1)
+        roundedRectPath = QPainterPath()
+        roundedRectPath.addRoundedRect(QRectF(dialogRect), 12, 12)
 
-        painter.fillPath(path, QBrush(QColor(246, 246, 246)))
-        painter.setPen(QColor(180, 180, 180))
-        painter.drawPath(path)
+        dialogPainter.fillPath(roundedRectPath, QBrush(QColor(246, 246, 246)))
+        dialogPainter.setPen(QColor(180, 180, 180))
+        dialogPainter.drawPath(roundedRectPath)
 
     def _on_python(self):
         self.runRequested.emit("python")
@@ -62,7 +62,7 @@ class RunFileDialog(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    dialog = RunFileDialog()
-    dialog.runRequested.connect(lambda runtime: print(f"Run requested: {runtime}"))
-    dialog.show()
+    runFileDialog = RunFileDialog()
+    runFileDialog.runRequested.connect(lambda runtime: print(f"Run requested: {runtime}"))
+    runFileDialog.show()
     sys.exit(app.exec())
