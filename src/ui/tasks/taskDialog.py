@@ -11,7 +11,7 @@ class TaskDialog(QWidget):
     def __init__(self, file_path=None, parent=None):
         super().__init__(parent)
         self._file_path = file_path
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)
+        self.setWindowFlags(Qt.Popup)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setMinimumSize(280, 160)
         self._setup_ui()

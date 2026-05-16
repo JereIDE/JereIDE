@@ -89,6 +89,7 @@ class MainWindow(QMainWindow):
 
     def _center_dialog(self, dialog):
         dialog.adjustSize()
+        dialog.setFixedSize(dialog.size())
         mainRect = self.geometry()
         dialog.move(
             mainRect.center().x() - dialog.width() // 2,
