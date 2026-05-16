@@ -7,6 +7,7 @@ from ui.menu import MenuBar
 from ui.nativeToolbar import attach_native_toolbar
 from ui.slidingPanel import SlidingPanel
 from ui.code import CodeView
+from ui.code.runFileDialog import RunFileDialog
 from ui.command import CommandView
 from utils.focusManager import FocusManager
 
@@ -19,6 +20,8 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
         self._native_segmented = None
         self.full_screen_enabled = False
+        self._run_file_dialog = RunFileDialog(self)
+        self._run_file_dialog.runRequested.connect(self._on_run_requested)
 
         container = QWidget()
         layout = QVBoxLayout(container)
@@ -66,7 +69,11 @@ class MainWindow(QMainWindow):
     def _attach_native_toolbar(self):
         old_title = self.windowTitle()
         self.setWindowTitle(self._native_id)
-        self._native_toolbar_ctrl, native_segmented = attach_native_toolbar(self._native_id, self._on_view_changed)
+        self._native_toolbar_ctrl, native_segmented = attach_native_toolbar(
+            self._native_id,
+            callback=self._on_view_changed,
+            run_callback=self._show_run_dialog
+        )
         self._native_segmented = native_segmented
         self.setWindowTitle(old_title)
         self._update_segmented_state()
@@ -181,3 +188,11 @@ class MainWindow(QMainWindow):
         else:
             self.showNormal()
             self.show()
+
+    def _show_run_dialog(self):
+        self._run_file_dialog.show()
+        self._run_file_dialog.raise_()
+        self._run_file_dialog.activateWindow()
+
+    def _on_run_requested(self, runtime: str):
+        print(f"Run requested: {runtime}")

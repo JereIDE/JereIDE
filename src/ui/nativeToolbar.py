@@ -47,10 +47,16 @@ class RunButtonController(NSObj):
         self = objc.super(RunButtonController, self).init()
         if self is None:
             return None
+        self._callback = None
         return self
 
+    @objc.python_method
+    def set_callback(self, func):
+        self._callback = func
+
     def runAction_(self, sender):
-        print("Run button clicked (dummy action)")
+        if self._callback:
+            self._callback()
 
 
 class ToolbarController(NSObj):
@@ -66,6 +72,10 @@ class ToolbarController(NSObj):
     @objc.python_method
     def set_view_callback(self, func):
         self._view_options_controller.set_callback(func)
+
+    @objc.python_method
+    def set_run_callback(self, func):
+        self._run_controller.set_callback(func)
 
     @objc.python_method
     def get_run_controller(self):
@@ -153,7 +163,7 @@ class ToolbarDelegate(NSObj):
         return None
 
 
-def attach_native_toolbar(window_id: str, callback=None):
+def attach_native_toolbar(window_id: str, callback=None, run_callback=None):
     app = NSApplication.sharedApplication()
     for window in app.windows():
         if window.title() == window_id:
@@ -165,6 +175,8 @@ def attach_native_toolbar(window_id: str, callback=None):
             toolbar_controller = ToolbarController.alloc().init()
             if callback:
                 toolbar_controller.set_view_callback(callback)
+            if run_callback:
+                toolbar_controller.set_run_callback(run_callback)
 
             segmented = toolbar_controller.create_segmented_control()
 
