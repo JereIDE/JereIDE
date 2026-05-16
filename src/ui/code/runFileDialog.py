@@ -24,12 +24,12 @@ class RunFileDialog(QWidget):
         titleLabel = QLabel("Run file")
         dialogLayout.addWidget(titleLabel)
 
-        self.pythonButton = QPushButton("Run file with Python")
+        self.pythonButton = QPushButton("Run Python File")
         self.pythonButton.setFocusPolicy(Qt.NoFocus)
         self.pythonButton.clicked.connect(self._on_python)
         dialogLayout.addWidget(self.pythonButton)
 
-        self.cppButton = QPushButton("Run file with C++")
+        self.cppButton = QPushButton("Run file with C++", enabled=False)
         self.cppButton.setFocusPolicy(Qt.NoFocus)
         self.cppButton.clicked.connect(self._on_cpp)
         dialogLayout.addWidget(self.cppButton)
