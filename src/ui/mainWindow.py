@@ -1,3 +1,4 @@
+import subprocess
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QShortcut, QKeySequence
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
@@ -8,6 +9,7 @@ from ui.nativeToolbar import attach_native_toolbar
 from ui.slidingPanel import SlidingPanel
 from ui.code import CodeView
 from ui.command import CommandView
+from ui.tasks.taskDialog import TaskDialog
 from utils.focusManager import FocusManager
 
 
@@ -68,11 +70,37 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(self._native_id)
         self._native_toolbar_ctrl, nativeSegmentedControl = attach_native_toolbar(
             self._native_id,
-            viewCallback=self._on_view_changed
+            viewCallback=self._on_view_changed,
+            runCallback=self._on_run_requested
         )
         self._nativeSegmentedControl = nativeSegmentedControl
         self.setWindowTitle(originalWindowTitle)
         self._update_segmented_state()
+
+    def _on_run_requested(self):
+        file_path = self.current_file_path
+        dialog = TaskDialog(file_path=file_path, parent=self)
+        dialog.runRequested.connect(self._execute_task)
+        dialog.setWindowTitle("Tasks")
+        dialog.show()
+        dialog.raise_()
+        self._center_dialog(dialog)
+
+    def _center_dialog(self, dialog):
+        dialog.adjustSize()
+        mainRect = self.geometry()
+        dialog.move(
+            mainRect.center().x() - dialog.width() // 2,
+            mainRect.center().y() - dialog.height() // 2
+        )
+
+    def _execute_task(self, command, file_path):
+        if not file_path:
+            return
+        try:
+            subprocess.Popen([command, file_path])
+        except FileNotFoundError:
+            pass
 
     def _update_segmented_state(self, _count=None):
         if self._nativeSegmentedControl is None:
@@ -93,6 +121,11 @@ class MainWindow(QMainWindow):
     def setup_menu(self):
         self.menu_bar = MenuBar(self)
         self.menu_bar.setup()
+
+    @property
+    def current_file_path(self):
+        _, data = self.code_view._get_current_tab_data()
+        return data["file_path"] if data else None
 
     @property
     def syntax_highlighting_enabled(self):

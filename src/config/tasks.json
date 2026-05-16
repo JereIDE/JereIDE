@@ -1,0 +1,19 @@
+{
+  "tasks": [
+    {
+      "name": "Python",
+      "command": "python3",
+      "icon": "play.fill"
+    },
+    {
+      "name": "Node.js",
+      "command": "node",
+      "icon": "play.fill"
+    },
+    {
+      "name": "Bash",
+      "command": "bash",
+      "icon": "terminal.fill"
+    }
+  ]
+}
