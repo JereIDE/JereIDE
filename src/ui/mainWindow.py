@@ -1,4 +1,5 @@
-import subprocess
+import os
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QShortcut, QKeySequence
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
@@ -97,10 +98,9 @@ class MainWindow(QMainWindow):
     def _execute_task(self, command, file_path):
         if not file_path:
             return
-        try:
-            subprocess.Popen([command, file_path])
-        except FileNotFoundError:
-            pass
+        terminal = self.code_view.terminal
+        cmd = f"{command} {file_path}\n"
+        os.write(terminal.fd, cmd.encode("utf-8"))
 
     def _update_segmented_state(self, _count=None):
         if self._nativeSegmentedControl is None:

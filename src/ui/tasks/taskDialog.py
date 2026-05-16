@@ -1,4 +1,3 @@
-import subprocess
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout
 from PySide6.QtCore import Signal, Qt, QRectF
 from PySide6.QtGui import QPainter, QColor, QBrush, QPainterPath
@@ -23,13 +22,12 @@ class TaskDialog(QWidget):
         dialogLayout.setSpacing(6)
 
         titleLabel = QLabel("Run Task")
-        titleLabel.setStyleSheet("font-weight: bold; font-size: 13px; color: #333;")
+        titleLabel.setObjectName("taskDialogTitle")
         dialogLayout.addWidget(titleLabel)
 
         tasks = task_manager.get_tasks()
         if not tasks:
             noTasksLabel = QLabel("No tasks configured")
-            noTasksLabel.setStyleSheet("color: #888; font-size: 11px;")
             noTasksLabel.setAlignment(Qt.AlignCenter)
             dialogLayout.addWidget(noTasksLabel)
         else:
@@ -37,21 +35,6 @@ class TaskDialog(QWidget):
                 btn = QPushButton(task["name"])
                 btn.setFocusPolicy(Qt.NoFocus)
                 btn.setCursor(Qt.PointingHandCursor)
-                btn.setStyleSheet("""
-                    QPushButton {
-                        text-align: left;
-                        padding: 8px 12px;
-                        border: 1px solid #ddd;
-                        border-radius: 6px;
-                        background: #fff;
-                        color: #333;
-                        font-size: 12px;
-                    }
-                    QPushButton:hover {
-                        background: #e8f0fe;
-                        border-color: #2386FB;
-                    }
-                """)
                 command = task["command"]
                 btn.clicked.connect(lambda checked, c=command: self._on_task_selected(c))
                 dialogLayout.addWidget(btn)
@@ -63,19 +46,6 @@ class TaskDialog(QWidget):
         cancelButton = QPushButton("Cancel")
         cancelButton.setFocusPolicy(Qt.NoFocus)
         cancelButton.setCursor(Qt.PointingHandCursor)
-        cancelButton.setStyleSheet("""
-            QPushButton {
-                padding: 6px 20px;
-                border: 1px solid #ccc;
-                border-radius: 6px;
-                background: #f5f5f5;
-                color: #555;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background: #e8e8e8;
-            }
-        """)
         cancelButton.clicked.connect(self.close)
         cancelLayout.addWidget(cancelButton)
         dialogLayout.addLayout(cancelLayout)
