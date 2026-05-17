@@ -11,6 +11,7 @@ class ConfigManager:
         self._defaults = {}
         self._theme_config = {}
         self._editor_config = {}
+        self._tasks_config = {}
         self._load_defaults()
         self._ensure_config_files()
         self._load_configs()
@@ -29,6 +30,7 @@ class ConfigManager:
         files_to_create = {
             "theme.json": self._defaults.get("theme", {}),
             "editor.json": self._defaults.get("editor", {}),
+            "tasks.json": self._defaults.get("tasks", {}),
         }
 
         for filename, content in files_to_create.items():
@@ -49,6 +51,11 @@ class ConfigManager:
             with open(editor_path, "r") as f:
                 self._editor_config = json.load(f)
 
+        tasks_path = os.path.join(self.config_dir, "tasks.json")
+        if os.path.exists(tasks_path):
+            with open(tasks_path, "r") as f:
+                self._tasks_config = json.load(f)
+
     def get_theme_config(self):
         """Get the theme configuration."""
         return self._theme_config
@@ -56,6 +63,10 @@ class ConfigManager:
     def get_editor_config(self):
         """Get the editor configuration."""
         return self._editor_config
+
+    def get_tasks_config(self):
+        """Get the tasks configuration."""
+        return self._tasks_config
 
     def get_config_value(self, config_type, key_path, default=None):
         """
@@ -76,6 +87,9 @@ class ConfigManager:
         elif config_type == "editor":
             config = self._editor_config
             fallback = self._defaults.get("editor", {})
+        elif config_type == "tasks":
+            config = self._tasks_config
+            fallback = self._defaults.get("tasks", {})
         elif config_type == "defaults":
             config = {}
             fallback = self._defaults

@@ -95,5 +95,13 @@
         "'": "'"
       }
     }
+  },
+  "tasks": {
+    "tasks": [
+      {
+        "name": "Run with Python",
+        "command": "python3"
+      }
+    ]
   }
 }
