@@ -2,8 +2,7 @@
   "tasks": [
     {
       "name": "Run with Python",
-      "command": "python3",
-      "icon": "play.fill"
+      "command": "python3"
     }
   ]
 }

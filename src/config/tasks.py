@@ -24,8 +24,8 @@ class TaskManager:
     def get_tasks(self):
         return list(self._tasks)
 
-    def add_task(self, name, command, icon="play.fill"):
-        self._tasks.append({"name": name, "command": command, "icon": icon})
+    def add_task(self, name, command):
+        self._tasks.append({"name": name, "command": command})
         self.save()
 
     def remove_task(self, index):
@@ -33,14 +33,12 @@ class TaskManager:
             del self._tasks[index]
             self.save()
 
-    def update_task(self, index, name=None, command=None, icon=None):
+    def update_task(self, index, name=None, command=None):
         if 0 <= index < len(self._tasks):
             if name is not None:
                 self._tasks[index]["name"] = name
             if command is not None:
                 self._tasks[index]["command"] = command
-            if icon is not None:
-                self._tasks[index]["icon"] = icon
             self.save()
 
 
