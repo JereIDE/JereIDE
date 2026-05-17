@@ -6,6 +6,8 @@ from AppKit import (
     NSImage,
     NSImageOnly,
     NSImageSymbolConfiguration,
+    NSMenuItem,
+    NSPopUpButton,
     NSToolbar,
     NSToolbarFlexibleSpaceItemIdentifier,
     NSToolbarItem,
@@ -59,6 +61,26 @@ class RunButtonController(NSObj):
             self._runCallback()
 
 
+class PopupButtonController(NSObj):
+
+    def init(self):
+        self = objc.super(PopupButtonController, self).init()
+        if self is None:
+            return None
+        self._popupCallback = None
+        return self
+
+    @objc.python_method
+    def set_callback(self, popupCallback):
+        self._popupCallback = popupCallback
+
+    def menuItemSelected_(self, sender):
+        if self._popupCallback:
+            selectedItem = sender.selectedItem()
+            title = selectedItem.title()
+            self._popupCallback(title)
+
+
 class ToolbarController(NSObj):
 
     def init(self):
@@ -67,6 +89,7 @@ class ToolbarController(NSObj):
             return None
         self._viewOptionsController = ViewOptionsController.alloc().init()
         self._runButtonController = RunButtonController.alloc().init()
+        self._popupButtonController = PopupButtonController.alloc().init()
         return self
 
     @objc.python_method
@@ -78,8 +101,25 @@ class ToolbarController(NSObj):
         self._runButtonController.set_callback(runCallback)
 
     @objc.python_method
+    def set_popup_callback(self, popupCallback):
+        self._popupButtonController.set_callback(popupCallback)
+
+    @objc.python_method
     def get_run_controller(self):
         return self._runButtonController
+
+    @objc.python_method
+    def create_project_selector(self):
+        projectButton = NSPopUpButton.alloc().initWithFrame_(((0, 0), (120, 28)))
+        projectButton.setBezelStyle_(NSBezelStyleTexturedRounded)
+        projectButton.addItemWithTitle_("Project 1")
+        projectButton.addItemWithTitle_("Project 2")
+        projectButton.addItemWithTitle_("Project 3")
+        projectButton.selectItemAtIndex_(0)
+        projectButton.setTarget_(self._popupButtonController)
+        projectButton.setAction_("menuItemSelected:")
+        projectButton.setTranslatesAutoresizingMaskIntoConstraints_(False)
+        return projectButton
 
 
 
@@ -162,7 +202,7 @@ class ToolbarDelegate(NSObj):
         return None
 
 
-def attach_native_toolbar(windowId: str, viewCallback=None, runCallback=None):
+def attach_native_toolbar(windowId: str, viewCallback=None, runCallback=None, popupCallback=None):
     app = NSApplication.sharedApplication()
     for mainWindow in app.windows():
         if mainWindow.title() == windowId:
@@ -176,14 +216,22 @@ def attach_native_toolbar(windowId: str, viewCallback=None, runCallback=None):
                 toolbarController.set_view_callback(viewCallback)
             if runCallback:
                 toolbarController.set_run_callback(runCallback)
+            if popupCallback:
+                toolbarController.set_popup_callback(popupCallback)
 
             viewSegmentedControl = toolbarController.create_segmented_control()
+            projectButton = toolbarController.create_project_selector()
 
-            titlebarAccessoryView = NSView.alloc().initWithFrame_(((0, 0), (96, 40)))
+            titlebarAccessoryView = NSView.alloc().initWithFrame_(((0, 0), (224, 40)))
+            titlebarAccessoryView.addSubview_(projectButton)
             titlebarAccessoryView.addSubview_(viewSegmentedControl)
 
             NSLayoutConstraint.activateConstraints_([
-                viewSegmentedControl.leadingAnchor().constraintEqualToAnchor_constant_(titlebarAccessoryView.leadingAnchor(), 12),
+                projectButton.leadingAnchor().constraintEqualToAnchor_constant_(titlebarAccessoryView.leadingAnchor(), 12),
+                projectButton.centerYAnchor().constraintEqualToAnchor_(titlebarAccessoryView.centerYAnchor()),
+                projectButton.widthAnchor().constraintEqualToConstant_(120),
+                projectButton.heightAnchor().constraintEqualToConstant_(28),
+                viewSegmentedControl.leadingAnchor().constraintEqualToAnchor_constant_(projectButton.trailingAnchor(), 8),
                 viewSegmentedControl.centerYAnchor().constraintEqualToAnchor_(titlebarAccessoryView.centerYAnchor()),
                 viewSegmentedControl.widthAnchor().constraintEqualToConstant_(72),
                 viewSegmentedControl.heightAnchor().constraintEqualToConstant_(28),

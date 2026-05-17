@@ -72,7 +72,8 @@ class MainWindow(QMainWindow):
         self._native_toolbar_ctrl, nativeSegmentedControl = attach_native_toolbar(
             self._native_id,
             viewCallback=self._on_view_changed,
-            runCallback=self._on_run_requested
+            runCallback=self._on_run_requested,
+            popupCallback=self._on_project_selected
         )
         self._nativeSegmentedControl = nativeSegmentedControl
         self.setWindowTitle(originalWindowTitle)
@@ -110,6 +111,9 @@ class MainWindow(QMainWindow):
             return
         self._nativeSegmentedControl.setEnabled_forSegment_(True, 0)
         self._nativeSegmentedControl.setEnabled_forSegment_(True, 1)
+
+    def _on_project_selected(self, title):
+        print(f"Switched to {title}")
 
     def _on_view_changed(self, index):
         self.sliding_panel.slideTo(index)
