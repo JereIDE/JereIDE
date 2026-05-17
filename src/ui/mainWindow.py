@@ -99,6 +99,9 @@ class MainWindow(QMainWindow):
     def _execute_task(self, command, file_path):
         self.code_view.show_terminal()
         terminal = self.code_view.terminal
+        # clear the terminal first
+        clearcmd = "clear" + "\r"
+        os.write(terminal.fd, clearcmd.encode("utf-8"))
         cmd = f"{command} {file_path}".strip() + "\r"
         os.write(terminal.fd, cmd.encode("utf-8"))
 
