@@ -166,4 +166,3 @@ class WelcomeFrame(QFrame):
 
     def _on_command_view(self):
         self.commandViewRequested.emit()
-        print("Command View")
