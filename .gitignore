@@ -53,3 +53,4 @@ poetry.lock
 
 src/config/theme.json
 src/config/editor.json
+src/config/tasks.json

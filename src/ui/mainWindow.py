@@ -1,14 +1,16 @@
+import os
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QShortcut, QKeySequence
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
 
 from const.constants import MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT
 from ui.menu import MenuBar
-from ui.code.bottomPanel import BottomPanel
 from ui.nativeToolbar import attach_native_toolbar
 from ui.slidingPanel import SlidingPanel
 from ui.code import CodeView
 from ui.command import CommandView
+from ui.tasks.taskDialog import TaskDialog
 from utils.focusManager import FocusManager
 
 
@@ -18,16 +20,16 @@ class MainWindow(QMainWindow):
         self._native_id = "JereIDEQ_MainWindow"
         self.resize(800, 600)
         self.setMinimumSize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
-        self._native_segmented = None
-        self.full_screen_enabled = False
+        self._nativeSegmentedControl = None
+        self.fullScreenEnabled = False
 
-        container = QWidget()
-        layout = QVBoxLayout(container)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        centralContainer = QWidget()
+        centralLayout = QVBoxLayout(centralContainer)
+        centralLayout.setContentsMargins(0, 0, 0, 0)
+        centralLayout.setSpacing(0)
 
         self.sliding_panel = SlidingPanel()
-        layout.addWidget(self.sliding_panel, 1)
+        centralLayout.addWidget(self.sliding_panel, 1)
 
         self.code_view = CodeView()
         self.sliding_panel.addPage(self.code_view)
@@ -35,22 +37,18 @@ class MainWindow(QMainWindow):
         self.command_view = CommandView()
         self.sliding_panel.addPage(self.command_view)
 
-        self.bottom_panel = BottomPanel()
-        layout.addWidget(self.bottom_panel)
-
-        self.setCentralWidget(container)
+        self.setCentralWidget(centralContainer)
 
         self._focus_manager = FocusManager(self)
         self._focus_manager.setup(
             get_current_editor=lambda: self.code_view.current_editor,
-            terminal=self.bottom_panel.terminal,
+            terminal=self.code_view.terminal,
             commandview_focus_target=self.command_view,
-            bottom_panel=self.bottom_panel
+            bottom_panel=self.code_view.bottom_panel
         )
         self.sliding_panel.pageChanged.connect(self._focus_manager.on_page_changed)
 
         self.code_view.tabCountChanged.connect(self._update_segmented_state)
-        self.code_view.dockToggled.connect(self.toggle_bottom_panel)
         self.code_view.commandViewRequested.connect(lambda: self._switch_page(1))
         self.code_view.modifiedStateChanged.connect(self.setWindowModified)
 
@@ -69,25 +67,60 @@ class MainWindow(QMainWindow):
     # --- Native toolbar ---
 
     def _attach_native_toolbar(self):
-        old_title = self.windowTitle()
+        originalWindowTitle = self.windowTitle()
         self.setWindowTitle(self._native_id)
-        self._native_toolbar_ctrl, native_segmented = attach_native_toolbar(self._native_id, self._on_view_changed)
-        self._native_segmented = native_segmented
-        self.setWindowTitle(old_title)
+        self._native_toolbar_ctrl, nativeSegmentedControl = attach_native_toolbar(
+            self._native_id,
+            viewCallback=self._on_view_changed,
+            runCallback=self._on_run_requested,
+            popupCallback=self._on_project_selected
+        )
+        self._nativeSegmentedControl = nativeSegmentedControl
+        self.setWindowTitle(originalWindowTitle)
         self._update_segmented_state()
 
+    def _on_run_requested(self):
+        file_path = self.current_file_path
+        dialog = TaskDialog(file_path=file_path, parent=self)
+        dialog.runRequested.connect(self._execute_task)
+        dialog.setWindowTitle("Tasks")
+        dialog.show()
+        dialog.raise_()
+        self._center_dialog(dialog)
+
+    def _center_dialog(self, dialog):
+        dialog.adjustSize()
+        dialog.setFixedSize(dialog.size())
+        mainRect = self.geometry()
+        dialog.move(
+            mainRect.center().x() - dialog.width() // 2,
+            mainRect.center().y() - dialog.height() // 2
+        )
+
+    def _execute_task(self, command, file_path):
+        self.code_view.show_terminal()
+        terminal = self.code_view.terminal
+        # clear the terminal first
+        clearcmd = "clear" + "\r"
+        os.write(terminal.fd, clearcmd.encode("utf-8"))
+        cmd = f"{command} {file_path}".strip() + "\r"
+        os.write(terminal.fd, cmd.encode("utf-8"))
+
     def _update_segmented_state(self, _count=None):
-        if self._native_segmented is None:
+        if self._nativeSegmentedControl is None:
             return
-        self._native_segmented.setEnabled_forSegment_(True, 0)
-        self._native_segmented.setEnabled_forSegment_(True, 1)
+        self._nativeSegmentedControl.setEnabled_forSegment_(True, 0)
+        self._nativeSegmentedControl.setEnabled_forSegment_(True, 1)
+
+    def _on_project_selected(self, title):
+        print(f"Switched to {title}")
 
     def _on_view_changed(self, index):
         self.sliding_panel.slideTo(index)
 
     def _switch_page(self, index):
-        if self._native_segmented:
-            self._native_segmented.setSelectedSegment_(index)
+        if self._nativeSegmentedControl:
+            self._nativeSegmentedControl.setSelectedSegment_(index)
         self.sliding_panel.slideTo(index)
 
     # --- Menu ---
@@ -95,6 +128,11 @@ class MainWindow(QMainWindow):
     def setup_menu(self):
         self.menu_bar = MenuBar(self)
         self.menu_bar.setup()
+
+    @property
+    def current_file_path(self):
+        _, data = self.code_view._get_current_tab_data()
+        return data["file_path"] if data else None
 
     @property
     def syntax_highlighting_enabled(self):
@@ -178,12 +216,9 @@ class MainWindow(QMainWindow):
 
     # --- Panel toggles ---
 
-    def toggle_bottom_panel(self):
-        self.bottom_panel.toggle()
-
     def toggle_full_screen(self):
-        self.full_screen_enabled = not self.full_screen_enabled
-        if self.full_screen_enabled:
+        self.fullScreenEnabled = not self.fullScreenEnabled
+        if self.fullScreenEnabled:
             self.showFullScreen()
             self.show()
         else:
