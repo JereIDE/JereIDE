@@ -3,7 +3,14 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            os: macos-latest
+          - arch: x86_64
+            os: macos-13 # Standard Intel runner
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -25,17 +32,19 @@ jobs:
             --macos-create-app-bundle \
             --enable-plugin=pyside6 \
             --noinclude-qt-plugins=senseless \
-            --macos-target-arch=universal2 \
+            --macos-target-arch=${{ matrix.arch }} \
             --include-qt-plugins=platforms,styles,iconengines,imageformats \
-            --macos-app-name="JereIDE" \
+            --macos-app-name="JereIDE-${{ matrix.arch }}" \
             src/JereIDE.py
 
       - name: Compress App Bundle
         run: |
-          zip -r JereIDE.zip JereIDE.app
+          # Nuitka creates the .app in the current directory or based on the file name
+          # Using wildcard to catch the generated .app bundle
+          zip -r JereIDE-${{ matrix.arch }}.zip *.app
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macOS-Build
-          path: JereIDE.zip
+          name: JereIDE-${{ matrix.arch }}
+          path: JereIDE-${{ matrix.arch }}.zip
