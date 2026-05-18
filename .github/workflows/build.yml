@@ -1,0 +1,39 @@
+name: Build macOS App
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          pip install PySide6 nuitka zstandard ordered-set
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Build with Nuitka
+        run: |
+          python3 -m nuitka --standalone \
+            --macos-create-app-bundle \
+            --enable-plugin=pyside6 \
+            --include-qt-plugins=all \
+            --macos-app-name="JereIDE" \
+            src/JereIDE.py
+
+      - name: Compress App Bundle
+        run: |
+          zip -r JereIDE.zip JereIDE.app
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-Build
+          path: JereIDE.zip
