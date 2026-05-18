@@ -25,6 +25,7 @@ jobs:
             --macos-create-app-bundle \
             --enable-plugin=pyside6 \
             --noinclude-qt-plugins=senseless \
+            --macos-target-arch=universal2 \
             --include-qt-plugins=platforms,styles,iconengines,imageformats \
             --macos-app-name="JereIDE" \
             src/JereIDE.py
