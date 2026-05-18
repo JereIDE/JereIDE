@@ -12,10 +12,13 @@
 
 *Python code editor, in progress and in beta*  
   
-  
-<img src="jereide_screenshot.png" width=700 height=400 style="border-radius: 15px;">
+<kbd>
+  <img src="jereide_screenshot.png" width="700" height="547" style="border-radius: 15px;">
+</kbd>
+
 </div>
 
+  
 A Pyside6 + PyObjC implementation of [JereIDE_wx](https://github.com/Jeremy-Qian/JereIDE_wx).  Still in beta.  
 
 This project was initially a vibe coding project, but I edit the code manually more and more.
