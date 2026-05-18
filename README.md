@@ -10,8 +10,10 @@
 ![](https://img.shields.io/badge/macOS-12+-skyblue)
 
 
-*Python code editor, in progress and in beta*
-
+*Python code editor, in progress and in beta*  
+  
+  
+<img src="jereide_screenshot.png" width=700 height=400 style="border-radius: 15px;">
 </div>
 
 A Pyside6 + PyObjC implementation of [JereIDE_wx](https://github.com/Jeremy-Qian/JereIDE_wx).  Still in beta.  
