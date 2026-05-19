@@ -37,7 +37,8 @@ jobs:
             --noinclude-qt-plugins=senseless \
             --macos-target-arch=${{ matrix.arch }} \
             --include-qt-plugins=platforms,styles,iconengines,imageformats \
-            --macos-app-name="JereIDE-${{ matrix.arch }}" \
+            --macos-app-name="JereIDE" \
+            --assume-yes-for-downloads
             src/JereIDE.py
 
       - name: Compress App Bundle
