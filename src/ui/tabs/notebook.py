@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal, QTimer
+from PySide6.QtGui import QPainter, QColor
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QStackedWidget,
@@ -10,9 +11,61 @@ from PySide6.QtWidgets import (
     QScrollArea,
 )
 
-from config.theme import TAB_STRIP_BG, TAB_BORDER
+from config.theme import TAB_STRIP_BG, TAB_BORDER, TAB_SELECTED_TEXT
 from .tabScrollArrow import TabScrollArrow
 from .tabWidget import JereIDETab
+
+
+class TabDropContainer(QFrame):
+    def __init__(self, notebook: JereIDEBook):
+        super().__init__()
+        self.notebook = notebook
+        self._drop_index = -1
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasFormat("application/x-jereide-tab"):
+            event.acceptProposedAction()
+            self._drop_index = self.notebook._get_drop_index(event)
+            self.update()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasFormat("application/x-jereide-tab"):
+            event.acceptProposedAction()
+            new_index = self.notebook._get_drop_index(event)
+            if new_index != self._drop_index:
+                self._drop_index = new_index
+                self.update()
+
+    def dragLeaveEvent(self, event):
+        self._drop_index = -1
+        self.update()
+
+    def dropEvent(self, event):
+        if event.mimeData().hasFormat("application/x-jereide-tab"):
+            source_index = int(event.mimeData().data("application/x-jereide-tab").data().decode())
+            target_index = self._drop_index
+            event.acceptProposedAction()
+            self.notebook._reorder_tab(source_index, target_index)
+        self._drop_index = -1
+        self.update()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if self._drop_index < 0:
+            return
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        x = 0
+        tabs = self.notebook._tabs
+        if self._drop_index < len(tabs):
+            x = tabs[self._drop_index].x()
+        elif tabs:
+            last = tabs[-1]
+            x = last.x() + last.width()
+        if x > 0:
+            painter.setPen(QColor(TAB_SELECTED_TEXT))
+            painter.drawLine(x, 6, x, self.height() - 6)
 
 
 class JereIDEBook(QWidget):
@@ -47,7 +100,7 @@ class JereIDEBook(QWidget):
         self._right_arrow.clicked.connect(self._on_scroll_arrow_clicked)
         self._tab_bar_layout.addWidget(self._right_arrow)
 
-        self._tabs_container = QFrame()
+        self._tabs_container = TabDropContainer(self)
         self._tabs_container_layout = QHBoxLayout(self._tabs_container)
         self._tabs_container_layout.setContentsMargins(0, 0, 0, 0)
         self._tabs_container_layout.setSpacing(0)
@@ -229,3 +282,38 @@ class JereIDEBook(QWidget):
 
         self._left_arrow.setEnabled(has_tabs and current > 0)
         self._right_arrow.setEnabled(has_tabs and current < len(self._tabs) - 1)
+
+    def _get_drop_index(self, event) -> int:
+        x = int(event.position().x())
+        for i, tab in enumerate(self._tabs):
+            tab_center = tab.x() + tab.width() // 2
+            if x < tab_center:
+                return i
+        return len(self._tabs)
+
+    def _reorder_tab(self, source_index: int, target_index: int) -> None:
+        if source_index == target_index:
+            return
+
+        tab = self._tabs.pop(source_index)
+        page = self._stacked_widget.widget(source_index)
+
+        self._tabs_container_layout.removeWidget(tab)
+        self._stacked_widget.removeWidget(page)
+
+        adjusted_target = target_index
+        if adjusted_target > source_index:
+            adjusted_target -= 1
+
+        self._tabs.insert(adjusted_target, tab)
+        self._tabs_container_layout.insertWidget(adjusted_target, tab)
+        self._stacked_widget.insertWidget(adjusted_target, page)
+
+        for i, t in enumerate(self._tabs):
+            t.index = i
+
+        self._current_selection = adjusted_target
+        self.SelectTab(self._current_selection)
+
+        self._update_container_min_width()
+        self._update_arrow_states()
