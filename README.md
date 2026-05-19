@@ -82,7 +82,8 @@ Do not write code for other platforms except for macOS. When writing code, use c
 
 ## Plans for the future
 - [x] Docstring highlighting
-- [ ] Save all, recent files
+- [x] Save all
+- [ ] Recent files
 - [ ] Command View  
 - [ ] Find/Replace: regex, whole words, wrap options
 
