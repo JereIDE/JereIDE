@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal, QRect
-from PySide6.QtGui import QPainter, QColor, QMouseEvent, QPaintEvent, QFontMetrics
+from PySide6.QtCore import Qt, Signal, QRect, QMimeData
+from PySide6.QtGui import QPainter, QColor, QMouseEvent, QPaintEvent, QFontMetrics, QDrag
 from PySide6.QtWidgets import QWidget
 
 from config.theme import (
@@ -36,6 +36,7 @@ class JereIDETab(QWidget):
         tab_height = config_manager.get_config_value('theme', 'tabs.height', 30)
         self.setFixedHeight(tab_height)
         self.setMouseTracking(True)
+        self._drag_start_pos = None
         self._update_width()
 
     def _update_width(self):
@@ -52,6 +53,24 @@ class JereIDETab(QWidget):
     def set_modified(self, modified: bool):
         self.is_modified = modified
         self.update()
+
+    def _start_drag(self):
+        pixmap = self.grab()
+        self.notebook._on_drag_started(self.index)
+
+        mime = QMimeData()
+        mime.setData("application/x-jereide-tab", str(self.index).encode())
+
+        drag = QDrag(self)
+        drag.setMimeData(mime)
+        drag.setPixmap(pixmap)
+        drag.setHotSpot(self._drag_start_pos)
+        self._drag_start_pos = None
+
+        self.notebook._drag_completed = False
+        result = drag.exec(Qt.MoveAction)
+        if not self.notebook._drag_completed:
+            self.notebook._on_drag_cancelled()
 
     @property
     def _close_button_rect(self):
@@ -126,15 +145,25 @@ class JereIDETab(QWidget):
             if self._close_hover_rect.contains(event.pos()):
                 self.close_clicked.emit(self.index)
             else:
-                self.clicked.emit(self.index)
+                self._drag_start_pos = event.pos()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if event.buttons() & Qt.MouseButton.LeftButton and self._drag_start_pos is not None:
+            if (event.pos() - self._drag_start_pos).manhattanLength() >= 5:
+                self._start_drag()
+                return
         was_close_hovered = self._is_close_hovered
         was_tab_hovered = self._is_tab_hovered
         self._is_close_hovered = self._close_hover_rect.contains(event.pos())
         self._is_tab_hovered = True
         if was_close_hovered != self._is_close_hovered or was_tab_hovered != self._is_tab_hovered:
             self.update()
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.LeftButton and self._drag_start_pos is not None:
+            self.clicked.emit(self.index)
+            self._drag_start_pos = None
+        super().mouseReleaseEvent(event)
 
     def leaveEvent(self, event) -> None:
         self._is_close_hovered = False

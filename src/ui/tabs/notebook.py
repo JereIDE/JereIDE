@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
 from config.theme import TAB_STRIP_BG, TAB_BORDER
 from .tabScrollArrow import TabScrollArrow
 from .tabWidget import JereIDETab
+from .tabDropContainer import TabDropContainer
+from .tabDragManager import TabDragManager
 
 
 class JereIDEBook(QWidget):
@@ -25,6 +27,8 @@ class JereIDEBook(QWidget):
         super().__init__(parent)
         self._tabs: list[JereIDETab] = []
         self._current_selection = -1
+
+        self._drag_mgr = TabDragManager(self)
 
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -47,7 +51,7 @@ class JereIDEBook(QWidget):
         self._right_arrow.clicked.connect(self._on_scroll_arrow_clicked)
         self._tab_bar_layout.addWidget(self._right_arrow)
 
-        self._tabs_container = QFrame()
+        self._tabs_container = TabDropContainer(self._drag_mgr)
         self._tabs_container_layout = QHBoxLayout(self._tabs_container)
         self._tabs_container_layout.setContentsMargins(0, 0, 0, 0)
         self._tabs_container_layout.setSpacing(0)
@@ -146,6 +150,9 @@ class JereIDEBook(QWidget):
     def _update_container_min_width(self) -> None:
         """Update the container's minimum width to allow scrolling."""
         total_width = sum(t.width() for t in self._tabs) if self._tabs else 0
+        spacer = self._drag_mgr._spacer
+        if spacer and spacer.isVisible():
+            total_width += spacer.width()
         self._tabs_container.setMinimumWidth(total_width)
 
     def _do_scroll_to_tab(self, tab: JereIDETab) -> None:
@@ -229,3 +236,17 @@ class JereIDEBook(QWidget):
 
         self._left_arrow.setEnabled(has_tabs and current > 0)
         self._right_arrow.setEnabled(has_tabs and current < len(self._tabs) - 1)
+
+    def _on_drag_started(self, source_index: int) -> None:
+        self._drag_mgr.on_drag_started(source_index)
+
+    @property
+    def _drag_completed(self) -> bool:
+        return self._drag_mgr.completed
+
+    @_drag_completed.setter
+    def _drag_completed(self, value: bool) -> None:
+        self._drag_mgr.completed = value
+
+    def _on_drag_cancelled(self) -> None:
+        self._drag_mgr.on_drag_cancelled()
