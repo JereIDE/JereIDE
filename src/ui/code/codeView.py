@@ -211,6 +211,13 @@ class CodeView(QWidget):
         if not result:
             return
         file_path, content = result
+
+        for i, data in enumerate(self._tabs_data):
+            if data["file_path"] and os.path.normpath(data["file_path"]) == os.path.normpath(file_path):
+                self._notebook.SelectTab(i)
+                self.on_tab_changed(i)
+                return
+
         self._create_new_tab(os.path.basename(file_path), file_path, content)
         self.on_tab_changed(self._notebook.GetSelection())
 
