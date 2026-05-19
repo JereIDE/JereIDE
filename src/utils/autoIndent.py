@@ -21,6 +21,12 @@ class AutoIndent:
                 else:
                     break
 
+            stripped = current_line_text.strip()
+            if stripped.endswith(':'):
+                indent_size = config_manager.get_config_value('editor', 'tab_width', 4)
+                indent_char = '\t' if '\t' in leading_whitespace else ' '
+                leading_whitespace += indent_char * indent_size
+
             cursor.insertText('\n' + leading_whitespace)
             self.editor.setTextCursor(cursor)
             return True
