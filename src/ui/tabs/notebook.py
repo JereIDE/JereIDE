@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal, QTimer
-from PySide6.QtGui import QPainter, QColor
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QStackedWidget,
@@ -11,63 +10,11 @@ from PySide6.QtWidgets import (
     QScrollArea,
 )
 
-from config.theme import TAB_STRIP_BG, TAB_BORDER, TAB_SELECTED_TEXT
+from config.theme import TAB_STRIP_BG, TAB_BORDER
 from .tabScrollArrow import TabScrollArrow
 from .tabWidget import JereIDETab
-
-
-class TabDropContainer(QFrame):
-    def __init__(self, notebook: JereIDEBook):
-        super().__init__()
-        self.notebook = notebook
-        self._drop_index = -1
-        self.setAcceptDrops(True)
-
-    def dragEnterEvent(self, event):
-        if event.mimeData().hasFormat("application/x-jereide-tab"):
-            event.acceptProposedAction()
-            self._drop_index = self.notebook._get_drop_index(event)
-            self.notebook._update_ghost(self._drop_index)
-            self.update()
-
-    def dragMoveEvent(self, event):
-        if event.mimeData().hasFormat("application/x-jereide-tab"):
-            event.acceptProposedAction()
-            new_index = self.notebook._get_drop_index(event)
-            if new_index != self._drop_index:
-                self._drop_index = new_index
-                self.notebook._update_ghost(self._drop_index)
-                self.update()
-
-    def dragLeaveEvent(self, event):
-        self._drop_index = -1
-        self.notebook._update_ghost(-1)
-        self.update()
-
-    def dropEvent(self, event):
-        if event.mimeData().hasFormat("application/x-jereide-tab"):
-            self.notebook._drag_completed = True
-            self.notebook._on_drop(self._drop_index)
-            event.acceptProposedAction()
-        self._drop_index = -1
-        self.update()
-
-    def paintEvent(self, event):
-        super().paintEvent(event)
-        if self._drop_index < 0:
-            return
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-        x = 0
-        tabs = self.notebook._tabs
-        if self._drop_index < len(tabs):
-            x = tabs[self._drop_index].x()
-        elif tabs:
-            last = tabs[-1]
-            x = last.x() + last.width()
-        if x > 0:
-            painter.setPen(QColor(TAB_SELECTED_TEXT))
-            painter.drawLine(x, 6, x, self.height() - 6)
+from .tabDropContainer import TabDropContainer
+from .tabDragManager import TabDragManager
 
 
 class JereIDEBook(QWidget):
@@ -81,14 +28,7 @@ class JereIDEBook(QWidget):
         self._tabs: list[JereIDETab] = []
         self._current_selection = -1
 
-        # Drag state
-        self._dragged_source_index = -1
-        self._dragged_tab = None
-        self._dragged_page = None
-        self._dragged_tab_width = 0
-        self._ghost_index = -1
-        self._spacer = None
-        self._drag_completed = False
+        self._drag_mgr = TabDragManager(self)
 
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -111,7 +51,7 @@ class JereIDEBook(QWidget):
         self._right_arrow.clicked.connect(self._on_scroll_arrow_clicked)
         self._tab_bar_layout.addWidget(self._right_arrow)
 
-        self._tabs_container = TabDropContainer(self)
+        self._tabs_container = TabDropContainer(self._drag_mgr)
         self._tabs_container_layout = QHBoxLayout(self._tabs_container)
         self._tabs_container_layout.setContentsMargins(0, 0, 0, 0)
         self._tabs_container_layout.setSpacing(0)
@@ -210,8 +150,9 @@ class JereIDEBook(QWidget):
     def _update_container_min_width(self) -> None:
         """Update the container's minimum width to allow scrolling."""
         total_width = sum(t.width() for t in self._tabs) if self._tabs else 0
-        if self._spacer and self._spacer.isVisible():
-            total_width += self._spacer.width()
+        spacer = self._drag_mgr._spacer
+        if spacer and spacer.isVisible():
+            total_width += spacer.width()
         self._tabs_container.setMinimumWidth(total_width)
 
     def _do_scroll_to_tab(self, tab: JereIDETab) -> None:
@@ -296,115 +237,16 @@ class JereIDEBook(QWidget):
         self._left_arrow.setEnabled(has_tabs and current > 0)
         self._right_arrow.setEnabled(has_tabs and current < len(self._tabs) - 1)
 
-    def _get_drop_index(self, event) -> int:
-        x = int(event.position().x())
-        count = len(self._tabs)
-        for i in range(count):
-            tab = self._tabs[i]
-            if not tab.isVisible():
-                continue
-            tab_center = tab.x() + tab.width() // 2
-            if x < tab_center:
-                return i
-        return count
-
-    # --- Drag and drop ---
-
     def _on_drag_started(self, source_index: int) -> None:
-        self._dragged_source_index = source_index
-        self._dragged_tab = self._tabs[source_index]
-        self._dragged_page = self._stacked_widget.widget(source_index)
-        self._dragged_tab_width = self._dragged_tab.width()
+        self._drag_mgr.on_drag_started(source_index)
 
-        self._dragged_tab.setVisible(False)
+    @property
+    def _drag_completed(self) -> bool:
+        return self._drag_mgr.completed
 
-        self._spacer = QFrame(self._tabs_container)
-        self._spacer.setFixedWidth(self._dragged_tab_width)
-        self._spacer.setVisible(False)
-
-        self._ghost_index = -1
-        self._drag_completed = False
-
-        self._update_container_min_width()
-
-    def _update_ghost(self, ghost_index: int) -> None:
-        if ghost_index == self._ghost_index:
-            return
-
-        if self._spacer and self._spacer.isVisible():
-            self._tabs_container_layout.removeWidget(self._spacer)
-            self._spacer.setVisible(False)
-
-        self._ghost_index = ghost_index
-
-        if ghost_index < 0 or not self._spacer:
-            self._update_container_min_width()
-            return
-
-        target = ghost_index
-        self._tabs_container_layout.insertWidget(target, self._spacer)
-        self._spacer.setVisible(True)
-        self._update_container_min_width()
-
-    def _on_drop(self, target_index: int) -> None:
-        if target_index < 0:
-            self._on_drag_cancelled()
-            return
-
-        source = self._dragged_source_index
-
-        if target_index == source or target_index == source + 1:
-            self._dragged_tab.setVisible(True)
-            self._clear_drag_state()
-            return
-
-        if self._spacer and self._spacer.isVisible():
-            self._tabs_container_layout.removeWidget(self._spacer)
-            self._spacer.setVisible(False)
-
-        tab = self._tabs.pop(source)
-        self._tabs_container_layout.removeWidget(tab)
-        self._stacked_widget.removeWidget(self._dragged_page)
-
-        adjusted = target_index
-        if adjusted > source:
-            adjusted -= 1
-
-        self._tabs.insert(adjusted, tab)
-        self._tabs_container_layout.insertWidget(adjusted, tab)
-        self._stacked_widget.insertWidget(adjusted, self._dragged_page)
-
-        tab.setVisible(True)
-
-        for i, t in enumerate(self._tabs):
-            t.index = i
-
-        self._current_selection = adjusted
-        self.SelectTab(self._current_selection)
-
-        self._clear_drag_state()
+    @_drag_completed.setter
+    def _drag_completed(self, value: bool) -> None:
+        self._drag_mgr.completed = value
 
     def _on_drag_cancelled(self) -> None:
-        if self._spacer and self._spacer.isVisible():
-            self._tabs_container_layout.removeWidget(self._spacer)
-            self._spacer.setVisible(False)
-
-        if self._dragged_tab:
-            self._dragged_tab.setVisible(True)
-
-        self._clear_drag_state()
-
-    def _clear_drag_state(self) -> None:
-        if self._spacer:
-            self._spacer.deleteLater()
-            self._spacer = None
-
-        self._dragged_source_index = -1
-        self._dragged_tab = None
-        self._dragged_page = None
-        self._dragged_tab_width = 0
-        self._ghost_index = -1
-        self._drag_completed = False
-
-        self._update_container_min_width()
-        self._update_arrow_states()
+        self._drag_mgr.on_drag_cancelled()
