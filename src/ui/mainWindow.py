@@ -64,6 +64,13 @@ class MainWindow(QMainWindow):
             lambda: self._switch_page(1)
         )
 
+        QShortcut(QKeySequence("Meta+Tab"), self).activated.connect(
+            self._switch_to_next_tab
+        )
+        QShortcut(QKeySequence("Meta+Shift+Tab"), self).activated.connect(
+            self._switch_to_prev_tab
+        )
+
     # --- Native toolbar ---
 
     def _attach_native_toolbar(self):
@@ -157,6 +164,26 @@ class MainWindow(QMainWindow):
     def _switch_to_code_view(self):
         if self.sliding_panel.currentIndex() != 0:
             self._switch_page(0)
+
+    def _switch_to_next_tab(self):
+        self._switch_to_code_view()
+        nb = self.code_view.notebook
+        count = nb.GetPageCount()
+        if count < 2:
+            return
+        current = nb.GetSelection()
+        next_idx = 0 if current >= count - 1 else current + 1
+        nb.SelectTab(next_idx)
+
+    def _switch_to_prev_tab(self):
+        self._switch_to_code_view()
+        nb = self.code_view.notebook
+        count = nb.GetPageCount()
+        if count < 2:
+            return
+        current = nb.GetSelection()
+        prev_idx = count - 1 if current <= 0 else current - 1
+        nb.SelectTab(prev_idx)
 
     def new_file(self):
         self._switch_to_code_view()
