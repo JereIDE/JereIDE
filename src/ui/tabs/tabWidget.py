@@ -55,15 +55,22 @@ class JereIDETab(QWidget):
         self.update()
 
     def _start_drag(self):
-        drag = QDrag(self)
+        pixmap = self.grab()
+        self.notebook._on_drag_started(self.index)
+
         mime = QMimeData()
         mime.setData("application/x-jereide-tab", str(self.index).encode())
+
+        drag = QDrag(self)
         drag.setMimeData(mime)
-        pixmap = self.grab()
         drag.setPixmap(pixmap)
         drag.setHotSpot(self._drag_start_pos)
         self._drag_start_pos = None
-        drag.exec(Qt.MoveAction)
+
+        self.notebook._drag_completed = False
+        result = drag.exec(Qt.MoveAction)
+        if not self.notebook._drag_completed:
+            self.notebook._on_drag_cancelled()
 
     @property
     def _close_button_rect(self):
