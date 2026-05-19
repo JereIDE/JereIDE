@@ -36,3 +36,6 @@ class StatusBar(QFrame):
 
     def update_position(self, line: int, column: int):
         self._position_button.setText(f"{line}:{column}")
+
+    def clear_position(self):
+        self._position_button.setText("--:--")
