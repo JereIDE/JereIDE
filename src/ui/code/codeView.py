@@ -172,7 +172,7 @@ class CodeView(QWidget):
         if self._notebook.GetPageCount() == 0:
             self._welcome_frame.show()
             self._notebook.hide()
-            self._status_bar.update_position(1, 1)
+            self._status_bar.clear_position()
             self.modifiedStateChanged.emit(False)
 
     def _get_tab_title(self, index):
@@ -211,6 +211,13 @@ class CodeView(QWidget):
         if not result:
             return
         file_path, content = result
+
+        for i, data in enumerate(self._tabs_data):
+            if data["file_path"] and os.path.normpath(data["file_path"]) == os.path.normpath(file_path):
+                self._notebook.SelectTab(i)
+                self.on_tab_changed(i)
+                return
+
         self._create_new_tab(os.path.basename(file_path), file_path, content)
         self.on_tab_changed(self._notebook.GetSelection())
 

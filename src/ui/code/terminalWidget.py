@@ -334,7 +334,8 @@ class TerminalWidget(QPlainTextEdit):
         if self.pid > 0:
             try:
                 os.kill(self.pid, signal.SIGHUP)
-            except ProcessLookupError:
+                os.waitpid(self.pid, 0)
+            except (ProcessLookupError, ChildProcessError):
                 pass
         super().closeEvent(event)
 
