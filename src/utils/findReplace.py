@@ -33,7 +33,7 @@ class FindReplace:
 
         content = editor.toPlainText()
         cursor = editor.textCursor()
-        start = cursor.position() + 1 if cursor.hasSelection() else cursor.position()
+        start = max(cursor.anchor(), cursor.position()) if cursor.hasSelection() else cursor.position()
 
         if case_sensitive:
             pos = content.find(text, start)
