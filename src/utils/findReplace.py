@@ -1,6 +1,6 @@
 import re
 from PySide6.QtWidgets import QMessageBox
-from PySide6.QtGui import QTextCursor
+from PySide6.QtGui import QTextCursor, QTextDocument
 
 
 class FindReplace:
@@ -31,23 +31,23 @@ class FindReplace:
         if not editor or not text:
             return -1, 0
 
-        content = editor.toPlainText()
+        doc = editor.document()
         cursor = editor.textCursor()
         start = max(cursor.anchor(), cursor.position()) if cursor.hasSelection() else cursor.position()
 
-        if case_sensitive:
-            pos = content.find(text, start)
-            if pos == -1 and wrap:
-                pos = content.find(text, 0)
-        else:
-            lower_content = content.lower()
-            lower_text = text.lower()
-            pos = lower_content.find(lower_text, start)
-            if pos == -1 and wrap:
-                pos = lower_content.find(lower_text, 0)
+        find_flags = QTextDocument.FindCaseSensitively if case_sensitive else QTextDocument.FindFlag(0)
 
-        if pos != -1:
-            return pos, len(text)
+        search_cursor = QTextCursor(doc)
+        search_cursor.setPosition(start)
+        result = doc.find(text, search_cursor, find_flags)
+
+        if result.isNull() and wrap:
+            search_cursor = QTextCursor(doc)
+            search_cursor.movePosition(QTextCursor.Start)
+            result = doc.find(text, search_cursor, find_flags)
+
+        if not result.isNull():
+            return result.selectionStart(), len(text)
         return -1, 0
 
     def on_find_next(self, text: str, case_sensitive: bool):
@@ -89,13 +89,19 @@ class FindReplace:
         if not editor or not find_text:
             return
 
-        content = editor.toPlainText()
-        flags = 0 if case_sensitive else re.IGNORECASE
-        pattern = self._build_pattern(find_text, {"regex": False, "whole_words": False})
+        cursor = editor.textCursor()
+        cursor.movePosition(QTextCursor.Start)
+        editor.setTextCursor(cursor)
 
-        new_content, count = re.subn(pattern, replace_text, content, flags=flags)
+        find_flags = QTextDocument.FindCaseSensitively if case_sensitive else QTextDocument.FindFlag(0)
+
+        count = 0
+        while editor.find(find_text, find_flags):
+            cursor = editor.textCursor()
+            cursor.insertText(replace_text)
+            count += 1
+
         if count > 0:
-            editor.setPlainText(new_content)
             QMessageBox.information(self.parent, "Replace", f"Replaced {count} occurrence(s).")
         else:
             QMessageBox.information(self.parent, "Replace", f"Cannot find '{find_text}'")
