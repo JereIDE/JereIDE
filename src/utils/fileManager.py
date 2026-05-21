@@ -24,7 +24,7 @@ class FileManager:
                     f"This file is {size / 1024 / 1024:.1f} MB. "
                     "Opening very large files may cause performance issues."
                 )
-                open_btn = msg_box.addButton("Open Anyway", QMessageBox.RejectRole)
+                open_btn = msg_box.addButton("Open Anyway", QMessageBox.DestructiveRole)
                 cancel_btn = msg_box.addButton("Cancel", QMessageBox.AcceptRole)
                 msg_box.setDefaultButton(cancel_btn)
                 msg_box.setEscapeButton(cancel_btn)
