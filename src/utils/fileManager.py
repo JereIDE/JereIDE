@@ -17,10 +17,20 @@ class FileManager:
                 )
                 return None
             if size > 100 * 1024 * 1024:
-                QMessageBox.warning(
-                    self._window, "Large File",
-                    f"This file is {size / 1024 / 1024:.1f} MB. Opening very large files may cause performance issues."
+                msg_box = QMessageBox(self._window)
+                msg_box.setWindowTitle("Large File")
+                msg_box.setIcon(QMessageBox.Question)
+                msg_box.setText(
+                    f"This file is {size / 1024 / 1024:.1f} MB. "
+                    "Opening very large files may cause performance issues."
                 )
+                cancel_btn = msg_box.addButton("Cancel", QMessageBox.RejectRole)
+                open_btn = msg_box.addButton("Open Anyway", QMessageBox.AcceptRole)
+                msg_box.setDefaultButton(cancel_btn)
+                msg_box.setEscapeButton(cancel_btn)
+                msg_box.exec()
+                if msg_box.clickedButton() != open_btn:
+                    return None
             with open(path, 'r', encoding='utf-8') as f:
                 return path, f.read()
         except Exception as e:
