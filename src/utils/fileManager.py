@@ -4,10 +4,33 @@ class FileManager:
 
     def open_with_dialog(self):
         from PySide6.QtWidgets import QFileDialog, QMessageBox
+        import os
         path, _ = QFileDialog.getOpenFileName(self._window, "Open File", "", "All Files (*)")
         if not path:
             return None
         try:
+            size = os.path.getsize(path)
+            if size > 200 * 1024 * 1024:
+                QMessageBox.critical(
+                    self._window, "File Too Large",
+                    f"This file is {size / 1024 / 1024:.1f} MB. Files larger than 200 MB cannot be opened."
+                )
+                return None
+            if size > 100 * 1024 * 1024:
+                msg_box = QMessageBox(self._window)
+                msg_box.setWindowTitle("Large File")
+                msg_box.setIcon(QMessageBox.Question)
+                msg_box.setText(
+                    f"This file is {size / 1024 / 1024:.1f} MB. "
+                    "Opening very large files may cause performance issues."
+                )
+                open_btn = msg_box.addButton("Open Anyway", QMessageBox.DestructiveRole)
+                cancel_btn = msg_box.addButton("Cancel", QMessageBox.AcceptRole)
+                msg_box.setDefaultButton(cancel_btn)
+                msg_box.setEscapeButton(cancel_btn)
+                msg_box.exec()
+                if msg_box.clickedButton() != open_btn:
+                    return None
             with open(path, 'r', encoding='utf-8') as f:
                 return path, f.read()
         except Exception as e:
