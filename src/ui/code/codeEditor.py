@@ -63,7 +63,8 @@ class QCodeEditor(QPlainTextEdit, AutoPairingMixin):
         if enabled:
             self.setLineWrapMode(QPlainTextEdit.WidgetWidth)
         else:
-            self.setLineWrapMode(QPlainTextEdit.NoWrap)
+        wrap_enabled = config_manager.get_config_value('editor', 'word_wrap.enabled', False)
+        self.setLineWrapMode(QPlainTextEdit.WidgetWidth if wrap_enabled else QPlainTextEdit.NoWrap)
 
     def line_number_area_width(self):
         digits = 1
