@@ -23,6 +23,7 @@ build/
 *.egg-info/
 *.egg
 *.whl
+*.app/
 
 # Test coverage
 .coverage
