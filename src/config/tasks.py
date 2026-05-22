@@ -1,6 +1,4 @@
-import json
-import os
-from const.paths import TASKS_PATH
+from config.config_manager import config_manager
 
 
 class TaskManager:
@@ -9,17 +7,11 @@ class TaskManager:
         self._load()
 
     def _load(self):
-        if os.path.exists(TASKS_PATH):
-            with open(TASKS_PATH, "r") as f:
-                data = json.load(f)
-                self._tasks = data.get("tasks", [])
-        else:
-            self._tasks = []
+        tasks_section = config_manager.get_section("tasks")
+        self._tasks = tasks_section.get("tasks", [])
 
     def save(self):
-        os.makedirs(os.path.dirname(TASKS_PATH), exist_ok=True)
-        with open(TASKS_PATH, "w") as f:
-            json.dump({"tasks": self._tasks}, f, indent=2)
+        config_manager.update_section("tasks", {"tasks": self._tasks})
 
     def get_tasks(self):
         return list(self._tasks)

@@ -1,119 +1,117 @@
 import json
 import os
+import threading
+from copy import deepcopy
+
+from PySide6.QtCore import QFileSystemWatcher, QObject, Signal
+
 from const.paths import ROOT_DIR
 
+RC_FILE = os.path.expanduser("~/.jereiderc")
+OLD_CONFIG_DIR = os.path.join(ROOT_DIR, "src", "config")
 
-class ConfigManager:
-    """Manages loading and accessing configuration from JSON files."""
 
-    def __init__(self):
-        self.config_dir = os.path.join(ROOT_DIR, "src", "config")
+class ConfigManager(QObject):
+    config_reloaded = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._lock = threading.Lock()
+        self._config = {}
         self._defaults = {}
-        self._theme_config = {}
-        self._editor_config = {}
-        self._tasks_config = {}
+        self._watcher = None
         self._load_defaults()
-        self._ensure_config_files()
-        self._load_configs()
+        self._ensure_rc_file()
+        self._load_rc_file()
+        self._setup_watcher()
 
     def _load_defaults(self):
-        """Load defaults from defaults.json."""
-        defaults_path = os.path.join(self.config_dir, "defaults.json")
+        defaults_path = os.path.join(OLD_CONFIG_DIR, "defaults.json")
         if os.path.exists(defaults_path):
             with open(defaults_path, "r") as f:
                 self._defaults = json.load(f)
-        else:
-            self._defaults = {}
 
-    def _ensure_config_files(self):
-        """Create config files from defaults if they don't exist."""
-        files_to_create = {
-            "theme.json": self._defaults.get("theme", {}),
-            "editor.json": self._defaults.get("editor", {}),
-            "tasks.json": self._defaults.get("tasks", {}),
+    def _ensure_rc_file(self):
+        if os.path.exists(RC_FILE):
+            return
+        config = {}
+        for key in ("theme", "editor", "tasks"):
+            old_path = os.path.join(OLD_CONFIG_DIR, f"{key}.json")
+            if os.path.exists(old_path):
+                with open(old_path, "r") as f:
+                    config[key] = json.load(f)
+        self._write_rc_file(config)
+
+    def _write_rc_file(self, config):
+        full = {
+            "__info__": [
+                "# JereIDE Configuration File",
+                "#",
+                "# Top-level keys:",
+                "#   theme  - Colors and fonts for the editor UI",
+                "#   editor - Editor behavior (tabs, syntax, auto-indent, etc.)",
+                "#   tasks  - Quick-run task definitions",
+                "#",
+                "# Changes made here while JereIDE is running are picked up automatically.",
+                "# Delete a key and restart JereIDE to reset that section to defaults.",
+            ]
         }
+        full.update(config)
+        with open(RC_FILE, "w") as f:
+            json.dump(full, f, indent=2)
+            f.write("\n")
 
-        for filename, content in files_to_create.items():
-            filepath = os.path.join(self.config_dir, filename)
-            if not os.path.exists(filepath):
-                with open(filepath, "w") as f:
-                    json.dump(content, f, indent=2)
+    def _load_rc_file(self):
+        if not os.path.exists(RC_FILE):
+            with self._lock:
+                self._config = {}
+            return
+        with open(RC_FILE, "r") as f:
+            raw = json.load(f)
+        with self._lock:
+            self._config = {k: v for k, v in raw.items() if not k.startswith("_")}
 
-    def _load_configs(self):
-        """Load all configuration files."""
-        theme_path = os.path.join(self.config_dir, "theme.json")
-        if os.path.exists(theme_path):
-            with open(theme_path, "r") as f:
-                self._theme_config = json.load(f)
+    def _setup_watcher(self):
+        self._watcher = QFileSystemWatcher(self)
+        if os.path.exists(RC_FILE):
+            self._watcher.addPath(RC_FILE)
+        self._watcher.fileChanged.connect(self._on_file_changed)
 
-        editor_path = os.path.join(self.config_dir, "editor.json")
-        if os.path.exists(editor_path):
-            with open(editor_path, "r") as f:
-                self._editor_config = json.load(f)
-
-        tasks_path = os.path.join(self.config_dir, "tasks.json")
-        if os.path.exists(tasks_path):
-            with open(tasks_path, "r") as f:
-                self._tasks_config = json.load(f)
-
-    def get_theme_config(self):
-        """Get the theme configuration."""
-        return self._theme_config
-
-    def get_editor_config(self):
-        """Get the editor configuration."""
-        return self._editor_config
-
-    def get_tasks_config(self):
-        """Get the tasks configuration."""
-        return self._tasks_config
+    def _on_file_changed(self, path):
+        if os.path.exists(path):
+            try:
+                self._load_rc_file()
+            except Exception:
+                return
+            finally:
+                if path not in self._watcher.files():
+                    self._watcher.addPath(path)
+            self.config_reloaded.emit()
 
     def get_config_value(self, config_type, key_path, default=None):
-        """
-        Get a configuration value using dot notation.
-        Falls back to defaults if value not found.
-
-        Args:
-            config_type: 'theme', 'editor', or 'defaults'
-            key_path: Dot-separated path to the value (e.g., 'editor.background')
-            default: Default value if key not found
-
-        Returns:
-            The configuration value or default if not found
-        """
-        if config_type == "theme":
-            config = self._theme_config
-            fallback = self._defaults.get("theme", {})
-        elif config_type == "editor":
-            config = self._editor_config
-            fallback = self._defaults.get("editor", {})
-        elif config_type == "tasks":
-            config = self._tasks_config
-            fallback = self._defaults.get("tasks", {})
-        elif config_type == "defaults":
-            config = {}
-            fallback = self._defaults
-        else:
-            return default
-
         keys = key_path.split(".")
-        value = config
+        with self._lock:
+            config = self._config.get(config_type, {})
+            fallback = self._defaults.get(config_type, {})
+        for source in (config, fallback):
+            value = source
+            try:
+                for key in keys:
+                    value = value[key]
+                return value
+            except (KeyError, TypeError):
+                continue
+        return default
 
-        try:
-            for key in keys:
-                value = value[key]
-            return value
-        except (KeyError, TypeError):
-            pass
+    def get_section(self, config_type):
+        with self._lock:
+            return deepcopy(self._config.get(config_type, {}))
 
-        value = fallback
-        try:
-            for key in keys:
-                value = value[key]
-            return value
-        except (KeyError, TypeError):
-            return default
+    def update_section(self, config_type, data):
+        with self._lock:
+            self._config[config_type] = data
+        self._write_rc_file(self._config)
+        self.config_reloaded.emit()
 
 
-# Create a singleton instance
 config_manager = ConfigManager()

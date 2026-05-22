@@ -7,8 +7,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config.config_manager import config_manager
 
 # Editor theme
-theme_config = config_manager.get_theme_config()
-
 EDITOR_BG = config_manager.get_config_value('theme', 'editor.background', '#FFFFFF')
 EDITOR_FONT_FAMILY = config_manager.get_config_value('theme', 'editor.font_family', 'Monaco')
 EDITOR_FONT_SIZE = config_manager.get_config_value('theme', 'editor.font_size', 11)

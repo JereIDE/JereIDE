@@ -11,5 +11,6 @@ CONST_DIR = os.path.join(SRC_DIR, "const")
 THEME_PATH = os.path.join(SRC_DIR, "config", "theme.py")
 STYLESHEET_PATH = os.path.join(CONST_DIR, "styles.qss")
 TASKS_PATH = os.path.join(SRC_DIR, "config", "tasks.json")
+RC_FILE_PATH = os.path.expanduser("~/.jereiderc")
 
 UI_DIR = os.path.join(SRC_DIR, "ui")
