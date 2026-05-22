@@ -10,7 +10,7 @@
 ![](https://img.shields.io/badge/macOS-12+-skyblue)
 
 
-*Python code editor, in progress and in beta*  
+*Python code editor, in progress right now*  
   
 <kbd>
   <img src="jereide_screenshot.png" width="700" height="547" style="border-radius: 15px;">
