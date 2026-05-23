@@ -39,6 +39,7 @@ class FileManager:
 
     def write_or_save_as(self, file_path, content):
         from PySide6.QtWidgets import QFileDialog, QMessageBox
+        import os
         if not file_path:
             path, _ = QFileDialog.getSaveFileName(
                 self._window, "Save File As", "",
@@ -47,6 +48,16 @@ class FileManager:
             if not path:
                 return None
             file_path = path
+        if os.path.exists(file_path):
+            writable = os.access(file_path, os.W_OK)
+        else:
+            writable = os.access(os.path.dirname(os.path.abspath(file_path)), os.W_OK)
+        if not writable:
+            QMessageBox.critical(
+                self._window, "Permission Denied",
+                f"Cannot write to \"{file_path}\". Check file/directory permissions."
+            )
+            return None
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(content)
