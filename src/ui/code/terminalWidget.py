@@ -110,6 +110,7 @@ class TerminalWidget(QPlainTextEdit):
 
         self.pid, self.fd = pty.fork()
         if self.pid == 0:
+            os.close(self.fd)
             os.environ['TERM'] = 'xterm-256color'
             try:
                 os.execve('/bin/zsh', ['/bin/zsh'], os.environ)
