@@ -61,6 +61,11 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -70,7 +75,16 @@ jobs:
         id: tag
         shell: bash
         run: |
-          echo "tag=$(date +'%Y%m%d%H%M%S')-$(echo ${{ github.sha }} | cut -c1-7)" >> "$GITHUB_OUTPUT"
+          LAST_TAG=$(git tag --list 'v*.*.*' --sort=-v:refname | head -1)
+          if [ -z "$LAST_TAG" ]; then
+            echo "tag=v0.1.0" >> "$GITHUB_OUTPUT"
+          else
+            MAJOR=$(echo "$LAST_TAG" | cut -d. -f1 | tr -d 'v')
+            MINOR=$(echo "$LAST_TAG" | cut -d. -f2)
+            PATCH=$(echo "$LAST_TAG" | cut -d. -f3)
+            PATCH=$((PATCH + 1))
+            echo "tag=v$MAJOR.$MINOR.$PATCH" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Draft Release
         uses: softprops/action-gh-release@v2
