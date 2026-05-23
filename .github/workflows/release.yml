@@ -90,9 +90,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: "Build ${{ steps.tag.outputs.tag }}"
-          body: |
-            Automated build from commit ${{ github.sha }}
+          name: "${{ steps.tag.outputs.tag }}"
           draft: true
           files: artifacts/**/*.zip
-          generate_release_notes: false
+          generate_release_notes: true
