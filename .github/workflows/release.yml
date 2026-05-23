@@ -1,0 +1,84 @@
+name: Draft Release
+
+on:
+  push:
+    branches-ignore:
+      - 'gh-pages'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            os: macos-latest
+          - arch: x86_64
+            os: macos-15-intel
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          pip install PySide6 nuitka zstandard ordered-set
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Build with Nuitka
+        run: |
+          python3 -m nuitka --standalone \
+            --macos-create-app-bundle \
+            --enable-plugin=pyside6 \
+            --noinclude-qt-plugins=senseless \
+            --macos-target-arch=${{ matrix.arch }} \
+            --include-qt-plugins=platforms,styles,iconengines,imageformats \
+            --macos-app-name="JereIDE" \
+            --assume-yes-for-downloads \
+            --macos-app-icon="src/icons/AppIcon.icns" \
+            src/JereIDE.py
+
+      - name: Compress App Bundle
+        run: |
+          zip -r JereIDE-${{ matrix.arch }}.zip *.app
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: JereIDE-${{ matrix.arch }}
+          path: JereIDE-${{ matrix.arch }}.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate Tag
+        id: tag
+        shell: bash
+        run: |
+          echo "tag=$(date +'%Y%m%d%H%M%S')-$(echo ${{ github.sha }} | cut -c1-7)" >> "$GITHUB_OUTPUT"
+
+      - name: Draft Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Build ${{ steps.tag.outputs.tag }}"
+          body: |
+            Automated build from commit ${{ github.sha }}
+          draft: true
+          files: artifacts/**/*.zip
+          generate_release_notes: false
