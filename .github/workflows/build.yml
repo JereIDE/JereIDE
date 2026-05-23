@@ -39,6 +39,7 @@ jobs:
             --include-qt-plugins=platforms,styles,iconengines,imageformats \
             --macos-app-name="JereIDE" \
             --assume-yes-for-downloads \
+            --macos-app-icon="src/icons/AppIcon.icns" \
             src/JereIDE.py
 
       - name: Compress App Bundle
