@@ -5,6 +5,10 @@ on:
     branches-ignore:
       - 'gh-pages'
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     strategy:
@@ -75,16 +79,18 @@ jobs:
         id: tag
         shell: bash
         run: |
-          LAST_TAG=$(git tag --list 'v*.*.*' --sort=-v:refname | head -1)
-          if [ -z "$LAST_TAG" ]; then
-            echo "tag=v0.1.0" >> "$GITHUB_OUTPUT"
+          LAST_RELEASE=$(git tag --list 'v*.*.*' --sort=-v:refname | grep -v '-' | head -1)
+          TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+          if [ -z "$LAST_RELEASE" ]; then
+            BASE="v0.1.0"
           else
-            MAJOR=$(echo "$LAST_TAG" | cut -d. -f1 | tr -d 'v')
-            MINOR=$(echo "$LAST_TAG" | cut -d. -f2)
-            PATCH=$(echo "$LAST_TAG" | cut -d. -f3)
+            MAJOR=$(echo "$LAST_RELEASE" | cut -d. -f1 | tr -d 'v')
+            MINOR=$(echo "$LAST_RELEASE" | cut -d. -f2)
+            PATCH=$(echo "$LAST_RELEASE" | cut -d. -f3)
             PATCH=$((PATCH + 1))
-            echo "tag=v$MAJOR.$MINOR.$PATCH" >> "$GITHUB_OUTPUT"
+            BASE="v$MAJOR.$MINOR.$PATCH"
           fi
+          echo "tag=$BASE-$TIMESTAMP" >> "$GITHUB_OUTPUT"
 
       - name: Draft Release
         uses: softprops/action-gh-release@v2
