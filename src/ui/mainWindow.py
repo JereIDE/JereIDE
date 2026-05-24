@@ -11,6 +11,7 @@ from ui.slidingPanel import SlidingPanel
 from ui.code import CodeView
 from ui.command import CommandView
 from ui.tasks.taskDialog import TaskDialog
+from ui.aboutDialog import AboutDialog
 from utils.focusManager import FocusManager
 
 
@@ -242,6 +243,11 @@ class MainWindow(QMainWindow):
         self.code_view.toggle_wrap()
 
     # --- Panel toggles ---
+
+    def show_about(self):
+        dialog = AboutDialog(self)
+        self._center_dialog(dialog)
+        dialog.exec()
 
     def toggle_full_screen(self):
         self.fullScreenEnabled = not self.fullScreenEnabled
