@@ -72,6 +72,12 @@ class MainWindow(QMainWindow):
             self._switch_to_prev_tab
         )
 
+        # Font zoom (Ctrl = Cmd on macOS)
+        QShortcut(QKeySequence("Ctrl+="), self).activated.connect(self.zoom_in)
+        QShortcut(QKeySequence("Ctrl++"), self).activated.connect(self.zoom_in)
+        QShortcut(QKeySequence("Ctrl+-"), self).activated.connect(self.zoom_out)
+        QShortcut(QKeySequence("Ctrl+0"), self).activated.connect(self.reset_zoom)
+
     # --- Native toolbar ---
 
     def _attach_native_toolbar(self):
@@ -141,6 +147,10 @@ class MainWindow(QMainWindow):
     def current_file_path(self):
         _, data = self.code_view._get_current_tab_data()
         return data["file_path"] if data else None
+
+    @property
+    def current_font_size(self):
+        return self.code_view._font_size
 
     @property
     def syntax_highlighting_enabled(self):
@@ -241,6 +251,17 @@ class MainWindow(QMainWindow):
 
     def toggle_wrap(self):
         self.code_view.toggle_wrap()
+
+    # --- Font zoom ---
+
+    def zoom_in(self):
+        self.code_view.zoom_in()
+
+    def zoom_out(self):
+        self.code_view.zoom_out()
+
+    def reset_zoom(self):
+        self.code_view.reset_zoom()
 
     # --- Panel toggles ---
 
