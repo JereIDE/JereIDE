@@ -1,7 +1,7 @@
 import os
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QShortcut, QKeySequence
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QShortcut, QKeySequence, QDesktopServices
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
 
 from const.constants import MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT
@@ -248,6 +248,9 @@ class MainWindow(QMainWindow):
         dialog = AboutDialog(self)
         self._center_dialog(dialog)
         dialog.exec()
+
+    def open_github(self):
+        QDesktopServices.openUrl(QUrl("https://github.com/Jeremy-Qian/JereIDE"))
 
     def toggle_full_screen(self):
         self.fullScreenEnabled = not self.fullScreenEnabled

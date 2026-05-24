@@ -122,3 +122,6 @@ class MenuBar:
         help_menu = menu_bar.addMenu("&Help")
         about_action = help_menu.addAction("&About JereIDE")
         about_action.triggered.connect(self.window.show_about)
+        help_menu.addSeparator()
+        star_action = help_menu.addAction("Star on &GitHub")
+        star_action.triggered.connect(self.window.open_github)
