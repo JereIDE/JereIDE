@@ -102,3 +102,4 @@ jobs:
           draft: true
           files: artifacts/**/*.zip
           generate_release_notes: true
+          prerelease: true
