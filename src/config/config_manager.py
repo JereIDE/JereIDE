@@ -20,10 +20,19 @@ class ConfigManager(QObject):
         self._config = {}
         self._defaults = {}
         self._watcher = None
-        self._load_defaults()
-        self._ensure_rc_file()
-        self._load_rc_file()
-        self._setup_watcher()
+        self._loaded = False
+
+    def _lazy_load(self):
+        if self._loaded:
+            return
+        with self._lock:
+            if self._loaded:
+                return
+            self._load_defaults()
+            self._ensure_rc_file()
+            self._load_rc_file()
+            self._setup_watcher()
+            self._loaded = True
 
     def _load_defaults(self):
         defaults_path = os.path.join(OLD_CONFIG_DIR, "defaults.json")
@@ -63,13 +72,11 @@ class ConfigManager(QObject):
 
     def _load_rc_file(self):
         if not os.path.exists(RC_FILE):
-            with self._lock:
-                self._config = {}
+            self._config = {}
             return
         with open(RC_FILE, "r") as f:
             raw = json.load(f)
-        with self._lock:
-            self._config = {k: v for k, v in raw.items() if not k.startswith("_")}
+        self._config = {k: v for k, v in raw.items() if not k.startswith("_")}
 
     def _setup_watcher(self):
         self._watcher = QFileSystemWatcher(self)
@@ -78,7 +85,9 @@ class ConfigManager(QObject):
         self._watcher.fileChanged.connect(self._on_file_changed)
 
     def _on_file_changed(self, path):
-        if os.path.exists(path):
+        if not os.path.exists(path):
+            return
+        with self._lock:
             try:
                 self._load_rc_file()
             except Exception:
@@ -89,28 +98,31 @@ class ConfigManager(QObject):
             self.config_reloaded.emit()
 
     def get_config_value(self, config_type, key_path, default=None):
+        self._lazy_load()
         keys = key_path.split(".")
         with self._lock:
             config = self._config.get(config_type, {})
             fallback = self._defaults.get(config_type, {})
-        for source in (config, fallback):
-            value = source
-            try:
-                for key in keys:
-                    value = value[key]
-                return value
-            except (KeyError, TypeError):
-                continue
-        return default
+            for source in (config, fallback):
+                value = source
+                try:
+                    for key in keys:
+                        value = value[key]
+                    return value
+                except (KeyError, TypeError):
+                    continue
+            return default
 
     def get_section(self, config_type):
+        self._lazy_load()
         with self._lock:
             return deepcopy(self._config.get(config_type, {}))
 
     def update_section(self, config_type, data):
+        self._lazy_load()
         with self._lock:
             self._config[config_type] = data
-        self._write_rc_file(self._config)
+            self._write_rc_file(self._config)
         self.config_reloaded.emit()
 
 
