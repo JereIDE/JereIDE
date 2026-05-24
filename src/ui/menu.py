@@ -17,6 +17,7 @@ class MenuBar:
         self._setup_edit_menu(menu_bar)
         self._setup_options_menu(menu_bar)
         self._setup_view_menu(menu_bar)
+        self._setup_help_menu(menu_bar)
 
     def _setup_edit_menu(self, menu_bar):
         edit_menu = menu_bar.addMenu("&Edit")
@@ -116,3 +117,8 @@ class MenuBar:
         self.toggle_full_screen_action = view_menu.addAction("Toggle Full Screen")
         self.toggle_full_screen_action.setShortcut("Meta+F")  # Cmd+F for macOS
         self.toggle_full_screen_action.triggered.connect(self.window.toggle_full_screen)
+
+    def _setup_help_menu(self, menu_bar):
+        help_menu = menu_bar.addMenu("&Help")
+        about_action = help_menu.addAction("&About JereIDE")
+        about_action.triggered.connect(self.window.show_about)
