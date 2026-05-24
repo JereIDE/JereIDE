@@ -112,10 +112,8 @@ class TerminalWidget(QPlainTextEdit):
         if self.pid == 0:
             env = os.environ.copy()
             env['TERM'] = 'xterm-256color'
-            try:
-                os.execve('/bin/zsh', ['/bin/zsh'], env)
-            except FileNotFoundError:
-                os.execve('/bin/bash', ['/bin/bash'], env)
+            shell = os.environ.get('SHELL', '/bin/zsh')
+            os.execve(shell, [shell], env)
             os._exit(1)
         else:
             self._update_size()
