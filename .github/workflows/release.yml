@@ -80,7 +80,6 @@ jobs:
         shell: bash
         run: |
           LAST_RELEASE=$(git tag --list 'v*.*.*' --sort=-v:refname | grep -v '-' | head -1)
-          TIMESTAMP=$(date +'%Y%m%d%H%M%S')
           if [ -z "$LAST_RELEASE" ]; then
             BASE="v0.1.0"
           else
@@ -90,7 +89,10 @@ jobs:
             PATCH=$((PATCH + 1))
             BASE="v$MAJOR.$MINOR.$PATCH"
           fi
-          echo "tag=$BASE-$TIMESTAMP" >> "$GITHUB_OUTPUT"
+          COMMIT_SUBJECT=$(git log -1 --format=%s)
+          SAFE_NAME=$(echo "$COMMIT_SUBJECT" | head -1 | tr '[:upper:]' '[:lower:]' | tr -s '[:space:]' '-' | tr -cd 'a-z0-9_-')
+          [ -z "$SAFE_NAME" ] && SAFE_NAME="untitled"
+          echo "tag=$BASE-$(echo $SAFE_NAME | cut -c1-50)" >> "$GITHUB_OUTPUT"
 
       - name: Draft Release
         uses: softprops/action-gh-release@v2
