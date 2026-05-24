@@ -120,7 +120,7 @@ class WelcomeFrame(QFrame):
         action_layout.setContentsMargins(0, 0, 0, 0)
         action_layout.setSpacing(0)
 
-        icon = get_sf_qicon(icon_type, size=18, weight=1)
+        icon = get_sf_qicon(icon_type, size=18, weight=-0.4)
         icon_label = QLabel()
         icon_pixmap = icon.pixmap(QSize(20, 20))
         icon_label.setPixmap(icon_pixmap)
