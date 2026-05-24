@@ -9,6 +9,7 @@ from .welcomeFrame import WelcomeFrame
 from .findReplaceDialog import FindReplaceDialog
 from utils.findReplace import FindReplace
 from utils.fileManager import FileManager
+from config.config_manager import config_manager
 
 
 class CodeView(QWidget):
@@ -70,6 +71,9 @@ class CodeView(QWidget):
         self.line_numbers_enabled = True
         self.auto_pairing_enabled = True
         self.wrap_enabled = False
+
+        self._font_size = config_manager.get_config_value('theme', 'editor.font_size', 11)
+        self._status_bar.update_font_size(self._font_size)
 
         self._create_new_tab()
 
@@ -327,6 +331,30 @@ class CodeView(QWidget):
         editor = self.current_editor
         if editor:
             editor.set_syntax_highlighting_enabled(self.syntax_highlighting_enabled)
+
+    # --- Font zoom ---
+
+    def zoom_in(self):
+        self._change_font_size(self._font_size + 1)
+
+    def zoom_out(self):
+        self._change_font_size(max(6, self._font_size - 1))
+
+    def reset_zoom(self):
+        default_size = config_manager.get_config_value('theme', 'editor.font_size', 11)
+        self._change_font_size(default_size)
+
+    def _change_font_size(self, new_size: int):
+        if new_size == self._font_size:
+            return
+        self._font_size = new_size
+        for data in self._tabs_data:
+            data["editor"].set_font_size(new_size)
+        self._status_bar.update_font_size(new_size)
+        config_manager.update_section('theme', {
+            **config_manager.get_section('theme'),
+            'editor.font_size': new_size
+        })
 
     def _on_page_changed_for_cursor(self, index):
         if 0 <= index < len(self._tabs_data):

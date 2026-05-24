@@ -114,8 +114,23 @@ class MenuBar:
 
     def _setup_view_menu(self, menu_bar):
         view_menu = menu_bar.addMenu("&View")
+
+        zoom_in_action = view_menu.addAction("Zoom &In")
+        zoom_in_action.setShortcut("Ctrl+=")  # Cmd+= on macOS
+        zoom_in_action.triggered.connect(self.window.zoom_in)
+
+        zoom_out_action = view_menu.addAction("Zoom &Out")
+        zoom_out_action.setShortcut("Ctrl+-")  # Cmd+- on macOS
+        zoom_out_action.triggered.connect(self.window.zoom_out)
+
+        reset_zoom_action = view_menu.addAction("&Reset Zoom")
+        reset_zoom_action.setShortcut("Ctrl+0")  # Cmd+0 on macOS
+        reset_zoom_action.triggered.connect(self.window.reset_zoom)
+
+        view_menu.addSeparator()
+
         self.toggle_full_screen_action = view_menu.addAction("Toggle Full Screen")
-        self.toggle_full_screen_action.setShortcut("Meta+F")  # Cmd+F for macOS
+        self.toggle_full_screen_action.setShortcut("Meta+F")  # ^F (Control+F) on macOS
         self.toggle_full_screen_action.triggered.connect(self.window.toggle_full_screen)
 
     def _setup_help_menu(self, menu_bar):

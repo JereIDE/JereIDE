@@ -41,6 +41,15 @@ class QCodeEditor(QPlainTextEdit, AutoPairingMixin):
         self.update_line_number_area_width(0)
         self.highlight_current_line()
 
+    def set_font_size(self, size: int):
+        """Update the editor's font size and recalculate dependent metrics."""
+        font = self.font()
+        font.setPointSize(size)
+        self.setFont(font)
+        tab_size = config_manager.get_config_value('editor', 'font.tab_size', 4)
+        self.setTabStopDistance(tab_size * self.fontMetrics().horizontalAdvance(' '))
+        self.update_line_number_area_width(0)
+
     def set_syntax_highlighting_enabled(self, enabled: bool):
         self.syntax_highlighter_enabled = enabled
         self.syntax_highlighter.setDocument(self.document() if enabled else None)
