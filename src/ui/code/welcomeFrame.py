@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QPixmap, QPainter, QFont
 from PySide6.QtSvg import QSvgRenderer
+from utils.sfSymbols import get_sf_qicon
 from config.theme import (
     EDITOR_BG, WELCOME_TEXT_PRIMARY,
     WELCOME_TEXT_SECONDARY, WELCOME_DIVIDER
@@ -95,13 +96,13 @@ class WelcomeFrame(QFrame):
         self._actions = []
 
         self._add_action(
-            "New File", "⌘N", "+", self._on_new_file
+            "New File", "⌘N", "doc.badge.plus", self._on_new_file
         )
         self._add_action(
             "Open File", "⌘O", "folder", self._on_open_file
         )
         self._add_action(
-            "Open Command View\t  ", "⌘⇧P", "cmd", self._on_command_view
+            "Open Command View\t  ", "⌘⇧P", "command", self._on_command_view
         )
 
         actions_layout.addWidget(section_label)
@@ -119,7 +120,16 @@ class WelcomeFrame(QFrame):
         action_layout.setContentsMargins(0, 0, 0, 0)
         action_layout.setSpacing(0)
 
-        label = QLabel(f"  {text}")
+        icon = get_sf_qicon(icon_type, size=18, weight=1)
+        icon_label = QLabel()
+        icon_pixmap = icon.pixmap(QSize(20, 20))
+        icon_label.setPixmap(icon_pixmap)
+        icon_label.setFixedSize(QSize(20, 20))
+
+        action_layout.addWidget(icon_label)
+        action_layout.addSpacing(8)
+
+        label = QLabel(text)
         action_font = QFont()
         action_font.setPointSize(14)
         label.setFont(action_font)
