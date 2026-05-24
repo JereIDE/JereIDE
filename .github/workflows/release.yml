@@ -2,8 +2,8 @@ name: Draft Release
 
 on:
   push:
-    branches-ignore:
-      - 'gh-pages'
+    branches:
+      - main
 
 concurrency:
   group: release-${{ github.ref }}
