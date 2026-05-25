@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QLabel
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton
 from PySide6.QtCore import QSize
 from utils.sfSymbols import get_sf_qicon
 from config.theme import STATUS_BAR_BG, STATUS_BAR_HEIGHT
@@ -30,14 +30,8 @@ class StatusBar(QFrame):
             "QPushButton:disabled { color: #666; }"
         )
 
-        self._font_size_label = QLabel("11")
-        self._font_size_label.setFixedHeight(STATUS_BAR_HEIGHT - 4)
-        self._font_size_label.setStyleSheet(
-            "color: #666; font-size: 12px; padding: 0 5px;"
-        )
         layout.addWidget(self._position_button)
         layout.addStretch()
-        layout.addWidget(self._font_size_label)
         layout.addWidget(self._dock_button)
 
     def update_position(self, line: int, column: int):
@@ -46,5 +40,3 @@ class StatusBar(QFrame):
     def clear_position(self):
         self._position_button.setText("--:--")
 
-    def update_font_size(self, size: int):
-        self._font_size_label.setText(f"{size}pt")
