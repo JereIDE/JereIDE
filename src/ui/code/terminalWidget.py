@@ -104,6 +104,7 @@ class TerminalWidget(QPlainTextEdit):
         self._render_timer.setSingleShot(True)
         self._render_timer.timeout.connect(self._render)
         self._at_bottom = True
+        self._rendered_history_count = 0
 
         self._pending_rows = None
         self._pending_cols = None
@@ -129,14 +130,14 @@ class TerminalWidget(QPlainTextEdit):
                 return
             self.stream.feed(data.decode('utf-8', errors='replace'))
             self._dirty = True
-            self._render_timer.start(0)
+            self._render_timer.start(16)
         except OSError:
             self.notifier.setEnabled(False)
 
     def _invalidate(self):
         if not self._dirty:
             self._dirty = True
-            self._render_timer.start(0)
+            self._render_timer.start(16)
 
 
     def _toggle_cursor(self):
@@ -225,38 +226,66 @@ class TerminalWidget(QPlainTextEdit):
         self._dirty = False
         was_at_bottom = self._at_bottom
 
+        history = list(self.screen.history.top)
+        hist_len = len(history)
+
         doc = self.document()
         cursor = QTextCursor(doc)
         cursor.beginEditBlock()
-        cursor.select(QTextCursor.Document)
-        cursor.removeSelectedText()
 
         default_fmt = self._make_format()
 
-        history = list(self.screen.history.top)
+        # --- Incremental history: only append new lines that scrolled in ---
+        if hist_len > self._rendered_history_count:
+            # Move cursor to the position right before the current buffer
+            cursor.movePosition(QTextCursor.Start)
+            cursor.movePosition(QTextCursor.Down, QTextCursor.MoveAnchor,
+                                self._rendered_history_count)
 
-        for row_idx, row in enumerate(history):
-            if row_idx > 0:
+            for i in range(self._rendered_history_count, hist_len):
                 cursor.insertText('\n', default_fmt)
-            for x in range(self.screen.columns):
-                char = row.get(x)
-                if char and char.data:
-                    data = char.data
-                    fmt = self._make_format(char)
-                else:
-                    data = ' '
-                    fmt = QTextCharFormat(default_fmt)
-                cursor.insertText(data, fmt)
+                row = history[i]
+                for x in range(self.screen.columns):
+                    char = row.get(x)
+                    if char and char.data:
+                        cursor.insertText(char.data, self._make_format(char))
+                    else:
+                        cursor.insertText(' ', QTextCharFormat(default_fmt))
 
-        if history:
             cursor.insertText('\n', default_fmt)
+            self._rendered_history_count = hist_len
+
+        elif hist_len < self._rendered_history_count:
+            # History was truncated (e.g., terminal reset) — full rebuild
+            cursor.select(QTextCursor.Document)
+            cursor.removeSelectedText()
+            self._rendered_history_count = 0
+
+            for i, row in enumerate(history):
+                if i > 0:
+                    cursor.insertText('\n', default_fmt)
+                for x in range(self.screen.columns):
+                    char = row.get(x)
+                    if char and char.data:
+                        cursor.insertText(char.data, self._make_format(char))
+                    else:
+                        cursor.insertText(' ', QTextCharFormat(default_fmt))
+            if hist_len > 0:
+                cursor.insertText('\n', default_fmt)
+            self._rendered_history_count = hist_len
+
+        # --- Buffer: always rewrite the visible area (small, ~24 lines) ---
+        cursor.movePosition(QTextCursor.Start)
+        cursor.movePosition(QTextCursor.Down, QTextCursor.MoveAnchor, hist_len)
+        cursor.movePosition(QTextCursor.End, QTextCursor.KeepAnchor)
+        cursor.removeSelectedText()
 
         buf = self.screen.buffer
         cy = self.screen.cursor.y
         cx = self.screen.cursor.x
 
         for y in range(self.screen.lines):
-            if y > 0:
+            if y > 0 or hist_len > 0:
                 cursor.insertText('\n', default_fmt)
             for x in range(self.screen.columns):
                 char = buf[y][x]
@@ -280,7 +309,6 @@ class TerminalWidget(QPlainTextEdit):
         cursor.endEditBlock()
 
         if was_at_bottom:
-            hist_len = len(history)
             target_line = hist_len + cy
             doc_line_count = self.document().lineCount()
             if target_line >= doc_line_count:
@@ -288,7 +316,8 @@ class TerminalWidget(QPlainTextEdit):
             c = self.textCursor()
             c.movePosition(QTextCursor.Start)
             c.movePosition(QTextCursor.Down, QTextCursor.MoveAnchor, target_line)
-            c.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor, min(cx, len(self.document().findBlockByLineNumber(target_line).text())))
+            c.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor,
+                           min(cx, len(self.document().findBlockByLineNumber(target_line).text())))
             self.setTextCursor(c)
             self.ensureCursorVisible()
 
