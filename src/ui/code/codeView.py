@@ -73,7 +73,6 @@ class CodeView(QWidget):
         self.wrap_enabled = False
 
         self._font_size = config_manager.get_config_value('theme', 'editor.font_size', 11)
-        self._status_bar.update_font_size(self._font_size)
 
         self._create_new_tab()
 
@@ -350,7 +349,6 @@ class CodeView(QWidget):
         self._font_size = new_size
         for data in self._tabs_data:
             data["editor"].set_font_size(new_size)
-        self._status_bar.update_font_size(new_size)
         config_manager.update_section('theme', {
             **config_manager.get_section('theme'),
             'editor.font_size': new_size
