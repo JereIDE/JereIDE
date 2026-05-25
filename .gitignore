@@ -16,6 +16,7 @@ ENV/
 *.swp
 *.swo
 *~
+.zed/
 
 # Build artifacts
 dist/
