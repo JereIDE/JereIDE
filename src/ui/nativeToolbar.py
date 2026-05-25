@@ -132,7 +132,7 @@ class ToolbarController(NSObj):
             "chevron.left.slash.chevron.right", None
         )
         commandViewSymbol = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
-            "wand.and.stars", None
+            "command", None
         )
 
         viewSegmentedControl.setImage_forSegment_(codeViewSymbol, 0)
