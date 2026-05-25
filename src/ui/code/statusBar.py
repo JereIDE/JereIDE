@@ -13,7 +13,7 @@ class StatusBar(QFrame):
         layout = QHBoxLayout(self)
         # Dock button – looks like a label (transparent background) with a rectangle.dock SF Symbol
         self._dock_button = QPushButton()
-        self._dock_button.setIcon(get_sf_qicon("rectangle.dock", size=16, weight=-0.4))
+        self._dock_button.setIcon(get_sf_qicon("rectangle.dock", size=16, weight=0))
         self._dock_button.setIconSize(QSize(16, 16))
         self._dock_button.setFixedHeight(STATUS_BAR_HEIGHT - 4)
         self._dock_button.setStyleSheet(
@@ -39,4 +39,3 @@ class StatusBar(QFrame):
 
     def clear_position(self):
         self._position_button.setText("--:--")
-
