@@ -5,8 +5,14 @@ import struct
 import fcntl
 import termios
 import signal
-
+from PySide6.QtWidgets import QApplication, QPlainTextEdit
+from PySide6.QtCore import QSocketNotifier, Qt, QTimer
+from PySide6.QtGui import (
+    QColor, QFont, QFontMetrics, QKeyEvent, QResizeEvent,
+    QTextCharFormat, QTextCursor,
+)
 import pyte
+from pyte import modes as _pyte_modes
 from pyte.screens import HistoryScreen
 
 _orig_sgr = pyte.screens.Screen.select_graphic_rendition
@@ -16,12 +22,6 @@ pyte.screens.Screen.select_graphic_rendition = _sgr_safe
 
 
 
-from PySide6.QtWidgets import QApplication, QPlainTextEdit
-from PySide6.QtCore import QSocketNotifier, Qt, QTimer
-from PySide6.QtGui import (
-    QColor, QFont, QFontMetrics, QKeyEvent, QResizeEvent,
-    QTextCharFormat, QTextCursor,
-)
 
 NAMED_COLORS = {
     'black': QColor(0, 0, 0),
@@ -47,52 +47,52 @@ class TerminalWidget(QPlainTextEdit):
     MAX_HISTORY = 5000
 
     _KEY_MAP = {
-        Qt.Key_Return: b'\r',
-        Qt.Key_Backspace: b'\x7f',
-        Qt.Key_Tab: b'\t',
-        Qt.Key_Up: b'\x1b[A',
-        Qt.Key_Down: b'\x1b[B',
-        Qt.Key_Right: b'\x1b[C',
-        Qt.Key_Left: b'\x1b[D',
-        Qt.Key_Home: b'\x1b[H',
-        Qt.Key_End: b'\x1b[F',
-        Qt.Key_PageUp: b'\x1b[5~',
-        Qt.Key_PageDown: b'\x1b[6~',
-        Qt.Key_Delete: b'\x1b[3~',
-        Qt.Key_Escape: b'\x1b',
-        Qt.Key_F1: b'\x1bOP',
-        Qt.Key_F2: b'\x1bOQ',
-        Qt.Key_F3: b'\x1bOR',
-        Qt.Key_F4: b'\x1bOS',
-        Qt.Key_F5: b'\x1b[15~',
-        Qt.Key_F6: b'\x1b[17~',
-        Qt.Key_F7: b'\x1b[18~',
-        Qt.Key_F8: b'\x1b[19~',
-        Qt.Key_F9: b'\x1b[20~',
-        Qt.Key_F10: b'\x1b[21~',
-        Qt.Key_F11: b'\x1b[23~',
-        Qt.Key_F12: b'\x1b[24~',
-        Qt.Key_Insert: b'\x1b[2~',
+        Qt.Key.Key_Return: b'\r',
+        Qt.Key.Key_Backspace: b'\x7f',
+        Qt.Key.Key_Tab: b'\t',
+        Qt.Key.Key_Up: b'\x1b[A',
+        Qt.Key.Key_Down: b'\x1b[B',
+        Qt.Key.Key_Right: b'\x1b[C',
+        Qt.Key.Key_Left: b'\x1b[D',
+        Qt.Key.Key_Home: b'\x1b[H',
+        Qt.Key.Key_End: b'\x1b[F',
+        Qt.Key.Key_PageUp: b'\x1b[5~',
+        Qt.Key.Key_PageDown: b'\x1b[6~',
+        Qt.Key.Key_Delete: b'\x1b[3~',
+        Qt.Key.Key_Escape: b'\x1b',
+        Qt.Key.Key_F1: b'\x1bOP',
+        Qt.Key.Key_F2: b'\x1bOQ',
+        Qt.Key.Key_F3: b'\x1bOR',
+        Qt.Key.Key_F4: b'\x1bOS',
+        Qt.Key.Key_F5: b'\x1b[15~',
+        Qt.Key.Key_F6: b'\x1b[17~',
+        Qt.Key.Key_F7: b'\x1b[18~',
+        Qt.Key.Key_F8: b'\x1b[19~',
+        Qt.Key.Key_F9: b'\x1b[20~',
+        Qt.Key.Key_F10: b'\x1b[21~',
+        Qt.Key.Key_F11: b'\x1b[23~',
+        Qt.Key.Key_F12: b'\x1b[24~',
+        Qt.Key.Key_Insert: b'\x1b[2~',
     }
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setReadOnly(True)
         self.setFrameStyle(0)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
 
         self.terminal_font = QFont("Menlo", 14)
-        self.terminal_font.setStyleHint(QFont.Monospace)
+        self.terminal_font.setStyleHint(QFont.StyleHint.Monospace)
         self.setFont(self.terminal_font)
-        self.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
         self.verticalScrollBar().valueChanged.connect(self._on_scroll)
 
         self.columns = 80
         self.lines = 24
-        self.screen = HistoryScreen(self.columns, self.lines, history=self.MAX_HISTORY)
-        self.screen.set_mode(pyte.modes.LNM)
-        self.stream = pyte.Stream(self.screen)
+        self.term_screen = HistoryScreen(self.columns, self.lines, history=self.MAX_HISTORY)
+        self.term_screen.set_mode(_pyte_modes.LNM)
+        self.term_stream = pyte.Stream(self.term_screen)
 
         self._cursor_visible = True
         self._cursor_timer = QTimer(self)
@@ -119,7 +119,7 @@ class TerminalWidget(QPlainTextEdit):
         else:
             self._update_size()
             self._apply_pending_resize()
-            self.notifier = QSocketNotifier(self.fd, QSocketNotifier.Read)
+            self.notifier = QSocketNotifier(self.fd, QSocketNotifier.Type.Read)
             self.notifier.activated.connect(self._read_data)
 
     def _read_data(self):
@@ -128,7 +128,7 @@ class TerminalWidget(QPlainTextEdit):
             if not data:
                 self.notifier.setEnabled(False)
                 return
-            self.stream.feed(data.decode('utf-8', errors='replace'))
+            self.term_stream.feed(data.decode('utf-8', errors='replace'))
             self._dirty = True
             self._render_timer.start(16)
         except OSError:
@@ -170,7 +170,7 @@ class TerminalWidget(QPlainTextEdit):
         cols = self._pending_cols
         self.columns = cols
         self.lines = rows
-        self.screen.resize(rows, cols)
+        self.term_screen.resize(rows, cols)
         self._invalidate()
         buf = struct.pack('HHHH', rows, cols, 0, 0)
         fcntl.ioctl(self.fd, termios.TIOCSWINSZ, buf)
@@ -203,7 +203,7 @@ class TerminalWidget(QPlainTextEdit):
             return fmt
 
         if pyte_char.bold:
-            fmt.setFontWeight(QFont.Bold)
+            fmt.setFontWeight(QFont.Weight.Bold)
 
         fg = self._resolve_color(pyte_char.fg)
         fmt.setForeground(fg or QColor(0, 0, 0))
@@ -212,7 +212,7 @@ class TerminalWidget(QPlainTextEdit):
         fmt.setBackground(bg or QColor(255, 255, 255))
 
         if pyte_char.underscore:
-            fmt.setUnderlineStyle(QTextCharFormat.SingleUnderline)
+            fmt.setUnderlineStyle(QTextCharFormat.UnderlineStyle.SingleUnderline)
             fmt.setFontUnderline(True)
 
         if pyte_char.strikethrough:
@@ -226,7 +226,7 @@ class TerminalWidget(QPlainTextEdit):
         self._dirty = False
         was_at_bottom = self._at_bottom
 
-        history = list(self.screen.history.top)
+        history = list(self.term_screen.history.top)
         hist_len = len(history)
 
         doc = self.document()
@@ -237,15 +237,14 @@ class TerminalWidget(QPlainTextEdit):
 
         # --- Incremental history: only append new lines that scrolled in ---
         if hist_len > self._rendered_history_count:
-            # Move cursor to the position right before the current buffer
-            cursor.movePosition(QTextCursor.Start)
-            cursor.movePosition(QTextCursor.Down, QTextCursor.MoveAnchor,
+            cursor.movePosition(QTextCursor.MoveOperation.Start)
+            cursor.movePosition(QTextCursor.MoveOperation.Down, QTextCursor.MoveMode.MoveAnchor,
                                 self._rendered_history_count)
 
             for i in range(self._rendered_history_count, hist_len):
                 cursor.insertText('\n', default_fmt)
                 row = history[i]
-                for x in range(self.screen.columns):
+                for x in range(self.term_screen.columns):
                     char = row.get(x)
                     if char and char.data:
                         cursor.insertText(char.data, self._make_format(char))
@@ -256,15 +255,14 @@ class TerminalWidget(QPlainTextEdit):
             self._rendered_history_count = hist_len
 
         elif hist_len < self._rendered_history_count:
-            # History was truncated (e.g., terminal reset) — full rebuild
-            cursor.select(QTextCursor.Document)
+            cursor.select(QTextCursor.SelectionType.Document)
             cursor.removeSelectedText()
             self._rendered_history_count = 0
 
             for i, row in enumerate(history):
                 if i > 0:
                     cursor.insertText('\n', default_fmt)
-                for x in range(self.screen.columns):
+                for x in range(self.term_screen.columns):
                     char = row.get(x)
                     if char and char.data:
                         cursor.insertText(char.data, self._make_format(char))
@@ -275,19 +273,19 @@ class TerminalWidget(QPlainTextEdit):
             self._rendered_history_count = hist_len
 
         # --- Buffer: always rewrite the visible area (small, ~24 lines) ---
-        cursor.movePosition(QTextCursor.Start)
-        cursor.movePosition(QTextCursor.Down, QTextCursor.MoveAnchor, hist_len)
-        cursor.movePosition(QTextCursor.End, QTextCursor.KeepAnchor)
+        cursor.movePosition(QTextCursor.MoveOperation.Start)
+        cursor.movePosition(QTextCursor.MoveOperation.Down, QTextCursor.MoveMode.MoveAnchor, hist_len)
+        cursor.movePosition(QTextCursor.MoveOperation.End, QTextCursor.MoveMode.KeepAnchor)
         cursor.removeSelectedText()
 
-        buf = self.screen.buffer
-        cy = self.screen.cursor.y
-        cx = self.screen.cursor.x
+        buf = self.term_screen.buffer
+        cy = self.term_screen.cursor.y
+        cx = self.term_screen.cursor.x
 
-        for y in range(self.screen.lines):
+        for y in range(self.term_screen.lines):
             if y > 0 or hist_len > 0:
                 cursor.insertText('\n', default_fmt)
-            for x in range(self.screen.columns):
+            for x in range(self.term_screen.columns):
                 char = buf[y][x]
                 if char and char.data:
                     data = char.data
@@ -314,9 +312,9 @@ class TerminalWidget(QPlainTextEdit):
             if target_line >= doc_line_count:
                 target_line = max(0, doc_line_count - 1)
             c = self.textCursor()
-            c.movePosition(QTextCursor.Start)
-            c.movePosition(QTextCursor.Down, QTextCursor.MoveAnchor, target_line)
-            c.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor,
+            c.movePosition(QTextCursor.MoveOperation.Start)
+            c.movePosition(QTextCursor.MoveOperation.Down, QTextCursor.MoveMode.MoveAnchor, target_line)
+            c.movePosition(QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.MoveAnchor,
                            min(cx, len(self.document().findBlockByLineNumber(target_line).text())))
             self.setTextCursor(c)
             self.ensureCursorVisible()
@@ -334,22 +332,22 @@ class TerminalWidget(QPlainTextEdit):
         key = event.key()
         mods = event.modifiers()
 
-        if mods == (Qt.ControlModifier | Qt.ShiftModifier) and key == Qt.Key_C:
+        if mods == (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier) and key == Qt.Key.Key_C:
             self.copy()
             return
-        if mods == (Qt.ControlModifier | Qt.ShiftModifier) and key == Qt.Key_V:
+        if mods == (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier) and key == Qt.Key.Key_V:
             self.paste()
             return
-        if mods == Qt.ControlModifier and Qt.Key_A <= key <= Qt.Key_Z:
-            os.write(self.fd, bytes([key - Qt.Key_A + 1]))
+        if mods == Qt.KeyboardModifier.ControlModifier and Qt.Key.Key_A <= key <= Qt.Key.Key_Z:
+            os.write(self.fd, bytes([key - Qt.Key.Key_A + 1]))
             return
-        if mods == Qt.AltModifier:
+        if mods == Qt.KeyboardModifier.AltModifier:
             text = event.text()
             if text:
                 os.write(self.fd, b'\x1b' + text.encode('utf-8'))
             return
-        if key in self._KEY_MAP:
-            os.write(self.fd, self._KEY_MAP[key])
+        if key in self._KEY_MAP:  # type: ignore[operator]
+            os.write(self.fd, self._KEY_MAP[key])  # type: ignore[index]
             return
         text = event.text()
         if text:
