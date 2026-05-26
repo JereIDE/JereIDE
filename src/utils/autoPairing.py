@@ -58,14 +58,24 @@ class AutoPairingMixin:
         self._highlighted_pair = None
         cursor = self.textCursor()
         pos = cursor.position()
-        text = self.toPlainText()
+        doc = self.document()
 
-        if pos < len(text):
-            char = text[pos]
-            if char in self.PAIRS.values():
-                self._find_and_highlight_pair(pos, char)
-            elif char in self.PAIRS:
-                self._find_opening_pair(pos, char)
+        if pos < 0 or pos >= doc.characterCount() - 1:
+            self.highlight_current_line()
+            return
+
+        char = doc.characterAt(pos)
+        if not char or (char not in self.PAIRS and char not in self.PAIRS.values()):
+            self.highlight_current_line()
+            return
+
+        # Only now fetch the full text — we know there's a bracket at the cursor
+        text = doc.toPlainText()
+
+        if char in self.PAIRS.values():
+            self._find_and_highlight_pair(pos, char, text)
+        elif char in self.PAIRS:
+            self._find_opening_pair(pos, char, text)
         self.highlight_current_line()
 
     def _find_unescaped_forward(self, text, char, start):
@@ -95,9 +105,10 @@ class AutoPairingMixin:
             i -= 1
         return -1
 
-    def _find_opening_pair(self, pos, opening_char):
+    def _find_opening_pair(self, pos, opening_char, text=None):
         closing_char = self.PAIRS[opening_char]
-        text = self.toPlainText()
+        if text is None:
+            text = self.toPlainText()
         close_pos = self._find_unescaped_forward(text, closing_char, pos + 1)
 
         while close_pos >= 0:
@@ -108,7 +119,7 @@ class AutoPairingMixin:
         if close_pos >= 0:
             self._highlighted_pair = (pos, close_pos)
 
-    def _find_and_highlight_pair(self, pos, closing_char):
+    def _find_and_highlight_pair(self, pos, closing_char, text=None):
         opening_char = None
         for o, c in self.PAIRS.items():
             if c == closing_char:
@@ -118,7 +129,8 @@ class AutoPairingMixin:
         if not opening_char:
             return
 
-        text = self.toPlainText()
+        if text is None:
+            text = self.toPlainText()
         open_pos = self._find_unescaped_backward(text, opening_char, pos - 1)
 
         while open_pos >= 0:
