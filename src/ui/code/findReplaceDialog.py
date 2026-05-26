@@ -1,14 +1,13 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QGroupBox, QDialog
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QTextCursor
+from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QDialog
+from PySide6.QtCore import Signal
 
 
 class FindReplaceDialog(QDialog):
     """Native PySide6 Find/Replace dialog with Find Next, Replace, Replace All."""
 
-    findNext = Signal(str, bool)  # text, case_sensitive
-    replaceOne = Signal(str, str, bool)  # find_text, replace_text, case_sensitive
-    replaceAll = Signal(str, str, bool)  # find_text, replace_text, case_sensitive
+    findNext = Signal(str, dict)  # text, flags
+    replaceOne = Signal(str, str, dict)  # find_text, replace_text, flags
+    replaceAll = Signal(str, str, dict)  # find_text, replace_text, flags
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -45,11 +44,9 @@ class FindReplaceDialog(QDialog):
         options_layout = QHBoxLayout()
         self.case_sensitive_cb = QCheckBox("Match Case")
         self.whole_words_cb = QCheckBox("Whole Words")
-        self.whole_words_cb.setEnabled(False)
         self.regex_cb = QCheckBox("Regex")
-        self.regex_cb.setEnabled(False)
+        self.regex_cb.toggled.connect(self._on_regex_toggled)
         self.wrap_cb = QCheckBox("Wrap Around")
-        self.wrap_cb.setEnabled(False)
         self.wrap_cb.setChecked(True)
         options_layout.addWidget(self.case_sensitive_cb)
         options_layout.addWidget(self.whole_words_cb)
@@ -85,21 +82,24 @@ class FindReplaceDialog(QDialog):
     def _on_find_text_changed(self, text):
         self.find_next_btn.setEnabled(bool(text))
 
+    def _on_regex_toggled(self, checked: bool):
+        self.whole_words_cb.setEnabled(not checked)
+
     def _on_find_next(self):
-        self.findNext.emit(self.find_input.text(), self.case_sensitive_cb.isChecked())
+        self.findNext.emit(self.find_input.text(), self._get_flags())
 
     def _on_replace_one(self):
         self.replaceOne.emit(
             self.find_input.text(),
             self.replace_input.text(),
-            self.case_sensitive_cb.isChecked()
+            self._get_flags()
         )
 
     def _on_replace_all(self):
         self.replaceAll.emit(
             self.find_input.text(),
             self.replace_input.text(),
-            self.case_sensitive_cb.isChecked()
+            self._get_flags()
         )
 
     def set_find_text(self, text: str):
