@@ -24,6 +24,10 @@
 
 A Pyside6 + PyObjC implementation of [JereIDE_wx](https://github.com/Jeremy-Qian/JereIDE_wx).  Still in beta.  
 
+> [!IMPORTANT]
+> JereIDE is still in beta and is not for production use. Check out [Zed](https://zed.dev) if you want a production-ready code editor. I am not responsible for any data loss or damage caused by using JereIDE.
+
+
 This project was initially a vibe coding project, but I edit the code manually more and more.
 
 ## Installation
