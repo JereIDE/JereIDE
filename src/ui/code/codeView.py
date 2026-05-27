@@ -436,10 +436,9 @@ class CodeView(QWidget):
         self._font_size = new_size
         for data in self._tabs_data:
             data["editor"].set_font_size(new_size)
-        config_manager.update_section('theme', {
-            **config_manager.get_section('theme'),
-            'editor.font_size': new_size
-        })
+        theme = config_manager.get_section('theme')
+        theme.setdefault('editor', {})['font_size'] = new_size
+        config_manager.update_section('theme', theme)
 
     def _on_page_changed_for_cursor(self, index):
         if 0 <= index < len(self._tabs_data):
