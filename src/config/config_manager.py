@@ -258,6 +258,24 @@ class ConfigManager(QObject):
             self._write_rc_file(self._config)
         self.config_reloaded.emit()
 
+    def get_default_value(self, config_type, key_path, default=None):
+        """Read a value from the built-in defaults only, ignoring user config.
+
+        This is useful for operations like "reset to default" where you
+        want the original fallback value regardless of what the user has set.
+        """
+        self._lazy_load()
+        keys = key_path.split(".")
+        with self._lock:
+            fallback = self._defaults.get(config_type, {})
+            value = fallback
+            try:
+                for key in keys:
+                    value = value[key]
+                return value
+            except (KeyError, TypeError):
+                return default
+
     def reset_config(self):
         """Reset the configuration to defaults and rewrite the RC file."""
         self._lazy_load()

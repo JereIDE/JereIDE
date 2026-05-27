@@ -427,7 +427,7 @@ class CodeView(QWidget):
         self._change_font_size(max(6, self._font_size - 1))
 
     def reset_zoom(self):
-        default_size = config_manager.get_config_value('theme', 'editor.font_size', 11)
+        default_size = config_manager.get_default_value('theme', 'editor.font_size', 11)
         self._change_font_size(default_size)
 
     def _change_font_size(self, new_size: int):
