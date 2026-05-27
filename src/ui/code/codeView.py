@@ -1,5 +1,5 @@
 import os
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QThread, QObject
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSplitter, QMessageBox
 from .codeEditor import QCodeEditor
 from ui.tabs import JereIDEBook
@@ -10,6 +10,34 @@ from .findReplaceDialog import FindReplaceDialog
 from utils.findReplace import FindReplace
 from utils.fileManager import FileManager
 from config.config_manager import config_manager
+
+
+class SaveAllWorker(QObject):
+    """Saves a list of (index, file_path, content) tuples on a worker thread."""
+    progress = Signal(int, int)   # current, total
+    finished = Signal()
+    error = Signal(int, str)      # tab_index, error_message
+
+    def __init__(self, saves: list):
+        super().__init__()
+        self._saves = saves
+        self._cancelled = False
+
+    def run(self):
+        for i, (idx, file_path, content) in enumerate(self._saves):
+            if self._cancelled:
+                break
+            try:
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+            except Exception as e:
+                self.error.emit(idx, str(e))
+                return
+            self.progress.emit(i + 1, len(self._saves))
+        self.finished.emit()
+
+    def cancel(self):
+        self._cancelled = True
 
 
 class CodeView(QWidget):
@@ -73,6 +101,8 @@ class CodeView(QWidget):
         self.wrap_enabled = False
 
         self._font_size = config_manager.get_config_value('theme', 'editor.font_size', 11)
+
+        self._pending_saves = None  # tracks active save-all operation
 
         self._create_new_tab()
 
@@ -236,11 +266,68 @@ class CodeView(QWidget):
             self._save_as_current_tab(idx)
 
     def save_all(self):
-        for i in range(len(self._tabs_data)):
-            self._save_current_tab(i)
+        if self._pending_saves is not None:
+            return  # already saving
+
+        # Snapshot tab data on the main thread
+        saves = []
+        for i, data in enumerate(self._tabs_data):
+            if data["file_path"]:
+                saves.append((i, data["file_path"], data["editor"].toPlainText()))
+
+        if not saves:
+            return
+
+        self._pending_saves = saves
+
+        self._save_worker = SaveAllWorker(saves)
+        self._save_worker.progress.connect(self._on_save_progress)
+        self._save_worker.finished.connect(self._on_save_all_finished)
+        self._save_worker.error.connect(self._on_save_error)
+
+        self._save_thread = QThread(self)
+        self._save_worker.moveToThread(self._save_thread)
+        self._save_thread.started.connect(self._save_worker.run)
+        self._save_worker.finished.connect(self._save_thread.quit)
+        self._save_worker.finished.connect(self._save_worker.deleteLater)
+        self._save_thread.finished.connect(self._save_thread.deleteLater)
+
+        self._status_bar.show_save_progress(0, len(saves))
+        self._save_thread.start()
+
+    def _on_save_progress(self, current: int, total: int):
+        self._status_bar.show_save_progress(current, total)
+
+    def _on_save_all_finished(self):
+        completed = self._pending_saves
+        self._pending_saves = None
+        self._status_bar.hide_save_progress()
+
+        # Update tab states with what was actually saved
+        for idx, file_path, saved_content in completed:
+            if 0 <= idx < len(self._tabs_data):
+                data = self._tabs_data[idx]
+                data["original_content"] = saved_content
+                self._notebook.SetPageText(idx, os.path.basename(file_path))
+                self._notebook.SetPageModified(
+                    idx, data["editor"].toPlainText() != saved_content
+                )
+
         if self._tabs_data:
-            current = self._notebook.GetSelection()
-            self.on_tab_changed(current)
+            self.on_tab_changed(self._notebook.GetSelection())
+
+    def _on_save_error(self, tab_index: int, message: str):
+        self._pending_saves = None
+        self._status_bar.hide_save_progress()
+        file_name = (
+            os.path.basename(self._tabs_data[tab_index]["file_path"])
+            if 0 <= tab_index < len(self._tabs_data)
+            else "unknown"
+        )
+        QMessageBox.critical(
+            self, "Save Error",
+            f"Failed to save {file_name}: {message}"
+        )
 
     def on_text_changed(self, editor):
         index = self._get_tab_index_by_editor(editor)
