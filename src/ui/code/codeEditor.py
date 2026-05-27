@@ -24,8 +24,9 @@ class QCodeEditor(QPlainTextEdit, AutoPairingMixin):
         self.setFont(font)
 
         self.setFrameShape(QPlainTextEdit.NoFrame)
-        tab_size = config_manager.get_config_value('editor', 'font.tab_size', 4)
-        self.setTabStopDistance(tab_size * self.fontMetrics().horizontalAdvance(' '))
+        self._tab_size = config_manager.get_config_value('editor', 'font.tab_size', 4)
+        self.setTabStopDistance(self._tab_size * self.fontMetrics().horizontalAdvance(' '))
+        self._line_numbers_min_width = config_manager.get_config_value('editor', 'line_numbers.minimum_width', 15)
         self.setLineWrapMode(QPlainTextEdit.NoWrap)
 
         # Apply Python syntax highlighting
@@ -46,8 +47,7 @@ class QCodeEditor(QPlainTextEdit, AutoPairingMixin):
         font = self.font()
         font.setPointSize(size)
         self.setFont(font)
-        tab_size = config_manager.get_config_value('editor', 'font.tab_size', 4)
-        self.setTabStopDistance(tab_size * self.fontMetrics().horizontalAdvance(' '))
+        self.setTabStopDistance(self._tab_size * self.fontMetrics().horizontalAdvance(' '))
         self.update_line_number_area_width(0)
 
     def set_syntax_highlighting_enabled(self, enabled: bool):
@@ -81,8 +81,7 @@ class QCodeEditor(QPlainTextEdit, AutoPairingMixin):
         while max_blocks >= 10:
             max_blocks //= 10
             digits += 1
-        minimum_width = config_manager.get_config_value('editor', 'line_numbers.minimum_width', 15)
-        space = minimum_width + self.fontMetrics().horizontalAdvance('9') * digits
+        space = self._line_numbers_min_width + self.fontMetrics().horizontalAdvance('9') * digits
         return space
 
     def update_line_number_area_width(self, _):
