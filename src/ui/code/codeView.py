@@ -143,6 +143,7 @@ class CodeView(QWidget):
             self._welcome_frame.hide()
 
         editor = QCodeEditor()
+        editor.set_font_size(self._font_size)
         self._notebook.AddPage(editor, title)
         self.tabCountChanged.emit(self._notebook.GetPageCount())
         self._tabs_data.append({
