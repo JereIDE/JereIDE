@@ -6,10 +6,7 @@ from copy import deepcopy
 
 from PySide6.QtCore import QFileSystemWatcher, QObject, Signal
 
-from const.paths import ROOT_DIR
-
 RC_FILE = os.path.expanduser("~/.jereiderc")
-OLD_CONFIG_DIR = os.path.join(ROOT_DIR, "src", "config")
 
 logger = logging.getLogger(__name__)
 
@@ -97,11 +94,15 @@ class ConfigManager(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._config = {}
         self._defaults = {}
         self._watcher = None
         self._loaded = False
+
+    # ------------------------------------------------------------------
+    # Lazy initialisation
+    # ------------------------------------------------------------------
 
     def _lazy_load(self):
         if self._loaded:
@@ -116,21 +117,16 @@ class ConfigManager(QObject):
             self._loaded = True
 
     def _load_defaults(self):
-        defaults_path = os.path.join(OLD_CONFIG_DIR, "defaults.json")
+        defaults_path = os.path.join(os.path.dirname(__file__), "defaults.json")
         if os.path.exists(defaults_path):
             with open(defaults_path, "r") as f:
                 self._defaults = json.load(f)
 
     def _ensure_rc_file(self):
+        """Create the user config file from defaults if it doesn't exist."""
         if os.path.exists(RC_FILE):
             return
-        config = {}
-        for key in ("theme", "editor", "tasks"):
-            old_path = os.path.join(OLD_CONFIG_DIR, f"{key}.json")
-            if os.path.exists(old_path):
-                with open(old_path, "r") as f:
-                    config[key] = json.load(f)
-        self._write_rc_file(config)
+        self._write_rc_file(self._defaults)
 
     def _write_rc_file(self, config):
         full = {
@@ -150,6 +146,10 @@ class ConfigManager(QObject):
         with open(RC_FILE, "w") as f:
             json.dump(full, f, indent=2)
             f.write("\n")
+
+    # ------------------------------------------------------------------
+    # Loading & validation
+    # ------------------------------------------------------------------
 
     def _load_rc_file(self):
         if not os.path.exists(RC_FILE):
@@ -173,6 +173,8 @@ class ConfigManager(QObject):
         Unknown keys and values of the wrong type are removed from *config*
         so that :meth:`get_config_value` cleanly falls back to defaults.
         Warnings are logged for each issue found.
+
+        Returns True if *config* is valid, False if it should be discarded.
         """
         if isinstance(schema, dict):
             if not isinstance(config, dict):
@@ -181,15 +183,14 @@ class ConfigManager(QObject):
                     path, type(config).__name__,
                 )
                 config.clear()
-                return
+                return False
             for key in list(config.keys()):
                 full_key = f"{path}.{key}" if path else key
                 if key not in schema:
                     logger.warning("Config: unknown key '%s' — removing", full_key)
                     del config[key]
                     continue
-                result = self._validate_and_clean(config[key], schema[key], full_key)
-                if result is False:
+                if not self._validate_and_clean(config[key], schema[key], full_key):
                     logger.warning("Config: removing invalid key '%s'", full_key)
                     del config[key]
             # Remove keys whose values became empty dicts after cleaning
@@ -197,19 +198,20 @@ class ConfigManager(QObject):
                 sub_schema = schema.get(key)
                 if isinstance(sub_schema, dict) and config[key] == {}:
                     del config[key]
-            return
+            return True
 
         # Leaf: *schema* is a Python type
-        # Parent needs to delete the key; we communicate via returning False.
-        # Since we're called from a loop, we need a different approach.
-        # Instead, just validate and let the caller handle deletion.
-        # This method is called from _load_rc_file which handles deletion.
-        if not isinstance(config, schema):
-            logger.warning(
-                "Config: '%s' expected %s, got %s — falling back to default",
-                path, schema.__name__, type(config).__name__,
-            )
-            return False
+        if isinstance(config, schema):
+            return True
+        logger.warning(
+            "Config: '%s' expected %s, got %s — falling back to default",
+            path, schema.__name__, type(config).__name__,
+        )
+        return False
+
+    # ------------------------------------------------------------------
+    # File watcher
+    # ------------------------------------------------------------------
 
     def _setup_watcher(self):
         self._watcher = QFileSystemWatcher(self)
@@ -223,14 +225,20 @@ class ConfigManager(QObject):
         with self._lock:
             try:
                 self._load_rc_file()
-            except Exception:
+            except Exception as e:
+                logger.warning("Config: error reloading %s: %s", path, e)
                 return
             finally:
                 if path not in self._watcher.files():
                     self._watcher.addPath(path)
             self.config_reloaded.emit()
 
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
     def get_config_value(self, config_type, key_path, default=None):
+        """Look up a config value, falling back to built-in defaults then *default*."""
         self._lazy_load()
         keys = key_path.split(".")
         with self._lock:
@@ -247,11 +255,13 @@ class ConfigManager(QObject):
             return default
 
     def get_section(self, config_type):
+        """Return a deep copy of the entire user-config section."""
         self._lazy_load()
         with self._lock:
             return deepcopy(self._config.get(config_type, {}))
 
     def update_section(self, config_type, data):
+        """Replace an entire config section and persist to disk."""
         self._lazy_load()
         with self._lock:
             self._config[config_type] = data
