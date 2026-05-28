@@ -1,11 +1,11 @@
 from PySide6.QtCore import Qt
-from config.config_manager import config_manager
+from const.theme import AUTO_INDENT_ENABLED, EDITOR_TAB_SIZE
 
 
 class AutoIndent:
     def __init__(self, editor):
         self.editor = editor
-        self.auto_indent_enabled = config_manager.get_config_value('editor', 'auto_indent.enabled', True)
+        self.auto_indent_enabled = AUTO_INDENT_ENABLED
 
     def handle_key_press(self, event):
         """Handle auto-indent when Enter/Return is pressed."""
@@ -23,7 +23,7 @@ class AutoIndent:
 
             stripped = current_line_text.strip()
             if stripped.endswith(':'):
-                indent_size = config_manager.get_config_value('editor', 'tab_width', 4)
+                indent_size = EDITOR_TAB_SIZE
                 indent_char = '\t' if '\t' in leading_whitespace else ' '
                 leading_whitespace += indent_char * indent_size
 

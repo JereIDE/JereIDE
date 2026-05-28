@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt, Signal, QPoint
 from PySide6.QtGui import QPainter, QColor, QMouseEvent, QPaintEvent, QPolygon
 from PySide6.QtWidgets import QWidget
 
-from config.theme import TAB_UNSELECTED_CLOSE_HOVER_BG, TAB_UNSELECTED_TEXT
+from const.theme import TAB_UNSELECTED_CLOSE_HOVER_BG, TAB_UNSELECTED_TEXT
 
 
 class TabScrollArrow(QWidget):

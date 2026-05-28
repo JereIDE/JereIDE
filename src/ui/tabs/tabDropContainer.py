@@ -1,7 +1,7 @@
 from PySide6.QtGui import QPainter, QColor
 from PySide6.QtWidgets import QFrame
 
-from config.theme import TAB_SELECTED_TEXT
+from const.theme import TAB_SELECTED_TEXT
 
 
 class TabDropContainer(QFrame):

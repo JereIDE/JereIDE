@@ -9,7 +9,6 @@ from .welcomeFrame import WelcomeFrame
 from .findReplaceDialog import FindReplaceDialog
 from utils.findReplace import FindReplace
 from utils.fileManager import FileManager
-from config.config_manager import config_manager
 
 
 class SaveAllWorker(QObject):
@@ -100,7 +99,7 @@ class CodeView(QWidget):
         self.auto_pairing_enabled = True
         self.wrap_enabled = False
 
-        self._font_size = config_manager.get_config_value('theme', 'editor.font_size', 11)
+        self._font_size = 11
 
         self._pending_saves = None  # tracks active save-all operation
 
@@ -428,7 +427,7 @@ class CodeView(QWidget):
         self._change_font_size(max(6, self._font_size - 1))
 
     def reset_zoom(self):
-        default_size = config_manager.get_default_value('theme', 'editor.font_size', 11)
+        default_size = 11
         self._change_font_size(default_size)
 
     def _change_font_size(self, new_size: int):
@@ -437,9 +436,6 @@ class CodeView(QWidget):
         self._font_size = new_size
         for data in self._tabs_data:
             data["editor"].set_font_size(new_size)
-        theme = config_manager.get_section('theme')
-        theme.setdefault('editor', {})['font_size'] = new_size
-        config_manager.update_section('theme', theme)
 
     def _on_page_changed_for_cursor(self, index):
         if 0 <= index < len(self._tabs_data):
