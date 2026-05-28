@@ -1,11 +1,14 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout
-from PySide6.QtCore import Signal, Qt, QRectF
+from PySide6.QtCore import Signal, Qt, QRectF, QSettings
 from PySide6.QtGui import QPainter, QColor, QBrush, QPainterPath
 
-# Hardcoded default tasks until QSettings is added
-DEFAULT_TASKS = [
-    {"name": "Run with Python", "command": "python3"},
-]
+def _load_tasks():
+    """Read tasks from QSettings, falling back to a default list."""
+    settings = QSettings("Jeremy", "JereIDE")
+    stored = settings.value("tasks/list")
+    if stored is not None:
+        return stored
+    return [{"name": "Run with Python", "command": "python3"}]
 
 
 class TaskDialog(QWidget):
@@ -28,7 +31,7 @@ class TaskDialog(QWidget):
         titleLabel.setObjectName("taskDialogTitle")
         dialogLayout.addWidget(titleLabel)
 
-        tasks = DEFAULT_TASKS
+        tasks = _load_tasks()
         if not tasks:
             noTasksLabel = QLabel("No tasks configured")
             noTasksLabel.setAlignment(Qt.AlignCenter)

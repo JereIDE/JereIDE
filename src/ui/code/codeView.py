@@ -1,5 +1,5 @@
 import os
-from PySide6.QtCore import Qt, Signal, QThread, QObject
+from PySide6.QtCore import Qt, Signal, QThread, QObject, QSettings
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSplitter, QMessageBox
 from .codeEditor import QCodeEditor
 from ui.tabs import JereIDEBook
@@ -99,7 +99,8 @@ class CodeView(QWidget):
         self.auto_pairing_enabled = True
         self.wrap_enabled = False
 
-        self._font_size = 11
+        self._settings = QSettings("Jeremy", "JereIDE")
+        self._font_size = int(self._settings.value("editor/font_size", 11))
 
         self._pending_saves = None  # tracks active save-all operation
 
@@ -434,6 +435,7 @@ class CodeView(QWidget):
         if new_size == self._font_size:
             return
         self._font_size = new_size
+        self._settings.setValue("editor/font_size", new_size)
         for data in self._tabs_data:
             data["editor"].set_font_size(new_size)
 
