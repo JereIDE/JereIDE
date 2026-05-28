@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal, QRect, QMimeData
-from PySide6.QtGui import QPainter, QColor, QMouseEvent, QPaintEvent, QFontMetrics, QDrag
+from PySide6.QtGui import QPainter, QColor, QMouseEvent, QPaintEvent, QFontMetrics, QDrag, QPixmap
 from PySide6.QtWidgets import QWidget
 
 from const.theme import (
@@ -53,8 +53,23 @@ class JereIDETab(QWidget):
         self.is_modified = modified
         self.update()
 
+    def _create_drag_pixmap(self):
+        """Create a lightweight drag pixmap instead of a full widget grab."""
+        width = self.width()
+        height = self.height()
+        pixmap = QPixmap(width, height)
+        pixmap.fill(Qt.transparent)
+
+        painter = QPainter(pixmap)
+        bg_color = QColor(TAB_SELECTED_BG) if self.is_selected else QColor(TAB_UNSELECTED_BG)
+        painter.fillRect(0, 0, width, height, bg_color)
+        painter.setPen(QColor(TAB_SELECTED_TEXT) if self.is_selected else QColor(TAB_UNSELECTED_TEXT))
+        painter.drawText(21, height // 2 + 4, self.label)
+        painter.end()
+        return pixmap
+
     def _start_drag(self):
-        pixmap = self.grab()
+        pixmap = self._create_drag_pixmap()
         self.notebook._on_drag_started(self.index)
 
         mime = QMimeData()
