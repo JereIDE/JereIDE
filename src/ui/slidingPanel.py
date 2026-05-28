@@ -39,7 +39,7 @@ class SlidingPanel(QScrollArea):
         self._pages.append(widget)
         self._layout.addWidget(widget)
         vp_width = self.viewport().width()
-        if vp_width > 0:
+        if vp_width > 0 and len(self._pages) == 1:
             widget.setFixedWidth(vp_width)
 
     def currentIndex(self) -> int:
