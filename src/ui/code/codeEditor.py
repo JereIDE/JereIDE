@@ -5,10 +5,13 @@ from .lineNumber import LineNumberArea
 from utils.syntaxHighlight import PythonSyntaxHighlighter
 from utils.autoIndent import AutoIndent
 from utils.autoPairing import AutoPairingMixin
-from config.theme import EDITOR_FONT_FAMILY, EDITOR_FONT_SIZE, LINE_NUMBER_BG, LINE_NUMBER_TEXT, CURRENT_LINE_BG
-from config.theme import SYNTAX_KEYWORD, SYNTAX_STRING, SYNTAX_NUMBER, SYNTAX_COMMENT
-from config.theme import SYNTAX_BUILTIN, SYNTAX_DECORATOR, SYNTAX_CLASS_DEF, SYNTAX_FUNCTION_DEF
-from config.config_manager import config_manager
+from const.theme import (
+    EDITOR_FONT_FAMILY, EDITOR_FONT_SIZE,
+    LINE_NUMBER_BG, LINE_NUMBER_TEXT, CURRENT_LINE_BG,
+    SYNTAX_KEYWORD, SYNTAX_STRING, SYNTAX_NUMBER, SYNTAX_COMMENT,
+    SYNTAX_BUILTIN, SYNTAX_DECORATOR, SYNTAX_CLASS_DEF, SYNTAX_FUNCTION_DEF,
+    LINE_NUMBERS_ENABLED, EDITOR_TAB_SIZE, LINE_NUMBERS_MIN_WIDTH, WORD_WRAP_ENABLED,
+)
 
 
 class QCodeEditor(QPlainTextEdit, AutoPairingMixin):
@@ -16,7 +19,7 @@ class QCodeEditor(QPlainTextEdit, AutoPairingMixin):
         super().__init__(parent)
         self.line_number_area = LineNumberArea(self)
         self.auto_indent_enabled = True
-        self.line_numbers_enabled = config_manager.get_config_value('editor', 'line_numbers.enabled', True)
+        self.line_numbers_enabled = LINE_NUMBERS_ENABLED
         self.init_auto_pairing()
 
         font = QFont(EDITOR_FONT_FAMILY, EDITOR_FONT_SIZE)
@@ -24,9 +27,9 @@ class QCodeEditor(QPlainTextEdit, AutoPairingMixin):
         self.setFont(font)
 
         self.setFrameShape(QPlainTextEdit.NoFrame)
-        self._tab_size = config_manager.get_config_value('editor', 'font.tab_size', 4)
+        self._tab_size = EDITOR_TAB_SIZE
         self.setTabStopDistance(self._tab_size * self.fontMetrics().horizontalAdvance(' '))
-        self._line_numbers_min_width = config_manager.get_config_value('editor', 'line_numbers.minimum_width', 15)
+        self._line_numbers_min_width = LINE_NUMBERS_MIN_WIDTH
         self.setLineWrapMode(QPlainTextEdit.NoWrap)
 
         # Apply Python syntax highlighting
@@ -72,7 +75,7 @@ class QCodeEditor(QPlainTextEdit, AutoPairingMixin):
         if enabled:
             self.setLineWrapMode(QPlainTextEdit.WidgetWidth)
         else:
-            wrap_enabled = config_manager.get_config_value('editor', 'word_wrap.enabled', False)
+            wrap_enabled = WORD_WRAP_ENABLED
             self.setLineWrapMode(QPlainTextEdit.WidgetWidth if wrap_enabled else QPlainTextEdit.NoWrap)
 
     def line_number_area_width(self):

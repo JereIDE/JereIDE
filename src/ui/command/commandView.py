@@ -1,7 +1,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
 
-from config.theme import WELCOME_TEXT_SECONDARY
+from const.theme import WELCOME_TEXT_SECONDARY
 
 
 class CommandView(QWidget):

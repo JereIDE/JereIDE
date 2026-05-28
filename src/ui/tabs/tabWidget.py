@@ -4,7 +4,7 @@ from PySide6.QtCore import Qt, Signal, QRect, QMimeData
 from PySide6.QtGui import QPainter, QColor, QMouseEvent, QPaintEvent, QFontMetrics, QDrag
 from PySide6.QtWidgets import QWidget
 
-from config.theme import (
+from const.theme import (
     TAB_SELECTED_BG,
     TAB_UNSELECTED_BG,
     TAB_SELECTED_TEXT,
@@ -12,8 +12,8 @@ from config.theme import (
     TAB_SELECTED_CLOSE_HOVER_BG,
     TAB_UNSELECTED_CLOSE_HOVER_BG,
     TAB_SEPARATOR,
+    TAB_HEIGHT,
 )
-from config.config_manager import config_manager
 
 
 class JereIDETab(QWidget):
@@ -33,8 +33,7 @@ class JereIDETab(QWidget):
         self._is_tab_hovered = False
         self._text_right = 0
 
-        tab_height = config_manager.get_config_value('theme', 'tabs.height', 30)
-        self.setFixedHeight(tab_height)
+        self.setFixedHeight(TAB_HEIGHT)
         self.setMouseTracking(True)
         self._drag_start_pos = None
         self._update_width()

@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
 )
 
-from config.theme import TAB_STRIP_BG, TAB_BORDER
+from const.theme import TAB_STRIP_BG, TAB_BORDER
 from .tabScrollArrow import TabScrollArrow
 from .tabWidget import JereIDETab
 from .tabDropContainer import TabDropContainer

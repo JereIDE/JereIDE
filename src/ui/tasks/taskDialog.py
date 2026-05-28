@@ -2,7 +2,10 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLa
 from PySide6.QtCore import Signal, Qt, QRectF
 from PySide6.QtGui import QPainter, QColor, QBrush, QPainterPath
 
-from config.tasks import task_manager
+# Hardcoded default tasks until QSettings is added
+DEFAULT_TASKS = [
+    {"name": "Run with Python", "command": "python3"},
+]
 
 
 class TaskDialog(QWidget):
@@ -25,7 +28,7 @@ class TaskDialog(QWidget):
         titleLabel.setObjectName("taskDialogTitle")
         dialogLayout.addWidget(titleLabel)
 
-        tasks = task_manager.get_tasks()
+        tasks = DEFAULT_TASKS
         if not tasks:
             noTasksLabel = QLabel("No tasks configured")
             noTasksLabel.setAlignment(Qt.AlignCenter)

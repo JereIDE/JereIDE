@@ -1,8 +1,10 @@
 from PySide6.QtCore import QRegularExpression
 from PySide6.QtGui import QFont, QColor, QSyntaxHighlighter, QTextCharFormat
-from config.theme import SYNTAX_KEYWORD, SYNTAX_STRING, SYNTAX_NUMBER, SYNTAX_COMMENT
-from config.theme import SYNTAX_BUILTIN, SYNTAX_DECORATOR, SYNTAX_CLASS_DEF, SYNTAX_FUNCTION_DEF
-from config.config_manager import config_manager
+from const.theme import (
+    SYNTAX_KEYWORD, SYNTAX_STRING, SYNTAX_NUMBER, SYNTAX_COMMENT,
+    SYNTAX_BUILTIN, SYNTAX_DECORATOR, SYNTAX_CLASS_DEF, SYNTAX_FUNCTION_DEF,
+    SYNTAX_HIGHLIGHTING_ENABLED, PYTHON_KEYWORDS, PYTHON_BUILTINS,
+)
 
 
 class PythonSyntaxHighlighter(QSyntaxHighlighter):
@@ -18,25 +20,9 @@ class PythonSyntaxHighlighter(QSyntaxHighlighter):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.syntax_highlighting_enabled = config_manager.get_config_value('editor', 'syntax_highlighting.enabled', True)
-        self.PYTHON_KEYWORDS = config_manager.get_config_value('editor', 'syntax_highlighting.keywords', [
-            'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await',
-            'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except',
-            'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is',
-            'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try',
-            'while', 'with', 'yield'
-        ])
-
-        self.PYTHON_BUILTINS = config_manager.get_config_value('editor', 'syntax_highlighting.builtins', [
-            'abs', 'all', 'any', 'bin', 'bool', 'bytes', 'callable', 'chr', 'dict',
-            'dir', 'divmod', 'enumerate', 'eval', 'exec', 'filter', 'float', 'format',
-            'frozenset', 'getattr', 'globals', 'hasattr', 'hash', 'help', 'hex', 'id',
-            'input', 'int', 'isinstance', 'issubclass', 'iter', 'len', 'list', 'locals',
-            'map', 'max', 'min', 'next', 'object', 'oct', 'open', 'ord', 'pow',
-            'print', 'property', 'range', 'repr', 'reversed', 'round', 'set',
-            'setattr', 'slice', 'sorted', 'staticmethod', 'str', 'sum', 'super', 'tuple',
-            'type', 'vars', 'zip', '__import__'
-        ])
+        self.syntax_highlighting_enabled = SYNTAX_HIGHLIGHTING_ENABLED
+        self.PYTHON_KEYWORDS = PYTHON_KEYWORDS
+        self.PYTHON_BUILTINS = PYTHON_BUILTINS
 
         self._triple_quote_fmt = self._create_format(SYNTAX_STRING)
         self._highlighting_rules = []
