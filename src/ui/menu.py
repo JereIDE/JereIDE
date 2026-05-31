@@ -12,6 +12,7 @@ class MenuBar:
         self._setup_file_menu(menu_bar)
         self._setup_edit_menu(menu_bar)
         self._setup_options_menu(menu_bar)
+        self._setup_run_menu(menu_bar)
         self._setup_view_menu(menu_bar)
         self._setup_help_menu(menu_bar)
 
@@ -93,6 +94,13 @@ class MenuBar:
         settings_action = options_menu.addAction("&Settings...")
         settings_action.setShortcut("Ctrl+,")
         settings_action.triggered.connect(self.window.open_settings)
+
+    def _setup_run_menu(self, menu_bar):
+        run_menu = menu_bar.addMenu("&Run")
+
+        run_task_action = run_menu.addAction("&Run Task...")
+        run_task_action.setShortcut("Ctrl+Shift+R")
+        run_task_action.triggered.connect(self.window.run_task)
 
     def _setup_view_menu(self, menu_bar):
         view_menu = menu_bar.addMenu("&View")
