@@ -64,12 +64,6 @@ python3 src/JereIDE.py
 ## Development
 ![Alt](https://repobeats.axiom.co/api/embed/4b9ba1d427bcb75b2305ae0f004b264fb65d016f.svg "Repobeats analytics image")
 
-## Rules for AI Agents
-This app is optimized for MAC only. It is built by mostly AI.
-
-If you are an agent:
-Do not write code for other platforms except for macOS. When writing code, use camelCase and use specific variable names.
-
 ## FAQ
 
 <details> 
