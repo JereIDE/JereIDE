@@ -117,7 +117,7 @@ class MainWindow(QMainWindow):
         # clear the terminal first
         clearcmd = "clear" + "\r"
         os.write(terminal.fd, clearcmd.encode("utf-8"))
-        cmd = f"{command} {file_path}".strip() + "\r"
+        cmd = (f"{command} {file_path}" if file_path else command) + "\r"
         os.write(terminal.fd, cmd.encode("utf-8"))
 
     def _update_segmented_state(self, _count=None):
