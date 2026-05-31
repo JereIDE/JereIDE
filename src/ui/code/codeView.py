@@ -93,14 +93,15 @@ class CodeView(QWidget):
         self._notebook.page_changed.connect(self._on_page_changed_for_cursor)
         self._notebook.page_close_requested.connect(self.on_tab_close_requested)
 
-        self.syntax_highlighting_enabled = True
-        self.auto_indent_enabled = True
-        self.line_numbers_enabled = True
-        self.auto_pairing_enabled = True
-        self.wrap_enabled = False
-
         self._settings = QSettings("Jeremy", "JereIDE")
-        self._font_size = int(self._settings.value("editor/font_size", 11))
+        self._default_font_size = int(self._settings.value("editor/default_font_size", 11))
+        self._font_size = int(self._settings.value("editor/font_size", self._default_font_size))
+
+        self.syntax_highlighting_enabled = self._settings.value("editor/syntax_highlighting", True, type=bool)
+        self.auto_indent_enabled = self._settings.value("editor/auto_indent", True, type=bool)
+        self.line_numbers_enabled = self._settings.value("editor/line_numbers", True, type=bool)
+        self.auto_pairing_enabled = self._settings.value("editor/auto_pairing", True, type=bool)
+        self.wrap_enabled = self._settings.value("editor/wrap", False, type=bool)
 
         self._pending_saves = None  # tracks active save-all operation
 
@@ -144,6 +145,11 @@ class CodeView(QWidget):
 
         editor = QCodeEditor()
         editor.set_font_size(self._font_size)
+        editor.set_line_numbers_enabled(self.line_numbers_enabled)
+        editor.set_syntax_highlighting_enabled(self.syntax_highlighting_enabled)
+        editor.auto_indent_enabled = self.auto_indent_enabled
+        editor.auto_pairing_enabled = self.auto_pairing_enabled
+        editor.set_word_wrap(self.wrap_enabled)
         self._notebook.AddPage(editor, title)
         self.tabCountChanged.emit(self._notebook.GetPageCount())
         self._tabs_data.append({
@@ -428,8 +434,7 @@ class CodeView(QWidget):
         self._change_font_size(max(6, self._font_size - 1))
 
     def reset_zoom(self):
-        default_size = 11
-        self._change_font_size(default_size)
+        self._change_font_size(self._default_font_size)
 
     def _change_font_size(self, new_size: int):
         if new_size == self._font_size:
@@ -438,6 +443,80 @@ class CodeView(QWidget):
         self._settings.setValue("editor/font_size", new_size)
         for data in self._tabs_data:
             data["editor"].set_font_size(new_size)
+
+    # --- Settings dialog ---
+
+    def open_settings(self):
+        """Open the settings dialog and apply changes if saved."""
+        from ui.settings.settingsDialog import SettingsDialog
+        from PySide6.QtWidgets import QDialog
+
+        current = {
+            "default_font_size": self._default_font_size,
+            "syntax_highlighting": self.syntax_highlighting_enabled,
+            "word_wrap": self.wrap_enabled,
+            "auto_indent": self.auto_indent_enabled,
+            "auto_pairing": self.auto_pairing_enabled,
+        }
+        dialog = SettingsDialog(current, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self._apply_settings(dialog.get_settings())
+
+    def _apply_settings(self, settings: dict):
+        """Apply settings dict to all editors and persist to QSettings."""
+        changed = False
+
+        # Default font size — also updates current size to match
+        default_size = settings["default_font_size"]
+        if default_size != self._default_font_size:
+            self._default_font_size = default_size
+            self._change_font_size(default_size)
+            changed = True
+
+        # Syntax highlighting
+        val = settings["syntax_highlighting"]
+        if val != self.syntax_highlighting_enabled:
+            self.syntax_highlighting_enabled = val
+            for data in self._tabs_data:
+                data["editor"].set_syntax_highlighting_enabled(val)
+            changed = True
+
+        # Auto indent
+        val = settings["auto_indent"]
+        if val != self.auto_indent_enabled:
+            self.auto_indent_enabled = val
+            for data in self._tabs_data:
+                data["editor"].auto_indent_enabled = val
+            changed = True
+
+        # Auto pairing
+        val = settings["auto_pairing"]
+        if val != self.auto_pairing_enabled:
+            self.auto_pairing_enabled = val
+            for data in self._tabs_data:
+                data["editor"].auto_pairing_enabled = val
+            changed = True
+
+        # Word wrap
+        val = settings["word_wrap"]
+        if val != self.wrap_enabled:
+            self.wrap_enabled = val
+            for data in self._tabs_data:
+                data["editor"].set_word_wrap(val)
+            changed = True
+
+        if changed:
+            self._persist_settings()
+
+    def _persist_settings(self):
+        """Save all editor settings to QSettings."""
+        self._settings.setValue("editor/default_font_size", self._default_font_size)
+        self._settings.setValue("editor/font_size", self._font_size)
+        self._settings.setValue("editor/syntax_highlighting", self.syntax_highlighting_enabled)
+        self._settings.setValue("editor/auto_indent", self.auto_indent_enabled)
+        self._settings.setValue("editor/auto_pairing", self.auto_pairing_enabled)
+        self._settings.setValue("editor/wrap", self.wrap_enabled)
+        self._settings.setValue("editor/line_numbers", self.line_numbers_enabled)
 
     def _on_page_changed_for_cursor(self, index):
         if 0 <= index < len(self._tabs_data):

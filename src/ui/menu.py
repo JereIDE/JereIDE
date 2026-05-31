@@ -4,11 +4,7 @@ from PySide6.QtWidgets import QMenuBar
 class MenuBar:
     def __init__(self, window):
         self.window = window
-        self.auto_indent_action = None
         self.line_numbers_action = None
-        self.auto_pairing_action = None
-        self.wrap_action = None
-        self.syntax_highlighting_action = None
         self.toggle_full_screen_action = None
 
     def setup(self):
@@ -87,30 +83,16 @@ class MenuBar:
     def _setup_options_menu(self, menu_bar):
         options_menu = menu_bar.addMenu("&Options")
 
-        self.syntax_highlighting_action = options_menu.addAction("&Syntax Highlighting")
-        self.syntax_highlighting_action.setCheckable(True)
-        self.syntax_highlighting_action.setChecked(self.window.syntax_highlighting_enabled)
-        self.syntax_highlighting_action.triggered.connect(self.window.toggle_syntax_highlighting)
-
-        self.auto_indent_action = options_menu.addAction("Auto &Indent")
-        self.auto_indent_action.setCheckable(True)
-        self.auto_indent_action.setChecked(self.window.auto_indent_enabled)
-        self.auto_indent_action.triggered.connect(self.window.toggle_auto_indent)
-
         self.line_numbers_action = options_menu.addAction("&Line Numbers")
         self.line_numbers_action.setCheckable(True)
         self.line_numbers_action.setChecked(self.window.line_numbers_enabled)
         self.line_numbers_action.triggered.connect(self.window.toggle_line_numbers)
 
-        self.auto_pairing_action = options_menu.addAction("Auto &Pairing")
-        self.auto_pairing_action.setCheckable(True)
-        self.auto_pairing_action.setChecked(self.window.auto_pairing_enabled)
-        self.auto_pairing_action.triggered.connect(self.window.toggle_auto_pairing)
+        options_menu.addSeparator()
 
-        self.wrap_action = options_menu.addAction("&Word Wrap")
-        self.wrap_action.setCheckable(True)
-        self.wrap_action.setChecked(self.window.wrap_enabled)
-        self.wrap_action.triggered.connect(self.window.toggle_wrap)
+        settings_action = options_menu.addAction("&Settings...")
+        settings_action.setShortcut("Ctrl+,")
+        settings_action.triggered.connect(self.window.open_settings)
 
     def _setup_view_menu(self, menu_bar):
         view_menu = menu_bar.addMenu("&View")
