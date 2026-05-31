@@ -223,6 +223,9 @@ class MainWindow(QMainWindow):
     def open_settings(self):
         self.code_view.open_settings()
 
+    def run_task(self):
+        self._on_run_requested()
+
     # --- Font zoom ---
 
     def zoom_in(self):
