@@ -81,9 +81,10 @@ python3 src/JereIDE.py
 ## Plans for the future
 - [x] Docstring highlighting
 - [x] Save all
+- [x] Find/Replace: regex, whole words, wrap options
 - [ ] Recent files
 - [ ] Command View  
-- [ ] Find/Replace: regex, whole words, wrap options
+
 
 For a full list of what's coming next, see the [JereIDE Roadmap](https://github.com/users/Jeremy-Qian/projects/4/views/1).
 
