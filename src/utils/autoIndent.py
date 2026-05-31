@@ -1,15 +1,14 @@
 from PySide6.QtCore import Qt
-from const.theme import AUTO_INDENT_ENABLED, EDITOR_TAB_SIZE
+from const.theme import EDITOR_TAB_SIZE
 
 
 class AutoIndent:
     def __init__(self, editor):
         self.editor = editor
-        self.auto_indent_enabled = AUTO_INDENT_ENABLED
 
     def handle_key_press(self, event):
         """Handle auto-indent when Enter/Return is pressed."""
-        if self.auto_indent_enabled and (event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter):
+        if self.editor.auto_indent_enabled and (event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter):
             cursor = self.editor.textCursor()
             block = cursor.block()
             current_line_text = block.text()
