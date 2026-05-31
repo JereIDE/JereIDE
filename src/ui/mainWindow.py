@@ -149,28 +149,8 @@ class MainWindow(QMainWindow):
         return data["file_path"] if data else None
 
     @property
-    def current_font_size(self):
-        return self.code_view._font_size
-
-    @property
-    def syntax_highlighting_enabled(self):
-        return self.code_view.syntax_highlighting_enabled
-
-    @property
-    def auto_indent_enabled(self):
-        return self.code_view.auto_indent_enabled
-
-    @property
     def line_numbers_enabled(self):
         return self.code_view.line_numbers_enabled
-
-    @property
-    def auto_pairing_enabled(self):
-        return self.code_view.auto_pairing_enabled
-
-    @property
-    def wrap_enabled(self):
-        return self.code_view.wrap_enabled
 
     def _switch_to_code_view(self):
         if self.sliding_panel.currentIndex() != 0:
@@ -237,20 +217,11 @@ class MainWindow(QMainWindow):
     def find_replace(self):
         self.code_view.find_replace()
 
-    def toggle_syntax_highlighting(self):
-        self.code_view.toggle_syntax_highlighting()
-
-    def toggle_auto_indent(self):
-        self.code_view.toggle_auto_indent()
-
     def toggle_line_numbers(self):
         self.code_view.toggle_line_numbers()
 
-    def toggle_auto_pairing(self):
-        self.code_view.toggle_auto_pairing()
-
-    def toggle_wrap(self):
-        self.code_view.toggle_wrap()
+    def open_settings(self):
+        self.code_view.open_settings()
 
     # --- Font zoom ---
 
