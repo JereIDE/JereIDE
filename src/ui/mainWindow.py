@@ -1,5 +1,3 @@
-import os
-
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QShortcut, QKeySequence, QDesktopServices
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
@@ -114,11 +112,8 @@ class MainWindow(QMainWindow):
     def _execute_task(self, command, file_path):
         self.code_view.show_terminal()
         terminal = self.code_view.terminal
-        # clear the terminal first
-        clearcmd = "clear" + "\r"
-        os.write(terminal.fd, clearcmd.encode("utf-8"))
-        cmd = (f"{command} {file_path}" if file_path else command) + "\r"
-        os.write(terminal.fd, cmd.encode("utf-8"))
+        cmd = f"{command} {file_path}" if file_path else command
+        terminal.run_command(cmd)
 
     def _update_segmented_state(self, _count=None):
         if self._nativeSegmentedControl is None:
