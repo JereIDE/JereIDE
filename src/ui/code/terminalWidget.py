@@ -105,6 +105,7 @@ class TerminalWidget(QPlainTextEdit):
         self._render_timer.timeout.connect(self._render)
         self._at_bottom = True
         self._rendered_history_count = 0
+        self._history_end_pos = 0
 
         self._pending_rows = None
         self._pending_cols = None
@@ -133,6 +134,50 @@ class TerminalWidget(QPlainTextEdit):
             self._render_timer.start(16)
         except OSError:
             self.notifier.setEnabled(False)
+
+    def run_command(self, command):
+        """Run a command in its own terminal session (new PTY + shell)."""
+        self.notifier.setEnabled(False)
+
+        # Clean up old shell process
+        if self.pid > 0:
+            try:
+                os.kill(self.pid, signal.SIGHUP)
+            except (ProcessLookupError, ChildProcessError):
+                pass
+            try:
+                os.waitpid(self.pid, os.WNOHANG)
+            except ChildProcessError:
+                pass
+
+        # Close old PTY file descriptor
+        try:
+            os.close(self.fd)
+        except OSError:
+            pass
+
+        # Reset pyte screen and history for a clean display
+        self.term_screen.reset()
+        self._rendered_history_count = 0
+        self._history_end_pos = 0
+        self._dirty = True
+        self._render_timer.start(16)
+
+        # Create a new PTY session for the command
+        pid, fd = pty.fork()
+        if pid == 0:
+            env = os.environ.copy()
+            env['TERM'] = 'xterm-256color'
+            os.execve('/bin/sh', ['/bin/sh', '-c', command], env)
+            os._exit(1)
+        else:
+            self.pid = pid
+            self.fd = fd
+            self._update_size()
+            self._apply_pending_resize()
+            self.notifier = QSocketNotifier(self.fd, QSocketNotifier.Type.Read)
+            self.notifier.activated.connect(self._read_data)
+            self.notifier.setEnabled(True)
 
     def _invalidate(self):
         if not self._dirty:
@@ -237,9 +282,7 @@ class TerminalWidget(QPlainTextEdit):
 
         # --- Incremental history: only append new lines that scrolled in ---
         if hist_len > self._rendered_history_count:
-            cursor.movePosition(QTextCursor.MoveOperation.Start)
-            cursor.movePosition(QTextCursor.MoveOperation.Down, QTextCursor.MoveMode.MoveAnchor,
-                                self._rendered_history_count)
+            cursor.setPosition(self._history_end_pos)
 
             for i in range(self._rendered_history_count, hist_len):
                 cursor.insertText('\n', default_fmt)
@@ -253,6 +296,7 @@ class TerminalWidget(QPlainTextEdit):
 
             cursor.insertText('\n', default_fmt)
             self._rendered_history_count = hist_len
+            self._history_end_pos = cursor.position()
 
         elif hist_len < self._rendered_history_count:
             cursor.select(QTextCursor.SelectionType.Document)
@@ -271,10 +315,12 @@ class TerminalWidget(QPlainTextEdit):
             if hist_len > 0:
                 cursor.insertText('\n', default_fmt)
             self._rendered_history_count = hist_len
+            self._history_end_pos = cursor.position()
 
         # --- Buffer: always rewrite the visible area (small, ~24 lines) ---
-        cursor.movePosition(QTextCursor.MoveOperation.Start)
-        cursor.movePosition(QTextCursor.MoveOperation.Down, QTextCursor.MoveMode.MoveAnchor, hist_len)
+        # Position cursor at the boundary between history and buffer
+        if hist_len > 0:
+            cursor.setPosition(self._history_end_pos)
         cursor.movePosition(QTextCursor.MoveOperation.End, QTextCursor.MoveMode.KeepAnchor)
         cursor.removeSelectedText()
 
