@@ -8,7 +8,7 @@ from ui.nativeToolbar import attach_native_toolbar
 from ui.slidingPanel import SlidingPanel
 from ui.code import CodeView
 from ui.command import CommandView
-from ui.tasks.taskDialog import TaskDialog
+from ui.tasks.taskDialog import TaskDialog, _substitute_variables
 from ui.aboutDialog import AboutDialog
 from utils.focusManager import FocusManager
 
@@ -110,9 +110,13 @@ class MainWindow(QMainWindow):
         )
 
     def _execute_task(self, command, file_path):
+        # Handle internal __rebuild__ signal (task dialog needs re-opening)
+        if command == "__rebuild__":
+            self._on_run_requested()
+            return
         self.code_view.show_terminal()
         terminal = self.code_view.terminal
-        cmd = f"{command} {file_path}" if file_path else command
+        cmd = _substitute_variables(command, file_path) if file_path else command
         terminal.run_command(cmd)
 
     def _update_segmented_state(self, _count=None):
