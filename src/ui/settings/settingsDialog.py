@@ -55,6 +55,10 @@ class SettingsDialog(QDialog):
 
         layout.addWidget(typing_group)
 
+        self.restore_defaults_btn = QPushButton("Restore Defaults")
+        self.restore_defaults_btn.clicked.connect(self._restore_defaults)
+        layout.addWidget(self.restore_defaults_btn)
+
         layout.addStretch()
 
         # ── Buttons ──
@@ -65,12 +69,31 @@ class SettingsDialog(QDialog):
         cancel_btn.clicked.connect(self.reject)
         btn_layout.addWidget(cancel_btn)
 
+
+        apply_btn = QPushButton("Apply")
+        apply_btn.setDisabled(True)
+        apply_btn.clicked.connect(self.apply)
+        btn_layout.addWidget(apply_btn)
+
         save_btn = QPushButton("Save")
         save_btn.setDefault(True)
         save_btn.clicked.connect(self.accept)
         btn_layout.addWidget(save_btn)
 
         layout.addLayout(btn_layout)
+
+    def _restore_defaults(self):
+        """Restore all settings to their default values."""
+        self._font_spin.setValue(11)
+        self._syntax_cb.setChecked(True)
+        self._wrap_cb.setChecked(False)
+        self._auto_indent_cb.setChecked(True)
+        self._auto_pair_cb.setChecked(True)
+
+    def apply(self):
+        """Apply the settings but doesn't close the dialog."""
+        # Update the current settings with the new values
+        pass
 
     def get_settings(self) -> dict:
         """Return the settings values from the dialog."""
