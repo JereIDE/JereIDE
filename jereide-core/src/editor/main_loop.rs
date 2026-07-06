@@ -1797,6 +1797,7 @@ pub fn run(
     // Momentum-scroll velocity for wheel-driven smooth scrolling.
     let mut editor_scroll_vel: f64 = 0.0;
     let mut sidebar_scroll_vel: f64 = 0.0;
+    let mut preview_scroll_vel: f64 = 0.0;
 
     let mut hover = HoverState::new();
     // Signature-help popup reuses the hover popup shape (text + visibility).
@@ -2065,6 +2066,7 @@ pub fn run(
                 EditorEvent::KeyPressed { key, modifiers } => {
                     editor_scroll_vel = 0.0;
                     sidebar_scroll_vel = 0.0;
+                    preview_scroll_vel = 0.0;
                     if let Some(doc) = docs.get_mut(active_tab) {
                         doc.view.scroll_y = doc.view.target_scroll_y;
                     }
@@ -8159,8 +8161,7 @@ pub fn run(
                             && mouse_x >= doc.preview.rect.x
                             && mouse_x < doc.preview.rect.x + doc.preview.rect.w;
                         if over_preview {
-                            doc.preview.target_scroll_y =
-                                (doc.preview.target_scroll_y - scroll_amt).max(0.0);
+                            preview_scroll_vel -= scroll_amt * 20.0;
                         } else {
                             editor_scroll_vel -= scroll_amt * 20.0;
                         }
@@ -9881,15 +9882,29 @@ pub fn run(
                             sidebar_scroll += sidebar_scroll_vel * dt;
                             let max_scroll = (sidebar_content_h - sidebar_sb_h).max(0.0);
                             sidebar_scroll = sidebar_scroll.clamp(0.0, max_scroll);
-                            sidebar_scroll_vel *= (-30.0 * dt).exp();
+                            sidebar_scroll_vel *= (-20.0 * dt).exp();
                         } else {
                             sidebar_scroll_vel = 0.0;
+                        }
+                    }
+                    // --- Markdown preview ---
+                    if let Some(doc) = docs.get_mut(active_tab) {
+                        if doc.preview.enabled && preview_scroll_vel.abs() > 0.5 {
+                            let rect = doc.preview.rect;
+                            let max_scroll = (doc.preview.content_height - rect.h).max(0.0);
+                            doc.preview.scroll_y += preview_scroll_vel * dt;
+                            doc.preview.scroll_y = doc.preview.scroll_y.clamp(0.0, max_scroll);
+                            doc.preview.target_scroll_y = doc.preview.scroll_y;
+                            preview_scroll_vel *= (-20.0 * dt).exp();
+                        } else {
+                            preview_scroll_vel = 0.0;
                         }
                     }
                 } else {
                     // Instant snap when transitions are disabled.
                     editor_scroll_vel = 0.0;
                     sidebar_scroll_vel = 0.0;
+                    preview_scroll_vel = 0.0;
                     if let Some(doc) = docs.get_mut(active_tab) {
                         let dv = &mut doc.view;
                         if dv.scroll_y != dv.target_scroll_y {
@@ -13110,6 +13125,7 @@ pub fn run(
                 if config.transitions && !config.disabled_transitions.scroll {
                     if editor_scroll_vel.abs() > 0.5
                         || sidebar_scroll_vel.abs() > 0.5
+                        || preview_scroll_vel.abs() > 0.5
                     {
                         redraw = true;
                     }
