@@ -1794,6 +1794,10 @@ pub fn run(
     let mut completion = CompletionState::new();
     // Document-word autocomplete index (used when LSP is not active).
     let mut word_index = WordIndex::new();
+    // Momentum-scroll velocity for wheel-driven smooth scrolling.
+    let mut editor_scroll_vel: f64 = 0.0;
+    let mut sidebar_scroll_vel: f64 = 0.0;
+
     let mut hover = HoverState::new();
     // Signature-help popup reuses the hover popup shape (text + visibility).
     let mut signature_help = HoverState::new();
@@ -2059,12 +2063,8 @@ pub fn run(
                     continue;
                 }
                 EditorEvent::KeyPressed { key, modifiers } => {
-                    // Snap any in-flight smooth-scroll animation to its target.
-                    // The lerp is event-driven (it only ticks on redraws), so
-                    // pressing keys after a wheel scroll would otherwise resume
-                    // the paused animation one tick at a time per press.
-                    // Pressing any key signals "I'm done scrolling", so finalize
-                    // the position immediately.
+                    editor_scroll_vel = 0.0;
+                    sidebar_scroll_vel = 0.0;
                     if let Some(doc) = docs.get_mut(active_tab) {
                         doc.view.scroll_y = doc.view.target_scroll_y;
                     }
@@ -6396,22 +6396,23 @@ pub fn run(
                             let min_thumb = style.scrollbar_size * 2.0;
                             let thumb_h = (sidebar_sb_h * ratio).max(min_thumb).min(sidebar_sb_h);
                             let max_scroll = (sidebar_content_h - sidebar_sb_h).max(1.0);
-                            let scroll_frac = (sidebar_scroll / max_scroll).clamp(0.0, 1.0);
-                            let thumb_y = sidebar_sb_top + scroll_frac * (sidebar_sb_h - thumb_h);
-                            if *y >= thumb_y && *y < thumb_y + thumb_h {
-                                sidebar_sb_drag_offset = *y - thumb_y;
-                            } else {
-                                sidebar_sb_drag_offset = thumb_h / 2.0;
-                                let new_top = (*y - thumb_h / 2.0)
-                                    .clamp(sidebar_sb_top, sidebar_sb_top + sidebar_sb_h - thumb_h);
-                                let travel = (sidebar_sb_h - thumb_h).max(1.0);
-                                let new_frac = (new_top - sidebar_sb_top) / travel;
-                                sidebar_scroll = (new_frac * max_scroll).max(0.0);
+                                let scroll_frac = (sidebar_scroll / max_scroll).clamp(0.0, 1.0);
+                                let thumb_y = sidebar_sb_top + scroll_frac * (sidebar_sb_h - thumb_h);
+                                if *y >= thumb_y && *y < thumb_y + thumb_h {
+                                    sidebar_sb_drag_offset = *y - thumb_y;
+                                } else {
+                                    sidebar_sb_drag_offset = thumb_h / 2.0;
+                                    let new_top = (*y - thumb_h / 2.0)
+                                        .clamp(sidebar_sb_top, sidebar_sb_top + sidebar_sb_h - thumb_h);
+                                    let travel = (sidebar_sb_h - thumb_h).max(1.0);
+                                    let new_frac = (new_top - sidebar_sb_top) / travel;
+                                    sidebar_scroll_vel = 0.0;
+                                    sidebar_scroll = (new_frac * max_scroll).max(0.0);
+                                }
+                                sidebar_sb_dragging = true;
+                                redraw = true;
+                                continue;
                             }
-                            sidebar_sb_dragging = true;
-                            redraw = true;
-                            continue;
-                        }
                     }
 
                     // Sidebar resize drag: click near the right edge.
@@ -7220,6 +7221,7 @@ pub fn run(
                                     let new_scroll = (new_frac * (total_h - dv_rect.h)).max(0.0);
                                     doc.view.target_scroll_y = new_scroll;
                                     doc.view.scroll_y = new_scroll;
+                                    editor_scroll_vel = 0.0;
                                 }
                                 editor_sb_dragging = true;
                                 redraw = true;
@@ -7745,6 +7747,7 @@ pub fn run(
                                 let new_scroll = (new_frac * (total_h - dv_rect.h)).max(0.0);
                                 doc.view.target_scroll_y = new_scroll;
                                 doc.view.scroll_y = new_scroll;
+                                editor_scroll_vel = 0.0;
                                 redraw = true;
                             }
                         }
@@ -7867,6 +7870,7 @@ pub fn run(
                             let travel = (sidebar_sb_h - thumb_h).max(1.0);
                             let new_frac = (new_top - sidebar_sb_top) / travel;
                             let max_scroll = (sidebar_content_h - sidebar_sb_h).max(1.0);
+                            sidebar_scroll_vel = 0.0;
                             sidebar_scroll = (new_frac * max_scroll).max(0.0);
                             redraw = true;
                         }
@@ -8146,8 +8150,7 @@ pub fn run(
                     }
                     if subsystems.has_sidebar() && sidebar_visible && mouse_x < sidebar_width {
                         // Mouse is over the sidebar -- scroll sidebar only.
-                        let max_scroll = (sidebar_content_h - sidebar_sb_h).max(0.0);
-                        sidebar_scroll = (sidebar_scroll - scroll_amt).clamp(0.0, max_scroll);
+                        sidebar_scroll_vel -= scroll_amt * 8.0;
                     } else if let Some(doc) = docs.get_mut(active_tab) {
                         // Route wheel to whichever pane the cursor is over
                         // in split preview mode.
@@ -8159,8 +8162,7 @@ pub fn run(
                             doc.preview.target_scroll_y =
                                 (doc.preview.target_scroll_y - scroll_amt).max(0.0);
                         } else {
-                            let dv = &mut doc.view;
-                            dv.target_scroll_y = (dv.target_scroll_y - scroll_amt).max(0.0);
+                            editor_scroll_vel -= scroll_amt * 8.0;
                         }
                     }
                     redraw = true;
@@ -9843,21 +9845,49 @@ pub fn run(
                     }
                 }
 
-                // Track the target instantly. A previous smooth-scroll lerp
-                // here was event-driven, not time-driven: it advanced one
-                // step per redraw, so any mouse motion (which redraws for
-                // hover/cursor updates) would tick the animation forward,
-                // making the view appear to scroll on bare mouse movement.
-                // Snapping to the target eliminates that class of bug — all
-                // legitimate scroll triggers (cursor, find, scrollbar,
-                // wheel) write to `target_scroll_y` and now show up the same
-                // frame.
-                if let Some(doc) = docs.get_mut(active_tab) {
-                    let dv = &mut doc.view;
-                    let target = dv.target_scroll_y.round();
-                    dv.target_scroll_y = target;
-                    if dv.scroll_y != target {
-                        dv.scroll_y = target;
+                // Momentum scrolling: velocity-driven with friction for wheel
+                // events. Programmatic jumps (cursor, find, go-to) still set
+                // `target_scroll_y` directly — when velocity is idle (< 0.5)
+                // we snap to it instantly. Disabled via `disabled_transitions.scroll`.
+                let dt = last_draw.elapsed().as_secs_f64().min(0.1);
+                if config.transitions && !config.disabled_transitions.scroll && dt > 0.0 {
+                    // --- Editor ---
+                    if let Some(doc) = docs.get_mut(active_tab) {
+                        let dv = &mut doc.view;
+                        if editor_scroll_vel.abs() > 0.5 {
+                            dv.scroll_y += editor_scroll_vel * dt;
+                            dv.scroll_y = dv.scroll_y.max(0.0);
+                            dv.target_scroll_y = dv.scroll_y;
+                            // Friction: exponential decay.
+                            editor_scroll_vel *= (-8.0 * dt).exp();
+                        } else {
+                            editor_scroll_vel = 0.0;
+                            // Snap programmatic jumps.
+                            if dv.scroll_y != dv.target_scroll_y {
+                                dv.scroll_y = dv.target_scroll_y;
+                            }
+                        }
+                    }
+                    // --- Sidebar ---
+                    if subsystems.has_sidebar() && sidebar_visible {
+                        if sidebar_scroll_vel.abs() > 0.5 {
+                            sidebar_scroll += sidebar_scroll_vel * dt;
+                            let max_scroll = (sidebar_content_h - sidebar_sb_h).max(0.0);
+                            sidebar_scroll = sidebar_scroll.clamp(0.0, max_scroll);
+                            sidebar_scroll_vel *= (-8.0 * dt).exp();
+                        } else {
+                            sidebar_scroll_vel = 0.0;
+                        }
+                    }
+                } else {
+                    // Instant snap when transitions are disabled.
+                    editor_scroll_vel = 0.0;
+                    sidebar_scroll_vel = 0.0;
+                    if let Some(doc) = docs.get_mut(active_tab) {
+                        let dv = &mut doc.view;
+                        if dv.scroll_y != dv.target_scroll_y {
+                            dv.scroll_y = dv.target_scroll_y;
+                        }
                     }
                 }
 
@@ -13065,7 +13095,14 @@ pub fn run(
 
                 crate::renderer::native_end_frame();
 
-                redraw = false;
+                // Keep redrawing while momentum scroll is still in motion.
+                if config.transitions && !config.disabled_transitions.scroll {
+                    if editor_scroll_vel.abs() > 0.5
+                        || sidebar_scroll_vel.abs() > 0.5
+                    {
+                        redraw = true;
+                    }
+                }
                 last_draw = Instant::now();
             }
         }
