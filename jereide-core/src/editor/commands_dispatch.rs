@@ -1390,6 +1390,36 @@ match cmd.as_str() {
 "scale:increase" | "scale:decrease" | "scale:reset" => {
     // Handled by direct key check above the dispatch.
 }
+"command:complete" => {
+    if subsystems.has_lsp()
+        && !completion.visible
+        && lsp_state.transport_id.is_some()
+        && lsp_state.initialized
+        && let Some(doc) = docs.get(active_tab)
+        && let Some(buf_id) = doc.view.buffer_id
+        && !doc.path.is_empty()
+    {
+        let tid = lsp_state.transport_id.unwrap();
+        let (cl, cc) = buffer::with_buffer(buf_id, |b| {
+            let l = *b.selections.get(2).unwrap_or(&1);
+            let c = *b.selections.get(3).unwrap_or(&1);
+            Ok((l, c))
+        })
+        .unwrap_or((1, 1));
+        let uri = path_to_uri(&doc.path);
+        let req_id = lsp_state.next_id();
+        lsp_state
+            .pending_requests
+            .insert(req_id, "textDocument/completion".to_string());
+        let _ = lsp::send_message(
+            tid,
+            &lsp_completion_request(req_id, &uri, cl - 1, cc - 1),
+        );
+        completion.line = cl;
+        completion.col = cc;
+        completion.latest_request_id = req_id;
+    }
+}
 _ => {
     // Default: forward to handle_doc_command and bump LSP edit tracking.
     // Keyboard-initiated: auto-scroll to keep cursor visible.

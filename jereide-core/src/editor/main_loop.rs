@@ -2310,10 +2310,26 @@ pub fn run(
                                                 let line = *b.selections.first().unwrap_or(&1);
                                                 let col = *b.selections.get(1).unwrap_or(&1);
                                                 if line <= b.lines.len() {
+                                                    // Find the start of the word prefix
+                                                    // at the cursor so we replace
+                                                    // rather than append.
+                                                    let l = &b.lines[line - 1];
+                                                    let chars: Vec<char> = l.chars().collect();
+                                                    let col_idx = (col - 1).min(chars.len());
+                                                    let mut word_start = col_idx;
+                                                    while word_start > 0 {
+                                                        let c = chars[word_start - 1];
+                                                        if c.is_alphanumeric() || c == '_' {
+                                                            word_start -= 1;
+                                                        } else {
+                                                            break;
+                                                        }
+                                                    }
                                                     let l = &mut b.lines[line - 1];
-                                                    let byte_pos = char_to_byte(l, col - 1);
-                                                    l.insert_str(byte_pos, &text);
-                                                    let new_col = col + text.chars().count();
+                                                    let byte_start = char_to_byte(l, word_start);
+                                                    let byte_end = char_to_byte(l, col - 1);
+                                                    l.replace_range(byte_start..byte_end, &text);
+                                                    let new_col = word_start + text.chars().count();
                                                     b.selections[0] = line;
                                                     b.selections[1] = new_col;
                                                     b.selections[2] = line;
