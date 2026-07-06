@@ -9866,7 +9866,7 @@ pub fn run(
                             dv.scroll_y = dv.scroll_y.clamp(0.0, editor_max_scroll);
                             dv.target_scroll_y = dv.scroll_y;
                             // Friction: exponential decay.
-                            editor_scroll_vel *= (-20.0 * dt).exp();
+                            editor_scroll_vel *= (-30.0 * dt).exp();
                         } else {
                             editor_scroll_vel = 0.0;
                             // Snap programmatic jumps.
@@ -9881,7 +9881,7 @@ pub fn run(
                             sidebar_scroll += sidebar_scroll_vel * dt;
                             let max_scroll = (sidebar_content_h - sidebar_sb_h).max(0.0);
                             sidebar_scroll = sidebar_scroll.clamp(0.0, max_scroll);
-                            sidebar_scroll_vel *= (-20.0 * dt).exp();
+                            sidebar_scroll_vel *= (-30.0 * dt).exp();
                         } else {
                             sidebar_scroll_vel = 0.0;
                         }
