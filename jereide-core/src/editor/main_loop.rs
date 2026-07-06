@@ -9854,9 +9854,16 @@ pub fn run(
                     // --- Editor ---
                     if let Some(doc) = docs.get_mut(active_tab) {
                         let dv = &mut doc.view;
+                        // Compute max scroll to prevent scrolling into the void.
+                        let editor_max_scroll = dv.buffer_id.and_then(|id| {
+                            let line_count = buffer::with_buffer(id, |b| Ok(b.lines.len())).ok()?;
+                            let line_h = style.code_font_height * 1.2;
+                            let view_h = dv.rect().h;
+                            Some(((line_count as f64 * line_h) - view_h).max(0.0))
+                        }).unwrap_or(0.0);
                         if editor_scroll_vel.abs() > 0.5 {
                             dv.scroll_y += editor_scroll_vel * dt;
-                            dv.scroll_y = dv.scroll_y.max(0.0);
+                            dv.scroll_y = dv.scroll_y.clamp(0.0, editor_max_scroll);
                             dv.target_scroll_y = dv.scroll_y;
                             // Friction: exponential decay.
                             editor_scroll_vel *= (-20.0 * dt).exp();
@@ -9888,6 +9895,10 @@ pub fn run(
                         if dv.scroll_y != dv.target_scroll_y {
                             dv.scroll_y = dv.target_scroll_y;
                         }
+                    }
+                    if subsystems.has_sidebar() && sidebar_visible {
+                        let max_scroll = (sidebar_content_h - sidebar_sb_h).max(0.0);
+                        sidebar_scroll = sidebar_scroll.clamp(0.0, max_scroll);
                     }
                 }
 
