@@ -1,0 +1,139 @@
+{
+  "syntax": {
+  "graph": {
+  "nodes": {
+  "1": {
+  "kind": "object",
+  "values": {
+  "comment": "#",
+  "files": {
+  "$ref": "2"
+},
+  "name": "SSH Config",
+  "patterns": {
+  "$ref": "3"
+},
+  "symbols": {
+  "$ref": "4"
+}
+}
+},
+  "2": {
+  "kind": "array",
+  "values": ["ssh_config$", "sshd_config$", "%.ssh/config$"]
+},
+  "3": {
+  "kind": "array",
+  "values": [{
+  "$ref": "5"
+}, {
+  "$ref": "6"
+}, {
+  "$ref": "8"
+}, {
+  "$ref": "9"
+}, {
+  "$ref": "10"
+}]
+},
+  "4": {
+  "kind": "object",
+  "values": {
+  "AddKeysToAgent": "keyword",
+  "BatchMode": "keyword",
+  "Ciphers": "keyword",
+  "Compression": "keyword",
+  "ConnectTimeout": "keyword",
+  "ControlMaster": "keyword",
+  "ControlPath": "keyword",
+  "ControlPersist": "keyword",
+  "DynamicForward": "keyword",
+  "ExitOnForwardFailure": "keyword",
+  "ForwardAgent": "keyword",
+  "ForwardX11": "keyword",
+  "ForwardX11Trusted": "keyword",
+  "GSSAPIAuthentication": "keyword",
+  "HashKnownHosts": "keyword",
+  "Host": "keyword",
+  "HostKeyAlgorithms": "keyword",
+  "HostName": "keyword",
+  "Hostname": "keyword",
+  "IPQoS": "keyword",
+  "IdentitiesOnly": "keyword",
+  "IdentityFile": "keyword",
+  "KexAlgorithms": "keyword",
+  "LocalForward": "keyword",
+  "LogLevel": "keyword",
+  "MACs": "keyword",
+  "Match": "keyword",
+  "PasswordAuthentication": "keyword",
+  "Port": "keyword",
+  "PreferredAuthentications": "keyword",
+  "ProxyCommand": "keyword",
+  "ProxyJump": "keyword",
+  "PubkeyAuthentication": "keyword",
+  "RSAAuthentication": "keyword",
+  "RemoteCommand": "keyword",
+  "RemoteForward": "keyword",
+  "RequestTTY": "keyword",
+  "SendEnv": "keyword",
+  "ServerAliveCountMax": "keyword",
+  "ServerAliveInterval": "keyword",
+  "SetEnv": "keyword",
+  "StrictHostKeyChecking": "keyword",
+  "TCPKeepAlive": "keyword",
+  "UseKeychain": "keyword",
+  "User": "keyword",
+  "VisualHostKey": "keyword",
+  "no": "literal",
+  "yes": "literal"
+}
+},
+  "5": {
+  "kind": "object",
+  "values": {
+  "pattern": "#.*",
+  "type": "comment"
+}
+},
+  "6": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "7"
+},
+  "type": "string"
+}
+},
+  "7": {
+  "kind": "array",
+  "values": ["\"", "\"", "\\"]
+},
+  "8": {
+  "kind": "object",
+  "values": {
+  "pattern": "~?/[%w%./%-_]*",
+  "type": "string"
+}
+},
+  "9": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%+%-]?%d+%.?%d*",
+  "type": "number"
+}
+},
+  "10": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%a_][%w_%-]*",
+  "type": "symbol"
+}
+}
+}
+},
+  "root": {
+  "$ref": "1"
+}
+}
+}

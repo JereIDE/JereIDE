@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=JereIDE
+Comment=A code editor built in Rust with SDL3
+Exec=jereide %F
+Icon=com.jeremy.jereide
+Terminal=false
+StartupWMClass=jereide
+Categories=Development;IDE;TextEditor;
+MimeType=text/plain;text/x-asm;text/x-csrc;text/x-chdr;text/x-c++src;text/x-c++hdr;text/x-csharp;text/css;text/csv;text/x-dart;text/x-dsrc;text/x-dockerfile;text/x-elixir;text/x-erlang;text/x-fsharp;text/x-crystal;text/x-gleam;text/x-go;text/x-groovy;text/x-haskell;text/html;text/x-ini;text/x-java;text/javascript;text/x-julia;text/x-kotlin;text/x-lisp;text/x-lua;text/x-makefile;text/markdown;text/x-meson;text/x-ocaml;text/x-php;text/x-python;text/x-r;text/x-ruby;text/x-rustsrc;text/x-scala;text/x-shellscript;text/x-sql;text/x-svelte;text/x-swift;text/x-toml;text/x-tsx;text/x-typescript;text/x-vue;text/xml;text/x-yaml;text/x-zig;text/x-powershell;text/x-clojure;text/x-scheme;application/json;application/xml;application/javascript;application/typescript;application/toml;application/x-yaml;application/sql;application/x-shellscript;application/x-php;application/x-ruby;inode/directory;

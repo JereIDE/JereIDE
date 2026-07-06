@@ -1,0 +1,16 @@
+[workspace]
+members = ["jereide-core", "jereide"]
+resolver = "2"
+
+[workspace.package]
+version = "2.14.1"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+
+[profile.release]
+opt-level = 2
+lto = "thin"
+strip = true
+codegen-units = 1
+panic = "abort"

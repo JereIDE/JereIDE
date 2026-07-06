@@ -1,0 +1,93 @@
+{
+  "syntax": {
+  "graph": {
+  "nodes": {
+  "1": {
+  "kind": "object",
+  "values": {
+  "files": {
+  "$ref": "2"
+},
+  "name": "Jupyter Notebook",
+  "patterns": {
+  "$ref": "3"
+},
+  "symbols": {
+  "$ref": "4"
+}
+}
+},
+  "2": {
+  "kind": "array",
+  "values": ["%.ipynb$"]
+},
+  "3": {
+  "kind": "array",
+  "values": [{
+  "$ref": "5"
+}, {
+  "$ref": "7"
+}, {
+  "$ref": "8"
+}, {
+  "$ref": "9"
+}, {
+  "$ref": "10"
+}]
+},
+  "4": {
+  "kind": "object",
+  "values": {
+  "false": "literal",
+  "null": "literal",
+  "true": "literal"
+}
+},
+  "5": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "6"
+},
+  "type": "string"
+}
+},
+  "6": {
+  "kind": "array",
+  "values": ["\"", "\"", "\\"]
+},
+  "7": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%+%-]?%d+%.?%d*[eE]?[%+%-]?%d*",
+  "type": "number"
+}
+},
+  "8": {
+  "kind": "object",
+  "values": {
+  "pattern": "[{}%[%]]",
+  "type": "operator"
+}
+},
+  "9": {
+  "kind": "object",
+  "values": {
+  "pattern": "[:,]",
+  "type": "operator"
+}
+},
+  "10": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%a_][%w_]*",
+  "type": "symbol"
+}
+}
+}
+},
+  "root": {
+  "$ref": "1"
+}
+}
+}

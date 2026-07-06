@@ -1,0 +1,156 @@
+{
+  "syntax": {
+  "graph": {
+  "nodes": {
+  "1": {
+  "kind": "object",
+  "values": {
+  "files": {
+  "$ref": "2"
+},
+  "name": "Jinja",
+  "patterns": {
+  "$ref": "3"
+},
+  "symbols": {
+  "$ref": "4"
+}
+}
+},
+  "2": {
+  "kind": "array",
+  "values": ["%.j2$", "%.jinja$", "%.jinja2$"]
+},
+  "3": {
+  "kind": "array",
+  "values": [{
+  "$ref": "5"
+}, {
+  "$ref": "7"
+}, {
+  "$ref": "9"
+}, {
+  "$ref": "11"
+}, {
+  "$ref": "13"
+}]
+},
+  "4": {
+  "kind": "object",
+  "values": {
+  "and": "keyword",
+  "as": "keyword",
+  "block": "keyword",
+  "call": "keyword",
+  "defined": "keyword2",
+  "else": "keyword",
+  "elif": "keyword",
+  "endblock": "keyword",
+  "endcall": "keyword",
+  "endfilter": "keyword",
+  "endfor": "keyword",
+  "endif": "keyword",
+  "endmacro": "keyword",
+  "endraw": "keyword",
+  "endset": "keyword",
+  "endwith": "keyword",
+  "extends": "keyword",
+  "filter": "keyword",
+  "for": "keyword",
+  "from": "keyword",
+  "if": "keyword",
+  "ignore": "keyword2",
+  "import": "keyword",
+  "in": "keyword",
+  "include": "keyword",
+  "is": "keyword",
+  "macro": "keyword",
+  "missing": "keyword2",
+  "not": "keyword",
+  "or": "keyword",
+  "raw": "keyword",
+  "recursive": "keyword2",
+  "scoped": "keyword2",
+  "set": "keyword",
+  "true": "literal",
+  "false": "literal",
+  "none": "literal",
+  "True": "literal",
+  "False": "literal",
+  "None": "literal",
+  "with": "keyword",
+  "without": "keyword2"
+}
+},
+  "5": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "6"
+},
+  "type": "comment"
+}
+},
+  "6": {
+  "kind": "array",
+  "values": ["{#", "#}"]
+},
+  "7": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "8"
+},
+  "type": "keyword"
+}
+},
+  "8": {
+  "kind": "array",
+  "values": ["{%%", "%%}"]
+},
+  "9": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "10"
+},
+  "type": "string"
+}
+},
+  "10": {
+  "kind": "array",
+  "values": ["{{", "}}"]
+},
+  "11": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "12"
+},
+  "type": "string"
+}
+},
+  "12": {
+  "kind": "array",
+  "values": ["\"", "\"", "\\"]
+},
+  "13": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "14"
+},
+  "type": "string"
+}
+},
+  "14": {
+  "kind": "array",
+  "values": ["'", "'", "\\"]
+}
+}
+},
+  "root": {
+  "$ref": "1"
+}
+}
+}

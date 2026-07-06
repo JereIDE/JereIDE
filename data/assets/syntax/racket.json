@@ -1,0 +1,220 @@
+{
+  "syntax": {
+  "graph": {
+  "nodes": {
+  "1": {
+  "kind": "object",
+  "values": {
+  "block_comment": {
+  "$ref": "3"
+},
+  "comment": ";",
+  "files": {
+  "$ref": "4"
+},
+  "headers": "^#lang ",
+  "name": "Racket",
+  "patterns": {
+  "$ref": "5"
+},
+  "symbols": {
+  "$ref": "2"
+}
+}
+},
+  "10": {
+  "kind": "object",
+  "values": {
+  "pattern": "#t%f[%W]",
+  "type": "literal"
+}
+},
+  "11": {
+  "kind": "object",
+  "values": {
+  "pattern": "#f%f[%W]",
+  "type": "literal"
+}
+},
+  "12": {
+  "kind": "object",
+  "values": {
+  "pattern": "#[boxd][%+%-]?[%x%d]+",
+  "type": "number"
+}
+},
+  "13": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%+%-]?%d+%.?%d*[eE]?[%+%-]?%d*",
+  "type": "number"
+}
+},
+  "14": {
+  "kind": "object",
+  "values": {
+  "pattern": "[',`]",
+  "type": "keyword2"
+}
+},
+  "15": {
+  "kind": "object",
+  "values": {
+  "pattern": "#;",
+  "type": "comment"
+}
+},
+  "16": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%(%)%[%]{}]",
+  "type": "operator"
+}
+},
+  "17": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%a_!%$][%w_%-%*%!%?<>/=+%$]*",
+  "type": "symbol"
+}
+},
+  "2": {
+  "kind": "object",
+  "values": {
+  "and": "keyword",
+  "apply": "keyword2",
+  "begin": "keyword",
+  "call-with-current-continuation": "keyword",
+  "call/cc": "keyword",
+  "car": "keyword2",
+  "case": "keyword",
+  "case-lambda": "keyword",
+  "cdr": "keyword2",
+  "class": "keyword",
+  "cond": "keyword",
+  "cons": "keyword2",
+  "contract": "keyword",
+  "define": "keyword",
+  "define-syntax": "keyword",
+  "define-values": "keyword",
+  "define/contract": "keyword",
+  "displayln": "keyword2",
+  "do": "keyword",
+  "else": "keyword",
+  "error": "keyword2",
+  "filter": "keyword2",
+  "for": "keyword",
+  "for*": "keyword",
+  "for-each": "keyword2",
+  "for/fold": "keyword",
+  "for/list": "keyword",
+  "for/vector": "keyword",
+  "hash": "keyword2",
+  "hash-ref": "keyword2",
+  "hash-set": "keyword2",
+  "if": "keyword",
+  "lambda": "keyword",
+  "let": "keyword",
+  "let*": "keyword",
+  "let-syntax": "keyword",
+  "let-values": "keyword",
+  "letrec": "keyword",
+  "letrec-syntax": "keyword",
+  "list": "keyword2",
+  "make-hash": "keyword2",
+  "map": "keyword2",
+  "match": "keyword",
+  "module": "keyword",
+  "module*": "keyword",
+  "module+": "keyword",
+  "not": "keyword",
+  "or": "keyword",
+  "parameterize": "keyword",
+  "printf": "keyword2",
+  "provide": "keyword",
+  "quasiquote": "keyword",
+  "quote": "keyword",
+  "raise": "keyword",
+  "require": "keyword",
+  "send": "keyword",
+  "set!": "keyword",
+  "struct": "keyword",
+  "syntax-rules": "keyword",
+  "unless": "keyword",
+  "unquote": "keyword",
+  "unquote-splicing": "keyword",
+  "values": "keyword2",
+  "when": "keyword",
+  "with-handlers": "keyword"
+}
+},
+  "3": {
+  "kind": "array",
+  "values": ["#|", "|#"]
+},
+  "4": {
+  "kind": "array",
+  "values": ["%.rkt$", "%.rktl$", "%.rktd$", "%.scrbl$"]
+},
+  "5": {
+  "kind": "array",
+  "values": [{
+  "$ref": "6"
+}, {
+  "$ref": "7"
+}, {
+  "$ref": "8"
+}, {
+  "$ref": "10"
+}, {
+  "$ref": "11"
+}, {
+  "$ref": "12"
+}, {
+  "$ref": "13"
+}, {
+  "$ref": "14"
+}, {
+  "$ref": "15"
+}, {
+  "$ref": "16"
+}, {
+  "$ref": "17"
+}]
+},
+  "6": {
+  "kind": "object",
+  "values": {
+  "pattern": ";.*",
+  "type": "comment"
+}
+},
+  "7": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "3"
+},
+  "type": "comment"
+}
+},
+  "8": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "9"
+},
+  "type": "string"
+}
+},
+  "9": {
+  "kind": "array",
+  "values": ["\"", "\"", "\\"]
+}
+}
+},
+  "root": {
+  "$ref": "1"
+}
+}
+}

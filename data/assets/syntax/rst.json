@@ -1,0 +1,140 @@
+{
+  "syntax": {
+  "graph": {
+  "nodes": {
+  "1": {
+  "kind": "object",
+  "values": {
+  "files": {
+  "$ref": "2"
+},
+  "name": "reStructuredText",
+  "patterns": {
+  "$ref": "3"
+},
+  "symbols": {
+  "$ref": "4"
+}
+}
+},
+  "2": {
+  "kind": "array",
+  "values": ["%.rst$", "%.rest$"]
+},
+  "3": {
+  "kind": "array",
+  "values": [{
+  "$ref": "5"
+}, {
+  "$ref": "6"
+}, {
+  "$ref": "7"
+}, {
+  "$ref": "9"
+}, {
+  "$ref": "11"
+}, {
+  "$ref": "12"
+}, {
+  "$ref": "13"
+}, {
+  "$ref": "14"
+}, {
+  "$ref": "15"
+}, {
+  "$ref": "16"
+}]
+},
+  "4": {
+  "kind": "object",
+  "values": {}
+},
+  "5": {
+  "kind": "object",
+  "values": {
+  "pattern": "^%p+$",
+  "type": "keyword"
+}
+},
+  "6": {
+  "kind": "object",
+  "values": {
+  "pattern": "^%.%.%s.*",
+  "type": "comment"
+}
+},
+  "7": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "8"
+},
+  "type": "string"
+}
+},
+  "8": {
+  "kind": "array",
+  "values": ["``", "``"]
+},
+  "9": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "10"
+},
+  "type": "string"
+}
+},
+  "10": {
+  "kind": "array",
+  "values": ["`", "`"]
+},
+  "11": {
+  "kind": "object",
+  "values": {
+  "pattern": "%*%*[^%*]+%*%*",
+  "type": "keyword"
+}
+},
+  "12": {
+  "kind": "object",
+  "values": {
+  "pattern": "%*[^%*\n]+%*",
+  "type": "keyword2"
+}
+},
+  "13": {
+  "kind": "object",
+  "values": {
+  "pattern": ":[%a][%w%-]*:`[^`]*`",
+  "type": "function"
+}
+},
+  "14": {
+  "kind": "object",
+  "values": {
+  "pattern": ":[%a][%w%-]*:",
+  "type": "keyword2"
+}
+},
+  "15": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%+%-]?%d+%.?%d*",
+  "type": "number"
+}
+},
+  "16": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%a_][%w_]*",
+  "type": "symbol"
+}
+}
+}
+},
+  "root": {
+  "$ref": "1"
+}
+}
+}

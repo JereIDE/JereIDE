@@ -1,0 +1,169 @@
+{
+  "syntax": {
+  "graph": {
+  "nodes": {
+  "1": {
+  "kind": "object",
+  "values": {
+  "block_comment": {
+  "$ref": "3"
+},
+  "comment": "%",
+  "files": {
+  "$ref": "4"
+},
+  "name": "MATLAB",
+  "patterns": {
+  "$ref": "5"
+},
+  "symbols": {
+  "$ref": "2"
+}
+}
+},
+  "10": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "11"
+},
+  "type": "string"
+}
+},
+  "11": {
+  "kind": "array",
+  "values": ["\"", "\"", "\\"]
+},
+  "12": {
+  "kind": "object",
+  "values": {
+  "pattern": "'[^']*'",
+  "type": "string"
+}
+},
+  "13": {
+  "kind": "object",
+  "values": {
+  "pattern": "0x[%da-fA-F]+",
+  "type": "number"
+}
+},
+  "14": {
+  "kind": "object",
+  "values": {
+  "pattern": "%d[%d%.]*[eE]?[%+%-]?[%di]*",
+  "type": "number"
+}
+},
+  "15": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%+%-=/%*<>!~|&%^;:{}%[%]@,%(%)%.]",
+  "type": "operator"
+}
+},
+  "16": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%a_][%w_]*%f[(]",
+  "type": "function"
+}
+},
+  "17": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%a_][%w_]*",
+  "type": "symbol"
+}
+},
+  "2": {
+  "kind": "object",
+  "values": {
+  "break": "keyword",
+  "case": "keyword",
+  "catch": "keyword",
+  "classdef": "keyword",
+  "continue": "keyword",
+  "else": "keyword",
+  "elseif": "keyword",
+  "end": "keyword",
+  "enumeration": "keyword",
+  "events": "keyword",
+  "false": "literal",
+  "for": "keyword",
+  "function": "keyword",
+  "global": "keyword",
+  "if": "keyword",
+  "methods": "keyword",
+  "nargin": "keyword2",
+  "nargout": "keyword2",
+  "otherwise": "keyword",
+  "parfor": "keyword",
+  "persistent": "keyword",
+  "pi": "literal",
+  "properties": "keyword",
+  "return": "keyword",
+  "spmd": "keyword",
+  "switch": "keyword",
+  "true": "literal",
+  "try": "keyword",
+  "while": "keyword"
+}
+},
+  "3": {
+  "kind": "array",
+  "values": ["%{", "%}"]
+},
+  "4": {
+  "kind": "array",
+  "values": ["%.m$", "%.mlx$"]
+},
+  "5": {
+  "kind": "array",
+  "values": [{
+  "$ref": "6"
+}, {
+  "$ref": "8"
+}, {
+  "$ref": "10"
+}, {
+  "$ref": "12"
+}, {
+  "$ref": "13"
+}, {
+  "$ref": "14"
+}, {
+  "$ref": "15"
+}, {
+  "$ref": "16"
+}, {
+  "$ref": "17"
+}]
+},
+  "6": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "7"
+},
+  "type": "comment"
+}
+},
+  "7": {
+  "kind": "array",
+  "values": ["%%{", "%%}"]
+},
+  "8": {
+  "kind": "object",
+  "values": {
+  "pattern": "%%.*",
+  "type": "comment"
+}
+}
+}
+},
+  "root": {
+  "$ref": "1"
+}
+}
+}

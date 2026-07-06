@@ -1,0 +1,199 @@
+{
+  "syntax": {
+  "graph": {
+  "nodes": {
+  "1": {
+  "kind": "object",
+  "values": {
+  "block_comment": {
+  "$ref": "3"
+},
+  "comment": "//",
+  "files": {
+  "$ref": "4"
+},
+  "name": "SCSS",
+  "patterns": {
+  "$ref": "5"
+},
+  "symbols": {
+  "$ref": "2"
+}
+}
+},
+  "10": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "11"
+},
+  "type": "string"
+}
+},
+  "11": {
+  "kind": "array",
+  "values": ["\"", "\"", "\\"]
+},
+  "12": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "13"
+},
+  "type": "string"
+}
+},
+  "13": {
+  "kind": "array",
+  "values": ["'", "'", "\\"]
+},
+  "14": {
+  "kind": "object",
+  "values": {
+  "pattern": "%$[%a_][%w_%-]*",
+  "type": "keyword2"
+}
+},
+  "15": {
+  "kind": "object",
+  "values": {
+  "pattern": "@[%a][%w%-]*",
+  "type": "keyword"
+}
+},
+  "16": {
+  "kind": "object",
+  "values": {
+  "pattern": "#{[^}]*}",
+  "type": "keyword2"
+}
+},
+  "17": {
+  "kind": "object",
+  "values": {
+  "pattern": "#%x%x%x%x%x%x%f[%W]",
+  "type": "string"
+}
+},
+  "18": {
+  "kind": "object",
+  "values": {
+  "pattern": "#%x%x%x%f[%W]",
+  "type": "string"
+}
+},
+  "19": {
+  "kind": "object",
+  "values": {
+  "pattern": "-?%d+[%d%.]*r?e[m]",
+  "type": "number"
+}
+},
+  "2": {
+  "kind": "object",
+  "values": {}
+},
+  "20": {
+  "kind": "object",
+  "values": {
+  "pattern": "-?%d+[%d%.]*[%a%%]*",
+  "type": "number"
+}
+},
+  "21": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%a_&][%w_%-]*%s*%f[:]",
+  "type": "keyword"
+}
+},
+  "22": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%a_][%w_%-]*%f[{(,]",
+  "type": "function"
+}
+},
+  "23": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%+%-=/%*%%<>!~|&%^%;:{}%[%](),.]",
+  "type": "operator"
+}
+},
+  "24": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%a_][%w_%-]*",
+  "type": "symbol"
+}
+},
+  "3": {
+  "kind": "array",
+  "values": ["/*", "*/"]
+},
+  "4": {
+  "kind": "array",
+  "values": ["%.scss$", "%.sass$"]
+},
+  "5": {
+  "kind": "array",
+  "values": [{
+  "$ref": "6"
+}, {
+  "$ref": "7"
+}, {
+  "$ref": "10"
+}, {
+  "$ref": "12"
+}, {
+  "$ref": "14"
+}, {
+  "$ref": "15"
+}, {
+  "$ref": "16"
+}, {
+  "$ref": "17"
+}, {
+  "$ref": "18"
+}, {
+  "$ref": "19"
+}, {
+  "$ref": "20"
+}, {
+  "$ref": "21"
+}, {
+  "$ref": "22"
+}, {
+  "$ref": "23"
+}, {
+  "$ref": "24"
+}]
+},
+  "6": {
+  "kind": "object",
+  "values": {
+  "pattern": "//.*",
+  "type": "comment"
+}
+},
+  "7": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "8"
+},
+  "type": "comment"
+}
+},
+  "8": {
+  "kind": "array",
+  "values": ["/%*", "%*/"]
+}
+}
+},
+  "root": {
+  "$ref": "1"
+}
+}
+}

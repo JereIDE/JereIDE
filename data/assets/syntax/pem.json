@@ -1,0 +1,56 @@
+{
+  "syntax": {
+  "graph": {
+  "nodes": {
+  "1": {
+  "kind": "object",
+  "values": {
+  "files": {
+  "$ref": "2"
+},
+  "name": "PEM",
+  "patterns": {
+  "$ref": "3"
+},
+  "symbols": {
+  "$ref": "4"
+}
+}
+},
+  "2": {
+  "kind": "array",
+  "values": ["%.pem$", "%.crt$", "%.cer$", "%.key$", "%.pub$", "%.p12$", "%.pfx$", "%.p8$", "%.csr$"]
+},
+  "3": {
+  "kind": "array",
+  "values": [{
+  "$ref": "5"
+}, {
+  "$ref": "6"
+}]
+},
+  "4": {
+  "kind": "object",
+  "values": {}
+},
+  "5": {
+  "kind": "object",
+  "values": {
+  "pattern": "^%-%-%-%-%-.+%-%-%-%-%-$",
+  "type": "keyword"
+}
+},
+  "6": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%a%d%+%/]+=*",
+  "type": "string"
+}
+}
+}
+},
+  "root": {
+  "$ref": "1"
+}
+}
+}

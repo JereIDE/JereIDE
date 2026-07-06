@@ -1,0 +1,47 @@
+[package]
+name = "jereide-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "JereIDE - a fast code editor built in Rust with SDL3"
+authors = ["Jeremy-Qian"]
+
+[features]
+default = ["sdl"]
+sdl = ["dep:sdl3-sys"]
+
+[dependencies]
+sdl3-sys = { version = "0.6.3", features = [
+    "build-from-source-static",
+    "sdl-lean-and-mean",
+    "no-sdl-gpu",
+    "no-sdl-camera",
+    "no-sdl-joystick",
+    "no-sdl-haptic",
+    "no-sdl-hidapi",
+    "no-sdl-sensor",
+    "no-sdl-dialog",
+    "no-sdl-tray",
+    "no-sdl-power",
+], optional = true }
+fontdue = "0.9.3"
+freetype-sys = { version = "0.22.1", features = ["bundled"] }
+notify = "8.2.0"
+pcre2 = "0.2.11"
+pulldown-cmark = { version = "0.12", default-features = false }
+png = "0.18"
+libc = "0.2.182"
+bitflags = "2.11.0"
+log = "0.4.29"
+env_logger = "0.11.9"
+thiserror = "2.0.18"
+anyhow = "1.0.102"
+parking_lot = "0.12.5"
+crossbeam-channel = "0.5.15"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0.145"
+toml = "0.8"
+
+[build-dependencies]
+cc = "1"

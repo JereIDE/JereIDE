@@ -1,0 +1,31 @@
+# Rust
+# Ignore local/credential cruft under .cargo/, but keep the committed
+# build config: CI and the release workflow rely on its +crt-static and
+# static-linking settings (see .github/workflows/release.yml).
+.cargo/*
+!.cargo/config.toml
+
+# Rust build output — covers debug, release, docs, and all profiles.
+target/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Runtime logs and crash files
+error.txt
+.lite-debug.log
+
+# Packaged release artifacts
+*.tar.gz
+*.zip
+*.deb
+*.AppImage
+
+# Local build output
+/dist/
+
+# Bundled no-GL SDL3 for Nano Anvil (regenerate with scripts/build-sdl3-nogl.sh)
+/lib/sdl3-nogl/

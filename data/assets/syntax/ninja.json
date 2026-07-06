@@ -1,0 +1,117 @@
+{
+  "syntax": {
+  "graph": {
+  "nodes": {
+  "1": {
+  "kind": "object",
+  "values": {
+  "comment": "#",
+  "files": {
+  "$ref": "2"
+},
+  "name": "Ninja",
+  "patterns": {
+  "$ref": "3"
+},
+  "symbols": {
+  "$ref": "4"
+}
+}
+},
+  "2": {
+  "kind": "array",
+  "values": ["%.ninja$", "build%.ninja$"]
+},
+  "3": {
+  "kind": "array",
+  "values": [{
+  "$ref": "5"
+}, {
+  "$ref": "6"
+}, {
+  "$ref": "8"
+}, {
+  "$ref": "9"
+}, {
+  "$ref": "10"
+}, {
+  "$ref": "11"
+}, {
+  "$ref": "12"
+}]
+},
+  "4": {
+  "kind": "object",
+  "values": {
+  "build": "keyword",
+  "console": "keyword2",
+  "default": "keyword",
+  "include": "keyword",
+  "phony": "keyword2",
+  "pool": "keyword",
+  "rule": "keyword",
+  "subninja": "keyword"
+}
+},
+  "5": {
+  "kind": "object",
+  "values": {
+  "pattern": "#.*",
+  "type": "comment"
+}
+},
+  "6": {
+  "kind": "object",
+  "values": {
+  "pattern": {
+  "$ref": "7"
+},
+  "type": "string"
+}
+},
+  "7": {
+  "kind": "array",
+  "values": ["\"", "\"", "\\"]
+},
+  "8": {
+  "kind": "object",
+  "values": {
+  "pattern": "%$%b{}",
+  "type": "keyword2"
+}
+},
+  "9": {
+  "kind": "object",
+  "values": {
+  "pattern": "%$[%a_][%w_%.]*",
+  "type": "keyword2"
+}
+},
+  "10": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%+%-=|&<>:%.]",
+  "type": "operator"
+}
+},
+  "11": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%a_][%w_%.%-]*%f[:]",
+  "type": "function"
+}
+},
+  "12": {
+  "kind": "object",
+  "values": {
+  "pattern": "[%a_][%w_]*",
+  "type": "symbol"
+}
+}
+}
+},
+  "root": {
+  "$ref": "1"
+}
+}
+}
