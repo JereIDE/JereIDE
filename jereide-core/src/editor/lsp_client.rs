@@ -141,6 +141,9 @@ pub(crate) struct CompletionState {
     /// reply can't clobber a fresher one (LSP responses are not
     /// ordered against the request stream).
     pub latest_request_id: i64,
+    /// Screen rect of the popup from the last frame, used for
+    /// mouse hit-testing.
+    pub rect: (f64, f64, f64, f64),
 }
 
 impl CompletionState {
@@ -153,6 +156,7 @@ impl CompletionState {
             line: 0,
             col: 0,
             latest_request_id: 0,
+            rect: (0.0, 0.0, 0.0, 0.0),
         }
     }
 
@@ -161,6 +165,7 @@ impl CompletionState {
         self.items.clear();
         self.selected = 0;
         self.scroll_offset = 0;
+        self.rect = (0.0, 0.0, 0.0, 0.0);
     }
 }
 

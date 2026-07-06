@@ -7398,6 +7398,146 @@ pub fn run(
                         continue;
                     }
 
+                    // Completion popup: click item to accept, click outside to dismiss.
+                    if *button == MouseButton::Left && completion.visible {
+                        let (px, py, pw, ph) = completion.rect;
+                        if *x >= px && *x < px + pw && *y >= py && *y < py + ph {
+                            let item_h = style.font_height + style.padding_y;
+                            let row = ((*y - py - style.padding_y / 2.0) / item_h) as usize;
+                            let idx = completion.scroll_offset + row;
+                            if idx < completion.items.len() {
+                                completion.selected = idx;
+                                if let Some((_, _, insert_text)) =
+                                    completion.items.get(completion.selected)
+                                {
+                                    let text = insert_text.clone();
+                                    if let Some(doc) = docs.get_mut(active_tab) {
+                                        if let Some(buf_id) = doc.view.buffer_id {
+                                            let _ = buffer::with_buffer_mut(buf_id, |b| {
+                                                buffer::push_undo(b);
+                                                let line =
+                                                    *b.selections.first().unwrap_or(&1);
+                                                let col =
+                                                    *b.selections.get(1).unwrap_or(&1);
+                                                if line <= b.lines.len() {
+                                                    let l = &b.lines[line - 1];
+                                                    let chars: Vec<char> =
+                                                        l.chars().collect();
+                                                    let col_idx =
+                                                        (col - 1).min(chars.len());
+                                                    let mut word_start = col_idx;
+                                                    while word_start > 0 {
+                                                        let c = chars[word_start - 1];
+                                                        if c.is_alphanumeric() || c == '_'
+                                                        {
+                                                            word_start -= 1;
+                                                        } else {
+                                                            break;
+                                                        }
+                                                    }
+                                                    let l = &mut b.lines[line - 1];
+                                                    let byte_start =
+                                                        char_to_byte(l, word_start);
+                                                    let byte_end =
+                                                        char_to_byte(l, col - 1);
+                                                    l.replace_range(
+                                                        byte_start..byte_end,
+                                                        &text,
+                                                    );
+                                                    let new_col = word_start
+                                                        + 1
+                                                        + text.chars().count();
+                                                    b.selections[0] = line;
+                                                    b.selections[1] = new_col;
+                                                    b.selections[2] = line;
+                                                    b.selections[3] = new_col;
+                                                }
+                                                Ok(())
+                                            });
+                                        }
+                                    }
+                                }
+                                completion.hide();
+                            }
+                        } else {
+                            completion.hide();
+                        }
+                        redraw = true;
+                        continue;
+                    }
+
+                    // CmdView: click suggestion to select it; click outside to dismiss.
+                    if *button == MouseButton::Left && cmdview_active {
+                        let (ww_cv, _, _, _) = crate::window::get_window_size();
+                        let width_cv = ww_cv as f64;
+                        let cv_w = (width_cv * 0.7).max(500.0).min(width_cv - 20.0);
+                        let cv_x = (width_cv - cv_w) / 2.0;
+                        let line_h = style.font_height + style.padding_y;
+                        let max_visible = 15usize;
+                        let visible_count = cmdview_suggestions.len().min(max_visible);
+                        let cv_h = line_h * (visible_count as f64 + 1.0)
+                            + style.padding_y * 2.0;
+                        let nag_offset = if matches!(
+                            nag,
+                            Nag::OverwriteFile { .. }
+                                | Nag::CreateDir { .. }
+                                | Nag::ReloadFromDisk { .. }
+                                | Nag::NoExtension { .. }
+                        ) {
+                            style.font_height + style.padding_y * 2.0 + style.padding_y
+                        } else {
+                            0.0
+                        };
+                        let cv_y = style.padding_y * 2.0 + nag_offset;
+                        if *x >= cv_x && *x < cv_x + cv_w && *y >= cv_y && *y < cv_y + cv_h {
+                            let input_y = cv_y + style.padding_y;
+                            let suggestion_start = input_y + line_h + style.divider_size;
+                            if *y >= suggestion_start {
+                                let row =
+                                    ((*y - suggestion_start) / line_h) as usize;
+                                if row < cmdview_suggestions.len() {
+                                    cmdview_selected = row;
+                                }
+                            }
+                        } else {
+                            cmdview_active = false;
+                        }
+                        redraw = true;
+                        continue;
+                    }
+
+                    // Command palette: click command to activate, click outside to dismiss.
+                    if *button == MouseButton::Left && palette_active {
+                        let (ww_pal, _, _, _) = crate::window::get_window_size();
+                        let width_pal = ww_pal as f64;
+                        let pal_w = (width_pal * 0.5).max(400.0).min(width_pal - 20.0);
+                        let pal_x = (width_pal - pal_w) / 2.0;
+                        let pal_y = style.padding_y * 2.0;
+                        let line_h = style.font_height + style.padding_y;
+                        let max_visible = 12usize;
+                        let visible = palette_results.len().min(max_visible);
+                        let pal_h = line_h * (visible as f64 + 1.0) + style.padding_y * 2.0;
+                        if *x >= pal_x && *x < pal_x + pal_w && *y >= pal_y && *y < pal_y + pal_h {
+                            let input_y = pal_y + style.padding_y;
+                            let suggestion_start = input_y + line_h + style.divider_size;
+                            if *y >= suggestion_start {
+                                let row =
+                                    ((*y - suggestion_start) / line_h) as usize;
+                                if row < palette_results.len() {
+                                    palette_selected = row;
+                                    let (cmd, _) = &palette_results[palette_selected];
+                                    let cmd = cmd.clone();
+                                    palette_active = false;
+                                    include!("commands_dispatch.rs");
+                                }
+                            }
+                        } else {
+                            palette_active = false;
+                        }
+                        redraw = true;
+                        continue;
+                    }
+
                     if let Some(doc) = docs.get_mut(active_tab) {
                         let dv = &mut doc.view;
                         if let Some(buf_id) = dv.buffer_id {
@@ -12582,6 +12722,8 @@ pub fn run(
                         let popup_w = (content_w + style.padding_x * 2.0)
                             .max(120.0)
                             .min(width - popup_x - 10.0);
+                        // Stash the screen rect for mouse hit-testing.
+                        completion.rect = (popup_x, popup_y, popup_w, popup_h);
                         // Background.
                         draw_ctx.draw_rect(
                             popup_x,
