@@ -13060,7 +13060,7 @@ pub fn run(
                 // Draw context menu on top of everything.
                 if context_menu.visible {
                     crate::editor::app_state::clip_init(width, height);
-                    context_menu.draw_native(&mut draw_ctx, &style);
+                    context_menu.draw_native(&mut draw_ctx, &style, width, height);
                 }
 
                 crate::renderer::native_end_frame();

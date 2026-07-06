@@ -55,11 +55,14 @@ impl Default for ContextMenu {
 }
 
 impl ContextMenu {
-    /// Draw the context menu natively.
+    /// Draw the context menu natively, auto-flipping above/below and
+    /// left/right so the menu stays within the given `screen_w` x `screen_h` area.
     pub fn draw_native(
         &self,
         ctx: &mut dyn DrawContext,
         style: &crate::editor::style_ctx::StyleContext,
+        screen_w: f64,
+        screen_h: f64,
     ) {
         if !self.visible || self.items.is_empty() {
             return;
@@ -76,8 +79,18 @@ impl ContextMenu {
                 max_w = max_w.max(w + style.padding_x * 2.0);
             }
         }
-        let x = self.position.x;
-        let y = self.position.y;
+        // Auto-flip: show below/right of cursor if there's room, otherwise
+        // flip above/left so the menu doesn't overflow the screen.
+        let x = if self.position.x + max_w + 10.0 <= screen_w {
+            self.position.x
+        } else {
+            (self.position.x - max_w).max(0.0)
+        };
+        let y = if self.position.y + total_h + 10.0 <= screen_h {
+            self.position.y
+        } else {
+            (self.position.y - total_h).max(0.0)
+        };
 
         // Background + border
         ctx.draw_rect(
