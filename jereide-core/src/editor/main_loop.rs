@@ -54,6 +54,7 @@ use crate::editor::keymap::NativeKeymap;
 use crate::editor::lsp;
 use crate::editor::lsp_client::*;
 use crate::editor::picker;
+use crate::editor::word_index::WordIndex;
 use crate::editor::status_view::{StatusItem, StatusView};
 use crate::editor::storage;
 use crate::editor::style_ctx::StyleContext;
@@ -1805,6 +1806,8 @@ pub fn run(
 
     // LSP completion, hover, and go-to-definition state.
     let mut completion = CompletionState::new();
+    // Document-word autocomplete index (used when LSP is not active).
+    let mut word_index = WordIndex::new();
     let mut hover = HoverState::new();
     // Signature-help popup reuses the hover popup shape (text + visibility).
     let mut signature_help = HoverState::new();
@@ -2287,6 +2290,11 @@ pub fn run(
                             "up" => {
                                 if completion.selected > 0 {
                                     completion.selected -= 1;
+                                    // Scroll the window so the selected item stays visible.
+                                    if completion.selected < completion.scroll_offset {
+                                        completion.scroll_offset =
+                                            completion.scroll_offset.saturating_sub(1);
+                                    }
                                 }
                                 redraw = true;
                                 continue;
@@ -2294,6 +2302,14 @@ pub fn run(
                             "down" => {
                                 if completion.selected + 1 < completion.items.len() {
                                     completion.selected += 1;
+                                    // Scroll the window so the selected item stays visible.
+                                    let max_visible = 10usize;
+                                    if completion.selected
+                                        >= completion.scroll_offset + max_visible
+                                    {
+                                        completion.scroll_offset =
+                                            completion.selected - max_visible + 1;
+                                    }
                                 }
                                 redraw = true;
                                 continue;
@@ -2329,7 +2345,10 @@ pub fn run(
                                                     let byte_start = char_to_byte(l, word_start);
                                                     let byte_end = char_to_byte(l, col - 1);
                                                     l.replace_range(byte_start..byte_end, &text);
-                                                    let new_col = word_start + text.chars().count();
+                                                    // word_start is 0-based; selections
+                                                    // use 1-based columns.
+                                                    let new_col =
+                                                        word_start + 1 + text.chars().count();
                                                     b.selections[0] = line;
                                                     b.selections[1] = new_col;
                                                     b.selections[2] = line;
@@ -5653,6 +5672,83 @@ pub fn run(
                                 signature_help.col = cc;
                             }
                         }
+                        // Document-word autocomplete: instant, no LSP dependency.
+                        // Fires on every word character typed when LSP isn't
+                        // handling it.
+                        let dwp_word_char = text
+                            .chars()
+                            .next()
+                            .map(|c| c.is_alphanumeric() || c == '_')
+                            .unwrap_or(false);
+                        if dwp_word_char {
+                            let lsp_handles = subsystems.has_lsp()
+                                && lsp_state.transport_id.is_some()
+                                && lsp_state.initialized;
+                            if !lsp_handles {
+                                if word_index.dirty {
+                                    if let Some(buf_id) = docs
+                                        .get(active_tab)
+                                        .and_then(|d| d.view.buffer_id)
+                                    {
+                                        let _ = buffer::with_buffer(buf_id, |b| {
+                                            word_index.rebuild(&b.lines);
+                                            Ok(())
+                                        });
+                                    }
+                                }
+                                if let Some(buf_id) = docs
+                                    .get(active_tab)
+                                    .and_then(|d| d.view.buffer_id)
+                                {
+                                    let (cl, cc, prefix) =
+                                        buffer::with_buffer(buf_id, |b| {
+                                            let l = *b.selections.get(2).unwrap_or(&1);
+                                            let c = *b.selections.get(3).unwrap_or(&1);
+                                            let line = b
+                                                .lines
+                                                .get(l - 1)
+                                                .map(String::as_str)
+                                                .unwrap_or("");
+                                            let prefix_chars: Vec<char> =
+                                                line.chars().collect();
+                                            let col = (c - 1).min(prefix_chars.len());
+                                            let mut start = col;
+                                            while start > 0 {
+                                                if prefix_chars[start - 1].is_alphanumeric()
+                                                    || prefix_chars[start - 1] == '_'
+                                                {
+                                                    start -= 1;
+                                                } else {
+                                                    break;
+                                                }
+                                            }
+                                            Ok((
+                                                l,
+                                                c,
+                                                prefix_chars[start..col]
+                                                    .iter()
+                                                    .collect::<String>(),
+                                            ))
+                                        })
+                                        .unwrap_or((1, 1, String::new()));
+                                    if !prefix.is_empty() {
+                                        let items = word_index.query(&prefix, 20);
+                                        if !items.is_empty() {
+                                            completion.items = items;
+                                            completion.selected = 0;
+                                            completion.scroll_offset = 0;
+                                            completion.line = cl;
+                                            completion.col = cc;
+                                            completion.visible = true;
+                                        } else if !completion.visible {
+                                            completion.hide();
+                                        }
+                                    } else {
+                                        completion.hide();
+                                    }
+                                }
+                            }
+                        }
                     }
                     redraw = true;
                 }
@@ -8428,6 +8524,7 @@ pub fn run(
                                 if !items.is_empty() && !cmdview_active && !palette_active {
                                     completion.items = items;
                                     completion.selected = 0;
+                                    completion.scroll_offset = 0;
                                     completion.visible = true;
                                 } else {
                                     completion.hide();
@@ -8835,13 +8932,33 @@ pub fn run(
             }
         }
 
-        // LSP: detect any buffer mutation on the active doc by watching
+        // Detect any buffer mutation on the active doc by watching
         // `change_id`. The typing path used to flip `last_change` itself,
         // but every other edit route (paste, undo, redo, format-document,
         // multi-cursor delete, snippet apply, find-and-replace) bypassed
         // that flag, so inlay hints went stale until the next keystroke.
         // Polling the change counter per frame catches all of them in one
         // place.
+        //
+        // Word-index dirty marking runs unconditionally (no LSP needed);
+        // the LSP inlay-hint / didChange logic below this block is gated
+        // on `has_lsp`.
+        if let Some(buf_id) = docs.get(active_tab).and_then(|d| d.view.buffer_id) {
+            let cur = buffer::with_buffer(buf_id, |b| Ok(b.change_id)).unwrap_or(0);
+            let prev = word_index.last_seen_change_id.get(&buf_id).copied();
+            match prev {
+                None => {
+                    word_index.last_seen_change_id.insert(buf_id, cur);
+                    word_index.dirty = true;
+                }
+                Some(p) if p != cur => {
+                    word_index.last_seen_change_id.insert(buf_id, cur);
+                    word_index.dirty = true;
+                }
+                _ => {}
+            }
+        }
+
         if subsystems.has_lsp() && lsp_state.transport_id.is_some() && lsp_state.initialized {
             if let Some(doc) = docs.get(active_tab) {
                 if !doc.path.is_empty() {
@@ -12416,8 +12533,8 @@ pub fn run(
                     }
                 }
 
-                // Draw LSP completion popup.
-                if subsystems.has_lsp() && completion.visible && !completion.items.is_empty() {
+                // Draw completion popup (LSP or document-word).
+                if completion.visible && !completion.items.is_empty() {
                     if let Some(doc) = docs.get(active_tab) {
                         let dv = &doc.view;
                         crate::editor::app_state::clip_init(width, height);
@@ -12430,19 +12547,29 @@ pub fn run(
                             + (completion.col as f64 - 1.0)
                                 * draw_ctx.font_width(style.code_font, "m")
                             - dv.scroll_x;
-                        let popup_y =
-                            dv.rect().y + completion.line as f64 * line_h_comp - dv.scroll_y;
                         let item_h = style.font_height + style.padding_y;
-                        let popup_h = item_h * completion.items.len() as f64 + style.padding_y;
-                        // Auto-size the popup to the widest item rather
-                        // than a fixed 350px box. Width = max(label +
-                        // " " + detail) over visible items, plus padding.
-                        // Clamped to the screen edge and to a sensible
-                        // minimum so a one-character item doesn't render
-                        // as a sliver.
+                        // At most 10 items visible; the rest are reached
+                        // by scrolling with Up/Down.
+                        let max_visible = 10usize;
+                        let visible_count = max_visible.min(completion.items.len());
+                        let popup_h = item_h * visible_count as f64 + style.padding_y;
+                        // Show just below the current line if there's room,
+                        // otherwise flip above.
+                        let cursor_screen_y =
+                            dv.rect().y + completion.line as f64 * line_h_comp - dv.scroll_y;
+                        let space_below = height - cursor_screen_y - line_h_comp;
+                        let popup_y = if space_below >= popup_h {
+                            cursor_screen_y + style.code_font_height + style.padding_y * 0.25
+                        } else {
+                            (cursor_screen_y - popup_h).max(0.0)
+                        };
+                        // Width = max label + detail over the visible
+                        // items, clamped to screen edge and to a 120px min.
                         let content_w = completion
                             .items
                             .iter()
+                            .skip(completion.scroll_offset)
+                            .take(visible_count)
                             .map(|(label, detail, _)| {
                                 let lw = draw_ctx.font_width(style.font, label);
                                 if detail.is_empty() {
@@ -12463,7 +12590,7 @@ pub fn run(
                             popup_h,
                             style.background3.to_array(),
                         );
-                        // Border.
+                        // Top border.
                         draw_ctx.draw_rect(
                             popup_x,
                             popup_y,
@@ -12471,38 +12598,47 @@ pub fn run(
                             style.divider_size,
                             style.divider.to_array(),
                         );
-                        for (i, (label, detail, _)) in completion.items.iter().enumerate() {
-                            let iy = popup_y + style.padding_y / 2.0 + i as f64 * item_h;
-                            if i == completion.selected {
-                                draw_ctx.draw_rect(
-                                    popup_x,
-                                    iy,
-                                    popup_w,
-                                    item_h,
-                                    style.selection.to_array(),
-                                );
-                            }
-                            let fg = if i == completion.selected {
-                                style.accent.to_array()
-                            } else {
-                                style.text.to_array()
-                            };
-                            draw_ctx.draw_text(
-                                style.font,
-                                label,
-                                popup_x + style.padding_x,
-                                iy + style.padding_y / 2.0,
-                                fg,
-                            );
-                            if !detail.is_empty() {
-                                let label_w = draw_ctx.font_width(style.font, label);
-                                draw_ctx.draw_text(
-                                    style.font,
-                                    detail,
-                                    popup_x + style.padding_x + label_w + style.padding_x,
-                                    iy + style.padding_y / 2.0,
-                                    style.dim.to_array(),
-                                );
+                        for vis_i in 0..visible_count {
+                            let i = completion.scroll_offset + vis_i;
+                            let iy = popup_y + style.padding_y / 2.0 + vis_i as f64 * item_h;
+                            if i < completion.items.len() {
+                                if i == completion.selected {
+                                    draw_ctx.draw_rect(
+                                        popup_x,
+                                        iy,
+                                        popup_w,
+                                        item_h,
+                                        style.selection.to_array(),
+                                    );
+                                }
+                                if let Some((label, detail, _)) = completion.items.get(i) {
+                                    let fg = if i == completion.selected {
+                                        style.accent.to_array()
+                                    } else {
+                                        style.text.to_array()
+                                    };
+                                    draw_ctx.draw_text(
+                                        style.font,
+                                        label,
+                                        popup_x + style.padding_x,
+                                        iy + style.padding_y / 2.0,
+                                        fg,
+                                    );
+                                    if !detail.is_empty() {
+                                        let label_w =
+                                            draw_ctx.font_width(style.font, label);
+                                        draw_ctx.draw_text(
+                                            style.font,
+                                            detail,
+                                            popup_x
+                                                + style.padding_x
+                                                + label_w
+                                                + style.padding_x,
+                                            iy + style.padding_y / 2.0,
+                                            style.dim.to_array(),
+                                        );
+                                    }
+                                }
                             }
                         }
                     }

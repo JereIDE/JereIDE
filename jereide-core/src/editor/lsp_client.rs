@@ -133,6 +133,7 @@ pub(crate) struct CompletionState {
     pub items: Vec<(String, String, String)>,
     pub visible: bool,
     pub selected: usize,
+    pub scroll_offset: usize,
     pub line: usize,
     pub col: usize,
     /// `id` of the most recently-sent `textDocument/completion`
@@ -148,6 +149,7 @@ impl CompletionState {
             items: Vec::new(),
             visible: false,
             selected: 0,
+            scroll_offset: 0,
             line: 0,
             col: 0,
             latest_request_id: 0,
@@ -158,6 +160,7 @@ impl CompletionState {
         self.visible = false;
         self.items.clear();
         self.selected = 0;
+        self.scroll_offset = 0;
     }
 }
 

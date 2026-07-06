@@ -45,3 +45,4 @@ pub mod tree_view;
 pub mod types;
 pub mod utf8;
 pub mod view;
+pub mod word_index;
