@@ -9854,12 +9854,12 @@ pub fn run(
                     // --- Editor ---
                     if let Some(doc) = docs.get_mut(active_tab) {
                         let dv = &mut doc.view;
-                        // Compute max scroll to prevent scrolling into the void.
+                        // Max scroll with 1.5 lines of overscroll past end.
                         let editor_max_scroll = dv.buffer_id.and_then(|id| {
                             let line_count = buffer::with_buffer(id, |b| Ok(b.lines.len())).ok()?;
                             let line_h = style.code_font_height * 1.2;
                             let view_h = dv.rect().h;
-                            Some(((line_count as f64 * line_h) - view_h).max(0.0))
+                            Some(((line_count as f64 * line_h) - view_h + line_h * 1.5).max(0.0))
                         }).unwrap_or(0.0);
                         if editor_scroll_vel.abs() > 0.5 {
                             dv.scroll_y += editor_scroll_vel * dt;
