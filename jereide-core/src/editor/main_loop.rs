@@ -8150,7 +8150,7 @@ pub fn run(
                     }
                     if subsystems.has_sidebar() && sidebar_visible && mouse_x < sidebar_width {
                         // Mouse is over the sidebar -- scroll sidebar only.
-                        sidebar_scroll_vel -= scroll_amt * 8.0;
+                        sidebar_scroll_vel -= scroll_amt * 20.0;
                     } else if let Some(doc) = docs.get_mut(active_tab) {
                         // Route wheel to whichever pane the cursor is over
                         // in split preview mode.
@@ -8162,7 +8162,7 @@ pub fn run(
                             doc.preview.target_scroll_y =
                                 (doc.preview.target_scroll_y - scroll_amt).max(0.0);
                         } else {
-                            editor_scroll_vel -= scroll_amt * 8.0;
+                            editor_scroll_vel -= scroll_amt * 20.0;
                         }
                     }
                     redraw = true;
@@ -9859,7 +9859,7 @@ pub fn run(
                             dv.scroll_y = dv.scroll_y.max(0.0);
                             dv.target_scroll_y = dv.scroll_y;
                             // Friction: exponential decay.
-                            editor_scroll_vel *= (-8.0 * dt).exp();
+                            editor_scroll_vel *= (-20.0 * dt).exp();
                         } else {
                             editor_scroll_vel = 0.0;
                             // Snap programmatic jumps.
@@ -9874,7 +9874,7 @@ pub fn run(
                             sidebar_scroll += sidebar_scroll_vel * dt;
                             let max_scroll = (sidebar_content_h - sidebar_sb_h).max(0.0);
                             sidebar_scroll = sidebar_scroll.clamp(0.0, max_scroll);
-                            sidebar_scroll_vel *= (-8.0 * dt).exp();
+                            sidebar_scroll_vel *= (-20.0 * dt).exp();
                         } else {
                             sidebar_scroll_vel = 0.0;
                         }
