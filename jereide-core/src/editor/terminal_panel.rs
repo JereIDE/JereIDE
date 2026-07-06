@@ -460,6 +460,9 @@ mod unix_impl {
         pub(crate) sel_end: Option<(usize, usize)>,
         /// True while the left button is held over the terminal.
         pub(crate) sel_dragging: bool,
+        /// Last PTY size sent to the child process (cols, rows).
+        /// Used to avoid redundant TIOCSWINSZ + SIGWINCH during drag-resize.
+        pub(crate) last_pty_size: (usize, usize),
     }
 
     /// Standard 16-color ANSI palette.
@@ -553,6 +556,7 @@ mod unix_impl {
                         sel_start: None,
                         sel_end: None,
                         sel_dragging: false,
+                        last_pty_size: (80, 24),
                     };
                     self.terminals.push(inst);
                     self.active = idx;
@@ -640,6 +644,9 @@ mod windows_impl {
         pub(crate) sel_end: Option<(usize, usize)>,
         /// True while the left button is held over the terminal.
         pub(crate) sel_dragging: bool,
+        /// Last PTY size sent to the child process (cols, rows).
+        /// Used to avoid redundant TIOCSWINSZ + SIGWINCH during drag-resize.
+        pub(crate) last_pty_size: (usize, usize),
     }
 
     /// Standard 16-color ANSI palette.
@@ -728,6 +735,7 @@ mod windows_impl {
                         sel_start: None,
                         sel_end: None,
                         sel_dragging: false,
+                        last_pty_size: (80, 24),
                     };
                     self.terminals.push(inst);
                     self.active = idx;

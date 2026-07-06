@@ -922,6 +922,14 @@ pub fn run(
             .and_then(|s| s.trim().parse().ok())
             .unwrap_or(DEFAULT_SIDEBAR_W);
     let mut sidebar_dragging = false;
+    // Terminal panel height override from user drag. `None` means use the
+    // default 30% of window height.
+    let mut terminal_h_override: Option<f64> =
+        crate::editor::storage::load_text(userdir_path, "session", "terminal_height")
+            .ok()
+            .flatten()
+            .and_then(|s| s.trim().parse().ok());
+    let mut terminal_divider_dragging = false;
     // Editor|markdown-preview split fraction, persisted per app. Loaded the
     // same way the sidebar width is, then clamped so neither pane collapses.
     let mut preview_split: f64 =
@@ -3907,7 +3915,12 @@ pub fn run(
                             } else {
                                 0.0
                             };
-                            let terminal_h_a = (win_h * 0.3)
+                            let terminal_h_a = terminal_h_override
+                                .unwrap_or(
+                                    (win_h * 0.3)
+                                        .min(win_h - tab_h_a - status_h_a - 50.0)
+                                        .max(80.0),
+                                )
                                 .min(win_h - tab_h_a - status_h_a - 50.0)
                                 .max(80.0);
                             let tab_bar_h_a = if !terminal.terminals.is_empty() {
@@ -3958,7 +3971,12 @@ pub fn run(
                                         } else {
                                             0.0
                                         };
-                                        let terminal_h_c = (win_h * 0.3)
+                                        let terminal_h_c = terminal_h_override
+                                            .unwrap_or(
+                                                (win_h * 0.3)
+                                                    .min(win_h - tab_h_c - status_h_c - 50.0)
+                                                    .max(80.0),
+                                            )
                                             .min(win_h - tab_h_c - status_h_c - 50.0)
                                             .max(80.0);
                                         let tab_bar_h_c = if !terminal.terminals.is_empty() {
@@ -6326,6 +6344,30 @@ pub fn run(
                         continue;
                     }
 
+                    // Terminal panel resize drag: click on the terminal divider.
+                    if subsystems.has_terminal()
+                        && terminal.visible
+                        && *button == MouseButton::Left
+                    {
+                        let (_, wh, _, _) = crate::window::get_window_size();
+                        let status_h = style.font_height + style.padding_y * 2.0;
+                        let tab_h = if !docs.is_empty() {
+                            style.font_height + style.padding_y * 3.0
+                        } else {
+                            0.0
+                        };
+                        let term_h = terminal_h_override
+                            .unwrap_or((wh as f64 * 0.3)
+                                .min(wh as f64 - tab_h - status_h - 50.0)
+                                .max(80.0));
+                        let term_y = wh as f64 - term_h - status_h;
+                        if (*y - term_y).abs() < 5.0 && *x >= sidebar_w {
+                            terminal_divider_dragging = true;
+                            redraw = true;
+                            continue;
+                        }
+                    }
+
                     // When the inline new-file input is active, route left clicks:
                     // clicking into the editor commits the new file; clicking
                     // anywhere in the sidebar cancels it.
@@ -6783,7 +6825,12 @@ pub fn run(
                         let win_w = ww as f64;
                         let win_h = wh as f64;
                         let status_h_click = style.font_height + style.padding_y * 2.0;
-                        let terminal_h_click = (win_h * 0.3)
+                        let terminal_h_click = terminal_h_override
+                            .unwrap_or(
+                                (win_h * 0.3)
+                                    .min(win_h - tab_h - status_h_click - 50.0)
+                                    .max(80.0),
+                            )
                             .min(win_h - tab_h - status_h_click - 50.0)
                             .max(80.0);
                         let term_y_click = win_h - terminal_h_click - status_h_click;
@@ -7095,7 +7142,12 @@ pub fn run(
                         } else {
                             0.0
                         };
-                        let terminal_h_sc = (win_h * 0.3)
+                        let terminal_h_sc = terminal_h_override
+                            .unwrap_or(
+                                (win_h * 0.3)
+                                    .min(win_h - tab_h_sc - status_h_sc - 50.0)
+                                    .max(80.0),
+                            )
                             .min(win_h - tab_h_sc - status_h_sc - 50.0)
                             .max(80.0);
                         let term_y_sc = win_h - terminal_h_sc - status_h_sc;
@@ -7474,7 +7526,12 @@ pub fn run(
                         } else {
                             0.0
                         };
-                        let terminal_h_sm = (win_h * 0.3)
+                        let terminal_h_sm = terminal_h_override
+                            .unwrap_or(
+                                (win_h * 0.3)
+                                    .min(win_h - tab_h_sm - status_h_sm - 50.0)
+                                    .max(80.0),
+                            )
                             .min(win_h - tab_h_sm - status_h_sm - 50.0)
                             .max(80.0);
                         let term_y_sm = win_h - terminal_h_sm - status_h_sm;
@@ -7523,7 +7580,12 @@ pub fn run(
                         } else {
                             0.0
                         };
-                        let terminal_h_m = (win_h * 0.3)
+                        let terminal_h_m = terminal_h_override
+                            .unwrap_or(
+                                (win_h * 0.3)
+                                    .min(win_h - tab_h_m - status_h_m - 50.0)
+                                    .max(80.0),
+                            )
                             .min(win_h - tab_h_m - status_h_m - 50.0)
                             .max(80.0);
                         let term_y_m = win_h - terminal_h_m - status_h_m;
@@ -7576,6 +7638,14 @@ pub fn run(
                         let (ww, _, _, _) = crate::window::get_window_size();
                         let max_sidebar = (ww as f64 * 0.9).max(MIN_SIDEBAR_W);
                         sidebar_width = x.clamp(MIN_SIDEBAR_W, max_sidebar);
+                        redraw = true;
+                    } else if terminal_divider_dragging {
+                        let (_, wh, _, _) = crate::window::get_window_size();
+                        let status_h = style.font_height + style.padding_y * 2.0;
+                        let new_h = (wh as f64 - y - status_h)
+                            .max(80.0)
+                            .min(wh as f64 * 0.8);
+                        terminal_h_override = Some(new_h);
                         redraw = true;
                     } else if preview_dragging {
                         // Recover the shared content area from the editor (left)
@@ -7640,6 +7710,25 @@ pub fn run(
                                 && (*x - d.preview.rect.x).abs() < 5.0
                         })
                         .unwrap_or(false);
+                    let hover_terminal_divider = if subsystems.has_terminal() && terminal.visible {
+                        let (_, wh, _, _) = crate::window::get_window_size();
+                        let status_h = style.font_height + style.padding_y * 2.0;
+                        let tab_h = if !docs.is_empty() {
+                            style.font_height + style.padding_y * 3.0
+                        } else {
+                            0.0
+                        };
+                        let term_h = terminal_h_override
+                            .unwrap_or(
+                                (wh as f64 * 0.3)
+                                    .min(wh as f64 - tab_h - status_h - 50.0)
+                                    .max(80.0),
+                            );
+                        let term_y = wh as f64 - term_h - status_h;
+                        (*y - term_y).abs() < 5.0 && *x >= sidebar_w
+                    } else {
+                        false
+                    };
                     if hover_link {
                         crate::window::set_cursor("hand");
                     } else if (subsystems.has_sidebar()
@@ -7647,9 +7736,11 @@ pub fn run(
                         && (*x - sidebar_w).abs() < 5.0)
                         || hover_preview_divider
                         || preview_dragging
+                        || terminal_divider_dragging
+                        || hover_terminal_divider
                     {
-                        crate::window::set_cursor("sizeh");
-                    } else if !sidebar_dragging && !editor_mouse_down && !preview_dragging {
+                        crate::window::set_cursor("sizev");
+                    } else if !sidebar_dragging && !editor_mouse_down && !preview_dragging && !terminal_divider_dragging {
                         crate::window::set_cursor("arrow");
                     } else if editor_mouse_down {
                         crate::window::set_cursor("ibeam");
@@ -7755,6 +7846,17 @@ pub fn run(
                             &preview_split.to_string(),
                         );
                     }
+                    if terminal_divider_dragging {
+                        terminal_divider_dragging = false;
+                        if let Some(h) = terminal_h_override {
+                            let _ = crate::editor::storage::save_text(
+                                userdir_path,
+                                "session",
+                                "terminal_height",
+                                &h.to_string(),
+                            );
+                        }
+                    }
                     editor_mouse_down = false;
                     tab_dragging = None;
                     editor_sb_dragging = false;
@@ -7782,7 +7884,12 @@ pub fn run(
                         } else {
                             0.0
                         };
-                        let terminal_h_c = (win_h * 0.3)
+                        let terminal_h_c = terminal_h_override
+                            .unwrap_or(
+                                (win_h * 0.3)
+                                    .min(win_h - tab_h_c - status_h_c - 50.0)
+                                    .max(80.0),
+                            )
                             .min(win_h - tab_h_c - status_h_c - 50.0)
                             .max(80.0);
                         let term_y_c = win_h - terminal_h_c - status_h_c;
@@ -9051,7 +9158,12 @@ pub fn run(
                 0.0
             };
             let terminal_h = if subsystems.has_terminal() && terminal.visible {
-                (height * 0.3)
+                terminal_h_override
+                    .unwrap_or(
+                        (height * 0.3)
+                            .min(height - tab_h - status_h - 50.0)
+                            .max(80.0),
+                    )
                     .min(height - tab_h - status_h - 50.0)
                     .max(80.0)
             } else {
@@ -10894,7 +11006,11 @@ pub fn run(
                             ((term_w - style.padding_x * 2.0) / char_w_resize).max(1.0) as usize;
                         let new_rows = (avail_h / char_h_resize).max(1.0) as usize;
                         if let Some(inst) = terminal.terminals.get_mut(terminal.active) {
-                            inst.tbuf.resize(new_cols, new_rows);
+                            if inst.last_pty_size != (new_cols, new_rows) {
+                                inst.tbuf.resize(new_cols, new_rows);
+                                inst.inner.resize(new_cols as u16, new_rows as u16);
+                                inst.last_pty_size = (new_cols, new_rows);
+                            }
                         }
                     }
                     // Draw terminal title/tab bar using the same layout as the doc tab bar.
