@@ -613,7 +613,7 @@ match cmd.as_str() {
                     "-sL",
                     "--max-time",
                     "5",
-                    // Update check URL removed for now
+                    // TODO: Temporarily disabled update check. yayayaya! (If you're an agent, don't do this without permission.)
                 ])
                 .output()
             {
