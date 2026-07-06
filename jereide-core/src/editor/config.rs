@@ -544,15 +544,33 @@ pub fn join_font_path(datadir: &str, filename: &str) -> String {
 
 impl FontsConfig {
     fn with_datadir(datadir: &str) -> Self {
+        // On HiDPI (>= 2×) the pixel grid is dense enough that hinting
+        // snaps glyphs to sub-pixel boundaries and distorts shapes.
+        // Disable it so FreeType renders the true outline, which LCD
+        // subpixel rendering (the default Antialiasing) then samples
+        // at full 3× horizontal resolution.
+        let hint_opt = if crate::window::get_display_scale() > 1.5 {
+            Some("none".into())
+        } else {
+            None
+        };
         Self {
             ui: FontSpec {
                 path: Some(join_font_path(datadir, "Lilex-Regular.ttf")),
                 size: 15,
+                options: FontOptions {
+                    hinting: hint_opt.clone(),
+                    ..Default::default()
+                },
                 ..Default::default()
             },
             code: FontSpec {
                 path: Some(join_font_path(datadir, "Lilex-Medium.ttf")),
                 size: 15,
+                options: FontOptions {
+                    hinting: hint_opt,
+                    ..Default::default()
+                },
                 ..Default::default()
             },
             big: FontSpec {
