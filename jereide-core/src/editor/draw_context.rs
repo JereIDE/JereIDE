@@ -62,6 +62,26 @@ impl DrawContext for NativeDrawContext {
         });
     }
 
+    fn draw_rounded_rect(&mut self, x: f64, y: f64, w: f64, h: f64, radius: f64, color: [u8; 4]) {
+        with_cache(|c| {
+            c.push_draw_rounded_rect(
+                RenRect {
+                    x: x.round() as i32,
+                    y: y.round() as i32,
+                    w: w.round() as i32,
+                    h: h.round() as i32,
+                },
+                RenColor {
+                    r: color[0],
+                    g: color[1],
+                    b: color[2],
+                    a: color[3],
+                },
+                radius.round() as i32,
+            );
+        });
+    }
+
     fn draw_text(&mut self, font_id: u64, text: &str, x: f64, y: f64, color: [u8; 4]) -> f64 {
         let Some(fonts) = self.get_font(font_id) else {
             return x;
@@ -131,6 +151,7 @@ pub struct HeadlessDrawContext;
 
 impl DrawContext for HeadlessDrawContext {
     fn draw_rect(&mut self, _x: f64, _y: f64, _w: f64, _h: f64, _color: [u8; 4]) {}
+    fn draw_rounded_rect(&mut self, _x: f64, _y: f64, _w: f64, _h: f64, _radius: f64, _color: [u8; 4]) {}
     fn draw_text(&mut self, _font_id: u64, _text: &str, x: f64, _y: f64, _color: [u8; 4]) -> f64 {
         x
     }

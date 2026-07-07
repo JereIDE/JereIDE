@@ -6,6 +6,8 @@ use crate::editor::types::Rect;
 pub trait DrawContext {
     /// Draw a filled rectangle.
     fn draw_rect(&mut self, x: f64, y: f64, w: f64, h: f64, color: [u8; 4]);
+    /// Draw a filled rectangle with rounded corners (radius in pixels).
+    fn draw_rounded_rect(&mut self, x: f64, y: f64, w: f64, h: f64, radius: f64, color: [u8; 4]);
     /// Draw text. Returns the x-advance.
     fn draw_text(&mut self, font_id: u64, text: &str, x: f64, y: f64, color: [u8; 4]) -> f64;
     /// Set the clip rectangle.

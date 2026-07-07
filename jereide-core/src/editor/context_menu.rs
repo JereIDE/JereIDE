@@ -101,15 +101,18 @@ impl ContextMenu {
         self.render_rect = (x, y, max_w, total_h);
 
         // Background + border
-        ctx.draw_rect(
+        let r = 10.0;
+        ctx.draw_rounded_rect(
             x - 1.0,
             y - 1.0,
             max_w + 2.0,
             total_h + 2.0,
+            r,
             style.divider.to_array(),
         );
-        ctx.draw_rect(x, y, max_w, total_h, style.background.to_array());
+        ctx.draw_rounded_rect(x, y, max_w, total_h, r, style.background.to_array());
 
+        let inner_pad = style.padding_x * 0.5;
         let mut iy = y + style.padding_y / 2.0;
         for (i, item) in self.items.iter().enumerate() {
             if item.separator {
@@ -126,7 +129,14 @@ impl ContextMenu {
             }
             let is_selected = self.selected == Some(i);
             if is_selected {
-                ctx.draw_rect(x, iy, max_w, item_h, style.selection.to_array());
+                ctx.draw_rounded_rect(
+                    x + inner_pad,
+                    iy + 1.0,
+                    max_w - inner_pad * 2.0,
+                    item_h - 2.0,
+                    6.0,
+                    style.selection.to_array(),
+                );
             }
             let color = if is_selected {
                 style.accent.to_array()

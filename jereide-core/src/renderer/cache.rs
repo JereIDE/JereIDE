@@ -95,6 +95,7 @@ pub struct DrawImageCmd {
 pub enum Command {
     SetClip(RenRect),
     DrawRect { rect: RenRect, color: RenColor },
+    DrawRoundedRect { rect: RenRect, color: RenColor, radius: i32 },
     DrawText(DrawTextCmd),
     DrawImage(DrawImageCmd),
 }
@@ -186,6 +187,13 @@ impl RenCache {
             return;
         }
         self.commands.push(Command::DrawRect { rect, color });
+    }
+
+    pub fn push_draw_rounded_rect(&mut self, rect: RenRect, color: RenColor, radius: i32) {
+        if rect.w == 0 || rect.h == 0 || !self.last_clip.overlaps(rect) {
+            return;
+        }
+        self.commands.push(Command::DrawRoundedRect { rect, color, radius });
     }
 
     /// Push a DrawImage (RGBA bitmap) command.
@@ -317,6 +325,13 @@ fn cmd_hash(cmd: &Command, arena: &str) -> (RenRect, u32) {
             let rect_bytes = bytepack_i32x4(r.x, r.y, r.w, r.h);
             fnv1a_update(&mut h, &rect_bytes);
             fnv1a_update(&mut h, &[c.r, c.g, c.b, c.a]);
+            (*r, h)
+        }
+        Command::DrawRoundedRect { rect: r, color: c, radius } => {
+            let rect_bytes = bytepack_i32x4(r.x, r.y, r.w, r.h);
+            fnv1a_update(&mut h, &rect_bytes);
+            fnv1a_update(&mut h, &[c.r, c.g, c.b, c.a]);
+            fnv1a_update(&mut h, &radius.to_le_bytes());
             (*r, h)
         }
         Command::DrawText(dt) => {
@@ -502,6 +517,9 @@ pub unsafe fn render_dirty_rects(
                     Command::DrawRect { rect, color } => unsafe {
                         draw_rect_surface(surface, pixels, pitch, &fmt, *rect, *color, clip);
                     },
+                    Command::DrawRoundedRect { rect, color, radius } => unsafe {
+                        draw_rounded_rect_surface(surface, pixels, pitch, &fmt, *rect, *color, *radius, clip);
+                    },
                     Command::DrawText(dt) => {
                         let text = arena
                             .get(
@@ -616,6 +634,112 @@ unsafe fn draw_rect_surface(
                     let nr = ((color.r as u32 * color.a as u32 + dr as u32 * ia) >> 8) as u8;
                     let ng = ((color.g as u32 * color.a as u32 + dg as u32 * ia) >> 8) as u8;
                     let nb = ((color.b as u32 * color.a as u32 + db as u32 * ia) >> 8) as u8;
+                    *dst_ptr = fmt.pack(nr, ng, nb, da);
+                }
+            }
+        }
+    }
+}
+
+/// Draw a rounded rectangle with per-pixel anti-aliased corners.
+unsafe fn draw_rounded_rect_surface(
+    surface: *mut SDL_Surface,
+    pixels: *mut u8,
+    pitch: usize,
+    fmt: &PixFmt,
+    rect: RenRect,
+    color: RenColor,
+    radius: i32,
+    clip: RenRect,
+) {
+    if color.a == 0 || radius <= 0 {
+        // No rounding — fall back to a plain rect.
+        unsafe { draw_rect_surface(surface, pixels, pitch, fmt, rect, color, clip) };
+        return;
+    }
+
+    let r = rect.intersect(clip);
+    if r.is_empty() {
+        return;
+    }
+
+    let rad = radius as f64;
+    let rad_sq = rad * rad;
+    // Centre of each corner arc (in rect-local coords).
+    let cx0 = rad; // left
+    let cx1 = rect.w as f64 - 1.0 - rad; // right
+    let cy0 = rad; // top
+    let cy1 = rect.h as f64 - 1.0 - rad; // bottom
+
+    let ia = 255 - color.a as u32;
+
+    for dst_y in r.y..r.y + r.h {
+        let row_ptr = unsafe { pixels.add(dst_y as usize * pitch) } as *mut u32;
+        for dst_x in r.x..r.x + r.w {
+            // Position inside the original (unclipped) rect.
+            let lx = (dst_x - rect.x) as f64;
+            let ly = (dst_y - rect.y) as f64;
+
+            // Determine which corner region we're in (if any).
+            let (corner_cx, corner_cy) = if lx < rad && ly < rad {
+                (cx0, cy0)
+            } else if lx > cx1 && ly < rad {
+                (cx1, cy0)
+            } else if lx < rad && ly > cy1 {
+                (cx0, cy1)
+            } else if lx > cx1 && ly > cy1 {
+                (cx1, cy1)
+            } else {
+                // Not in a corner region — fully inside the rect.
+                unsafe {
+                    let dst_ptr = row_ptr.add(dst_x as usize);
+                    if color.a == 255 {
+                        *dst_ptr = fmt.pack(color.r, color.g, color.b, 255);
+                    } else {
+                        let (dr, dg, db, da) = fmt.unpack(*dst_ptr);
+                        let nr = ((color.r as u32 * color.a as u32 + dr as u32 * ia) >> 8) as u8;
+                        let ng = ((color.g as u32 * color.a as u32 + dg as u32 * ia) >> 8) as u8;
+                        let nb = ((color.b as u32 * color.a as u32 + db as u32 * ia) >> 8) as u8;
+                        *dst_ptr = fmt.pack(nr, ng, nb, da);
+                    }
+                }
+                continue;
+            };
+
+            // Distance from pixel centre to arc centre.
+            let dx = lx - corner_cx;
+            let dy = ly - corner_cy;
+            let dist_sq = dx * dx + dy * dy;
+
+            if dist_sq >= rad_sq {
+                // Outside the circle — outside the rounded rect. Skip.
+                continue;
+            }
+
+            // Anti-alias: blend based on distance to the arc edge.
+            // The transition zone is the last 1.0 px inside the circle.
+            let dist = dist_sq.sqrt();
+            let edge_dist = rad - dist; // > 0 inside, > 1 well inside
+            let alpha = if edge_dist >= 1.0 {
+                color.a
+            } else {
+                ((edge_dist * 255.0) as u32).min(color.a as u32) as u8
+            };
+
+            if alpha == 0 {
+                continue;
+            }
+
+            unsafe {
+                let dst_ptr = row_ptr.add(dst_x as usize);
+                if alpha == 255 {
+                    *dst_ptr = fmt.pack(color.r, color.g, color.b, 255);
+                } else {
+                    let (dr, dg, db, da) = fmt.unpack(*dst_ptr);
+                    let blend_ia = 255 - alpha as u32;
+                    let nr = ((color.r as u32 * alpha as u32 + dr as u32 * blend_ia) >> 8) as u8;
+                    let ng = ((color.g as u32 * alpha as u32 + dg as u32 * blend_ia) >> 8) as u8;
+                    let nb = ((color.b as u32 * alpha as u32 + db as u32 * blend_ia) >> 8) as u8;
                     *dst_ptr = fmt.pack(nr, ng, nb, da);
                 }
             }

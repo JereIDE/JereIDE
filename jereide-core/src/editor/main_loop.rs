@@ -966,6 +966,7 @@ pub fn run(
     let mut sidebar_content_h: f64 = 0.0;
     let mut sidebar_sb_top: f64 = 0.0;
     let mut sidebar_sb_h: f64 = 0.0;
+    #[allow(unused_assignments)]
     let mut sidebar_hovered_index: Option<usize> = None;
     let mut sidebar_menu_pinned_index: Option<usize> = None;
 
@@ -5785,7 +5786,6 @@ pub fn run(
 
                     // Context menu: left-click outside dismisses, right-click shows.
                     if context_menu.visible && *button == MouseButton::Left {
-                        use crate::editor::view::DrawContext as _;
                         let (menu_x, menu_y, menu_w, menu_h) = context_menu.render_rect;
                         let item_h = style.font_height + style.padding_y;
                         if menu_h > 0.0
@@ -11882,14 +11882,16 @@ pub fn run(
                     let visible = palette_results.len().min(max_visible);
                     let pal_h = line_h * (visible as f64 + 1.0) + style.padding_y * 2.0;
 
-                    draw_ctx.draw_rect(
+                    let pal_r = 10.0;
+                    draw_ctx.draw_rounded_rect(
                         pal_x - 1.0,
                         pal_y - 1.0,
                         pal_w + 2.0,
                         pal_h + 2.0,
+                        pal_r,
                         style.divider.to_array(),
                     );
-                    draw_ctx.draw_rect(pal_x, pal_y, pal_w, pal_h, style.background3.to_array());
+                    draw_ctx.draw_rounded_rect(pal_x, pal_y, pal_w, pal_h, pal_r, style.background3.to_array());
 
                     let input_y = pal_y + style.padding_y;
                     draw_ctx.draw_text(
@@ -11923,11 +11925,13 @@ pub fn run(
                         let ry =
                             input_y + line_h + style.divider_size + display_idx as f64 * line_h;
                         if i == palette_selected {
-                            draw_ctx.draw_rect(
-                                pal_x,
-                                ry,
-                                pal_w,
-                                line_h,
+                            let inner_pad = style.padding_x * 0.5;
+                            draw_ctx.draw_rounded_rect(
+                                pal_x + inner_pad,
+                                ry + 1.0,
+                                pal_w - inner_pad * 2.0,
+                                line_h - 2.0,
+                                6.0,
                                 style.selection.to_array(),
                             );
                         }
@@ -12547,14 +12551,16 @@ pub fn run(
                     let cv_y = style.padding_y * 2.0 + nag_offset;
 
                     // Border + background.
-                    draw_ctx.draw_rect(
+                    let cv_r = 10.0;
+                    draw_ctx.draw_rounded_rect(
                         cv_x - 1.0,
                         cv_y - 1.0,
                         cv_w + 2.0,
                         cv_h + 2.0,
+                        cv_r,
                         style.divider.to_array(),
                     );
-                    draw_ctx.draw_rect(cv_x, cv_y, cv_w, cv_h, style.background3.to_array());
+                    draw_ctx.draw_rounded_rect(cv_x, cv_y, cv_w, cv_h, cv_r, style.background3.to_array());
 
                     // Input line.
                     let input_y = cv_y + style.padding_y;
@@ -12667,7 +12673,15 @@ pub fn run(
                         let ry =
                             input_y + line_h + style.divider_size + display_idx as f64 * line_h;
                         if i == cmdview_selected {
-                            draw_ctx.draw_rect(cv_x, ry, cv_w, line_h, style.selection.to_array());
+                            let inner_pad = style.padding_x * 0.5;
+                            draw_ctx.draw_rounded_rect(
+                                cv_x + inner_pad,
+                                ry + 1.0,
+                                cv_w - inner_pad * 2.0,
+                                line_h - 2.0,
+                                6.0,
+                                style.selection.to_array(),
+                            );
                         }
                         let is_dir = suggestion.ends_with('/') || suggestion.ends_with('\\');
                         let color = if i == cmdview_selected || is_dir {
@@ -12743,31 +12757,36 @@ pub fn run(
                         // Stash the screen rect for mouse hit-testing.
                         completion.rect = (popup_x, popup_y, popup_w, popup_h);
                         // Background.
-                        draw_ctx.draw_rect(
+                        // Background + top border.
+                        let popup_r = 10.0;
+                        draw_ctx.draw_rounded_rect(
                             popup_x,
                             popup_y,
                             popup_w,
                             popup_h,
-                            style.background3.to_array(),
-                        );
-                        // Top border.
-                        draw_ctx.draw_rect(
-                            popup_x,
-                            popup_y,
-                            popup_w,
-                            style.divider_size,
+                            popup_r,
                             style.divider.to_array(),
                         );
+                        draw_ctx.draw_rounded_rect(
+                            popup_x,
+                            popup_y + style.divider_size,
+                            popup_w,
+                            popup_h - style.divider_size,
+                            popup_r,
+                            style.background3.to_array(),
+                        );
+                        let inner_pad = style.padding_x * 0.5;
                         for vis_i in 0..visible_count {
                             let i = completion.scroll_offset + vis_i;
                             let iy = popup_y + style.padding_y / 2.0 + vis_i as f64 * item_h;
                             if i < completion.items.len() {
                                 if i == completion.selected {
-                                    draw_ctx.draw_rect(
-                                        popup_x,
-                                        iy,
-                                        popup_w,
-                                        item_h,
+                                    draw_ctx.draw_rounded_rect(
+                                        popup_x + inner_pad,
+                                        iy + 1.0,
+                                        popup_w - inner_pad * 2.0,
+                                        item_h - 2.0,
+                                        6.0,
                                         style.selection.to_array(),
                                     );
                                 }
@@ -12830,14 +12849,15 @@ pub fn run(
                         .collect();
                     let w = draw_ctx.font_width(style.font, &text) + style.padding_x * 2.0;
                     let h = style.font_height + style.padding_y * 2.0;
-                    draw_ctx.draw_rect(
+                    draw_ctx.draw_rounded_rect(
                         sig_x - 1.0,
                         sig_y - 1.0,
                         w + 2.0,
                         h + 2.0,
+                        10.0,
                         style.divider.to_array(),
                     );
-                    draw_ctx.draw_rect(sig_x, sig_y, w, h, style.background3.to_array());
+                    draw_ctx.draw_rounded_rect(sig_x, sig_y, w, h, 10.0, style.background3.to_array());
                     draw_ctx.draw_text(
                         style.font,
                         &text,
@@ -12889,20 +12909,22 @@ pub fn run(
                             .fold(0.0_f64, f64::max)
                             + style.padding_x * 2.0;
                         let tooltip_y = hover_y - tooltip_h;
-                        // Background.
-                        draw_ctx.draw_rect(
+                        // Background + top border.
+                        draw_ctx.draw_rounded_rect(
                             hover_x,
                             tooltip_y,
                             tooltip_w,
                             tooltip_h,
-                            style.background3.to_array(),
-                        );
-                        draw_ctx.draw_rect(
-                            hover_x,
-                            tooltip_y,
-                            tooltip_w,
-                            style.divider_size,
+                            10.0,
                             style.divider.to_array(),
+                        );
+                        draw_ctx.draw_rounded_rect(
+                            hover_x,
+                            tooltip_y + style.divider_size,
+                            tooltip_w,
+                            tooltip_h - style.divider_size,
+                            10.0,
+                            style.background3.to_array(),
                         );
                         for (i, line_text) in hover_lines.iter().enumerate() {
                             draw_ctx.draw_text(
@@ -12967,18 +12989,20 @@ pub fn run(
                                     .max(sidebar_w)
                                     .min((width - tip_w).max(sidebar_w));
                                 let tip_y = tbh + 2.0;
-                                draw_ctx.draw_rect(
+                                draw_ctx.draw_rounded_rect(
                                     tip_x - 1.0,
                                     tip_y - 1.0,
                                     tip_w + 2.0,
                                     tip_h + 2.0,
+                                    10.0,
                                     style.divider.to_array(),
                                 );
-                                draw_ctx.draw_rect(
+                                draw_ctx.draw_rounded_rect(
                                     tip_x,
                                     tip_y,
                                     tip_w,
                                     tip_h,
+                                    10.0,
                                     style.background.to_array(),
                                 );
                                 draw_ctx.draw_text(
