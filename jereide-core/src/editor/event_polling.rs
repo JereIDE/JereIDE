@@ -2559,11 +2559,11 @@
                             redraw = true;
                             continue;
                         }
-                        match key.as_str() {
+                        // Check if the key is handled by the palette.
+                        let palette_handled = match key.as_str() {
                             "escape" => {
                                 palette_active = false;
-                                redraw = true;
-                                continue;
+                                true
                             }
                             "return" | "keypad enter" => {
                                 if let Some((cmd, _)) = palette_results.get(palette_selected) {
@@ -2581,17 +2581,13 @@
                                                 userdir_path,
                                             );
                                         }
-                                        redraw = true;
-                                        continue;
-                                    }
-                                    // Execute the selected command.
-                                    {
+                                    } else {
+                                        // Execute the selected command.
                                         let cmd: String = cmd;
                                         include!("commands_dispatch.rs");
                                     }
                                 }
-                                redraw = true;
-                                continue;
+                                true
                             }
                             "backspace" => {
                                 if !palette_query.is_empty() {
@@ -2603,25 +2599,96 @@
                                     );
                                 }
                                 palette_query.pop();
+                                false
                             }
                             "up" => {
                                 palette_selected = palette_selected.saturating_sub(1);
+                                true
                             }
                             "down" => {
                                 if palette_selected + 1 < palette_results.len() {
                                     palette_selected += 1;
                                 }
+                                true
                             }
-                            _ => {
-                                continue;
-                            }
+                            _ => false,
+                        };
+                        if palette_handled {
+                            // Filter commands with fuzzy matching.
+                            palette_results = fuzzy_filter_commands(&palette_query, &all_commands);
+                            palette_selected =
+                                palette_selected.min(palette_results.len().saturating_sub(1));
+                            redraw = true;
+                            continue;
                         }
-                        // Filter commands with fuzzy matching.
-                        palette_results = fuzzy_filter_commands(&palette_query, &all_commands);
-                        palette_selected =
-                            palette_selected.min(palette_results.len().saturating_sub(1));
-                        redraw = true;
-                        continue;
+                        // Unhandled key: let keymap dispatch handle it.
+                        // If a keymap command fires, it will close the palette.
+                    }
+
+                    // Theme picker intercepts keys when active.
+                    if theme_picker_active {
+                        let theme_picker_handled = match key.as_str() {
+                            "escape" => {
+                                // Restore original theme.
+                                if let Some(orig) = theme_picker_original_style.take() {
+                                    style = orig;
+                                    current_theme_idx = theme_picker_original_idx;
+                                }
+                                theme_picker_active = false;
+                                true
+                            }
+                            "return" | "keypad enter" => {
+                                // Confirm selected theme.
+                                if let Some((name, _)) = theme_picker_results.get(theme_picker_selected) {
+                                    current_theme_idx = available_themes.iter().position(|t| t == name).unwrap_or(0);
+                                }
+                                theme_picker_active = false;
+                                theme_picker_original_style = None;
+                                true
+                            }
+                            "backspace" => {
+                                theme_picker_query.pop();
+                                true
+                            }
+                            "up" => {
+                                theme_picker_selected = theme_picker_selected.saturating_sub(1);
+                                true
+                            }
+                            "down" => {
+                                if theme_picker_selected + 1 < theme_picker_results.len() {
+                                    theme_picker_selected += 1;
+                                }
+                                true
+                            }
+                            _ => false,
+                        };
+                        if theme_picker_handled {
+                            // Refilter results if query changed.
+                            theme_picker_results = if theme_picker_query.is_empty() {
+                                available_themes.iter().map(|t| (t.clone(), t.clone())).collect()
+                            } else {
+                                let q = theme_picker_query.to_lowercase();
+                                available_themes.iter().filter(|t| {
+                                    t.to_lowercase().contains(&q)
+                                }).map(|t| (t.clone(), t.clone())).collect()
+                            };
+                            theme_picker_selected = theme_picker_selected.min(theme_picker_results.len().saturating_sub(1));
+                            // Preview the selected theme.
+                            if let Some((name, _)) = theme_picker_results.get(theme_picker_selected) {
+                                let tp = Path::new(datadir)
+                                    .join("assets")
+                                    .join("themes")
+                                    .join(format!("{name}.json"))
+                                    .to_string_lossy()
+                                    .into_owned();
+                                if let Ok(palette) = crate::editor::style::load_theme_palette(&tp) {
+                                    apply_theme_to_style(&mut style, &palette);
+                                }
+                            }
+                            redraw = true;
+                            continue;
+                        }
+                        // Unhandled key: let keymap dispatch handle it.
                     }
 
                     // Find bar intercepts keys when active.
@@ -3249,6 +3316,17 @@
                         for cmd in Vec::from(cmds) {
                             {
                                 let cmd: String = cmd;
+                                // Close any active palette before dispatching.
+                                if palette_active {
+                                    palette_active = false;
+                                }
+                                if theme_picker_active {
+                                    if let Some(orig) = theme_picker_original_style.take() {
+                                        style = orig;
+                                        current_theme_idx = theme_picker_original_idx;
+                                    }
+                                    theme_picker_active = false;
+                                }
                                 include!("commands_dispatch.rs");
                             }
                         }
@@ -3442,6 +3520,20 @@
                         palette_query.push_str(text);
                         palette_results = fuzzy_filter_commands(&palette_query, &all_commands);
                         palette_selected = 0;
+                        redraw = true;
+                        continue;
+                    }
+                    if theme_picker_active {
+                        theme_picker_query.push_str(text);
+                        theme_picker_results = if theme_picker_query.is_empty() {
+                            available_themes.iter().map(|t| (t.clone(), t.clone())).collect()
+                        } else {
+                            let q = theme_picker_query.to_lowercase();
+                            available_themes.iter().filter(|t| {
+                                t.to_lowercase().contains(&q)
+                            }).map(|t| (t.clone(), t.clone())).collect()
+                        };
+                        theme_picker_selected = 0;
                         redraw = true;
                         continue;
                     }
@@ -5475,6 +5567,44 @@
                             }
                         } else {
                             palette_active = false;
+                        }
+                        redraw = true;
+                        continue;
+                    }
+
+                    // Theme picker: click theme to select, click outside to dismiss.
+                    if *button == MouseButton::Left && theme_picker_active {
+                        let (ww_pal, _, _, _) = crate::window::get_window_size();
+                        let width_pal = ww_pal as f64;
+                        let pal_w = (width_pal * 0.4).max(300.0).min(width_pal - 20.0);
+                        let pal_x = (width_pal - pal_w) / 2.0;
+                        let pal_y = style.padding_y * 2.0;
+                        let line_h = style.font_height + style.padding_y;
+                        let max_visible = 12usize;
+                        let visible = theme_picker_results.len().min(max_visible);
+                        let pal_h = line_h * (visible as f64 + 1.0) + style.padding_y * 2.0;
+                        if *x >= pal_x && *x < pal_x + pal_w && *y >= pal_y && *y < pal_y + pal_h {
+                            let input_y = pal_y + style.padding_y;
+                            let suggestion_start = input_y + line_h + style.divider_size;
+                            if *y >= suggestion_start {
+                                let row = ((*y - suggestion_start) / line_h) as usize;
+                                if row < theme_picker_results.len() {
+                                    theme_picker_selected = row;
+                                    // Confirm selected theme.
+                                    if let Some((name, _)) = theme_picker_results.get(theme_picker_selected) {
+                                        current_theme_idx = available_themes.iter().position(|t| t == name).unwrap_or(0);
+                                    }
+                                    theme_picker_active = false;
+                                    theme_picker_original_style = None;
+                                }
+                            }
+                        } else {
+                            // Restore original theme on dismiss.
+                            if let Some(orig) = theme_picker_original_style.take() {
+                                style = orig;
+                                current_theme_idx = theme_picker_original_idx;
+                            }
+                            theme_picker_active = false;
                         }
                         redraw = true;
                         continue;

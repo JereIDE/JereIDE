@@ -1234,6 +1234,14 @@ pub fn run(
     let mut palette_results: Vec<(String, String)> = Vec::new(); // (cmd_name, display_name)
     let mut palette_selected: usize = 0;
 
+    // Theme picker state.
+    let mut theme_picker_active = false;
+    let mut theme_picker_query = String::new();
+    let mut theme_picker_results: Vec<(String, String)> = Vec::new(); // (theme_name, display_name)
+    let mut theme_picker_selected: usize = 0;
+    let mut theme_picker_original_style: Option<crate::editor::style_ctx::StyleContext> = None;
+    let mut theme_picker_original_idx: usize = 0;
+
     // Build command list for palette from keymap.
     let all_commands: Vec<(String, String)> = {
         let mut cmds = Vec::new();

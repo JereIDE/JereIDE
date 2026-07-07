@@ -331,7 +331,7 @@ const DEFAULT_BINDINGS: &[(&str, &[&str])] = &[
     ("ctrl+shift+]", &["doc:unfold"]),
     ("ctrl+shift+\\", &["doc:unfold-all"]),
     ("ctrl+shift+p", &["core:find-command"]),
-    ("ctrl+t", &["core:cycle-theme"]),
+    ("ctrl+t", &["core:theme-picker"]),
     ("ctrl+shift+g", &["core:git-status"]),
     ("ctrl+shift+m", &["core:toggle-markdown-preview"]),
     ("ctrl+f4", &["doc:toggle-bookmark"]),

@@ -74,6 +74,14 @@ match cmd.as_str() {
     }
 }
 "core:find-command" => {
+    // Close theme picker if open, restore its theme if needed.
+    if theme_picker_active {
+        if let Some(orig) = theme_picker_original_style.take() {
+            style = orig;
+            current_theme_idx = theme_picker_original_idx;
+        }
+        theme_picker_active = false;
+    }
     palette_active = true;
     palette_query.clear();
     palette_results = all_commands.clone();
@@ -654,6 +662,20 @@ match cmd.as_str() {
         if let Ok(palette) = crate::editor::style::load_theme_palette(&tp) {
             apply_theme_to_style(&mut style, &palette);
         }
+    }
+}
+"core:theme-picker" => {
+    if !available_themes.is_empty() {
+        palette_active = false;
+        theme_picker_active = true;
+        theme_picker_query.clear();
+        theme_picker_results = available_themes
+            .iter()
+            .map(|t| (t.clone(), t.clone()))
+            .collect();
+        theme_picker_selected = current_theme_idx;
+        theme_picker_original_style = Some(style.clone());
+        theme_picker_original_idx = current_theme_idx;
     }
 }
 "core:open-user-settings" => {

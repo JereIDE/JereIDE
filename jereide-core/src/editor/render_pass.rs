@@ -2563,6 +2563,86 @@
                     }
                 }
 
+                // Draw theme picker if active.
+                if theme_picker_active {
+                    crate::editor::app_state::clip_init(width, height);
+                    use crate::editor::view::DrawContext as _;
+                    let pal_w = (width * 0.4).max(300.0).min(width - 20.0);
+                    let pal_x = (width - pal_w) / 2.0;
+                    let pal_y = style.padding_y * 2.0;
+                    let line_h = style.font_height + style.padding_y;
+                    let max_visible = 12usize;
+                    let visible = theme_picker_results.len().min(max_visible);
+                    let pal_h = line_h * (visible as f64 + 1.0) + style.padding_y * 2.0;
+
+                    let pal_r = 10.0;
+                    draw_ctx.draw_rounded_rect(
+                        pal_x - 1.0,
+                        pal_y - 1.0,
+                        pal_w + 2.0,
+                        pal_h + 2.0,
+                        pal_r,
+                        style.divider.to_array(),
+                    );
+                    draw_ctx.draw_rounded_rect(pal_x, pal_y, pal_w, pal_h, pal_r, style.background3.to_array());
+
+                    let input_y = pal_y + style.padding_y;
+                    draw_ctx.draw_text(
+                        style.font,
+                        &format!("> {theme_picker_query}_"),
+                        pal_x + style.padding_x,
+                        input_y,
+                        style.text.to_array(),
+                    );
+                    draw_ctx.draw_rect(
+                        pal_x,
+                        input_y + line_h,
+                        pal_w,
+                        style.divider_size,
+                        style.divider.to_array(),
+                    );
+
+                    // Scroll the visible window so theme_picker_selected stays in view.
+                    let scroll_off = if theme_picker_selected >= max_visible {
+                        theme_picker_selected - max_visible + 1
+                    } else {
+                        0
+                    };
+                    for (i, (_, display)) in theme_picker_results
+                        .iter()
+                        .enumerate()
+                        .skip(scroll_off)
+                        .take(max_visible)
+                    {
+                        let display_idx = i - scroll_off;
+                        let ry =
+                            input_y + line_h + style.divider_size + display_idx as f64 * line_h;
+                        if i == theme_picker_selected {
+                            let inner_pad = style.padding_x * 0.5;
+                            draw_ctx.draw_rounded_rect(
+                                pal_x + inner_pad,
+                                ry + 1.0,
+                                pal_w - inner_pad * 2.0,
+                                line_h - 2.0,
+                                6.0,
+                                style.selection.to_array(),
+                            );
+                        }
+                        let color = if i == theme_picker_selected {
+                            style.accent.to_array()
+                        } else {
+                            style.text.to_array()
+                        };
+                        draw_ctx.draw_text(
+                            style.font,
+                            display,
+                            pal_x + style.padding_x,
+                            ry + style.padding_y / 2.0,
+                            color,
+                        );
+                    }
+                }
+
                 // Draw project search overlay.
                 if subsystems.has_find_in_files() && project_search_active {
                     crate::editor::app_state::clip_init(width, height);
