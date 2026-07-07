@@ -6949,7 +6949,6 @@ pub fn run(
                                 }
                                 if *x >= tx && *x < tx + tw {
                                     terminal.active = i;
-                                    terminal.focused = true;
                                     handled = true;
                                     break;
                                 }
@@ -6962,7 +6961,6 @@ pub fn run(
                         }
 
                         if *y >= term_y_click && *y < win_h - status_h_click {
-                            terminal.focused = true;
                             // Clicking inside the terminal viewport starts a
                             // text selection (mouse-drag copy). If the click
                             // lands on the scrollbar strip on the right
@@ -7021,8 +7019,6 @@ pub fn run(
                                 redraw = true;
                                 continue;
                             }
-                        } else {
-                            terminal.focused = false;
                         }
                         let _ = ww;
                     }
@@ -7574,6 +7570,40 @@ pub fn run(
                 EditorEvent::MouseMoved { x, y, .. } => {
                     mouse_x = *x;
                     mouse_y = *y;
+                    // Hover-focus: focus the terminal when the mouse enters
+                    // its area, unfocus when the mouse leaves.
+                    if subsystems.has_terminal() && terminal.visible {
+                        let (_, wh, _, _) = crate::window::get_window_size();
+                        let win_h = wh as f64;
+                        let status_h_hf = style.font_height + style.padding_y * 2.0;
+                        let tab_h_hf = if !single_file_mode && !docs.is_empty() {
+                            style.font_height + style.padding_y * 3.0
+                        } else {
+                            0.0
+                        };
+                        let terminal_h_hf = terminal_h_override
+                            .unwrap_or(
+                                (win_h * 0.3)
+                                    .min(win_h - tab_h_hf - status_h_hf - 50.0)
+                                    .max(80.0),
+                            )
+                            .min(win_h - tab_h_hf - status_h_hf - 50.0)
+                            .max(80.0);
+                        let term_y_hf = win_h - terminal_h_hf - status_h_hf;
+                        let sidebar_w_hf = if subsystems.has_sidebar() && sidebar_visible {
+                            sidebar_width
+                        } else {
+                            0.0
+                        };
+                        let in_terminal = *y >= term_y_hf
+                            && *y < win_h - status_h_hf
+                            && *x >= sidebar_w_hf;
+                        let was_focused = terminal.focused;
+                        terminal.focused = in_terminal;
+                        if terminal.focused != was_focused {
+                            redraw = true;
+                        }
+                    }
                     // Hover highlight for the context menu (right-click on a
                     // tab, sidebar entry, doc area, or the tab-overflow
                     // dropdown). Without this `selected` only changes via
@@ -10771,6 +10801,15 @@ pub fn run(
                                 .ok()
                             })
                             .unwrap_or_default();
+                        let bracket = dv.buffer_id.and_then(|buf_id| {
+                            buffer::with_buffer(buf_id, |b| {
+                                Ok(crate::editor::picker::bracket_pair(
+                                    &b.lines, cursor_line, cursor_col,
+                                ))
+                            })
+                            .ok()
+                            .flatten()
+                        });
                         dv.draw_native(
                             &mut draw_ctx,
                             &style,
@@ -10782,6 +10821,7 @@ pub fn run(
                             &doc.git_changes,
                             &all_cursors,
                             &occurrence,
+                            bracket,
                         );
 
                         // Test-runner badges: scan the doc for recognised
@@ -10885,41 +10925,7 @@ pub fn run(
                             dv.rect().w,
                             dv.rect().h,
                         ));
-                        // Draw bracket match underlines at cursor position.
-                        if let Some(buf_id) = dv.buffer_id {
-                            let bracket = buffer::with_buffer(buf_id, |b| {
-                                Ok(crate::editor::picker::bracket_pair(
-                                    &b.lines,
-                                    cursor_line,
-                                    cursor_col,
-                                ))
-                            })
-                            .ok()
-                            .flatten();
-                            if let Some((l1, c1, l2, c2)) = bracket {
-                                use crate::editor::view::DrawContext as _;
-                                let line_h = style.code_font_height * 1.2;
-                                let gutter_w = dv.gutter_width;
-                                let doc_x = dv.rect().x + gutter_w + style.padding_x;
-                                let doc_y = dv.rect().y;
-                                let char_w = draw_ctx.font_width(style.code_font, "m");
-                                let caret_color = style.caret.to_array();
-                                // Underline at first bracket.
-                                let y1 =
-                                    doc_y + (l1 as f64 - 1.0) * line_h + line_h - 2.0 - dv.scroll_y;
-                                let x1 = doc_x + (c1 as f64 - 1.0) * char_w - dv.scroll_x;
-                                if y1 >= doc_y && y1 <= doc_y + dv.rect().h {
-                                    draw_ctx.draw_rect(x1, y1, char_w, 2.0, caret_color);
-                                }
-                                // Underline at second bracket.
-                                let y2 =
-                                    doc_y + (l2 as f64 - 1.0) * line_h + line_h - 2.0 - dv.scroll_y;
-                                let x2 = doc_x + (c2 as f64 - 1.0) * char_w - dv.scroll_x;
-                                if y2 >= doc_y && y2 <= doc_y + dv.rect().h {
-                                    draw_ctx.draw_rect(x2, y2, char_w, 2.0, caret_color);
-                                }
-                            }
-                        }
+
                         // Draw diagnostic underlines from LSP (only for LSP-handled files).
                         if subsystems.has_lsp()
                             && is_lsp_file
