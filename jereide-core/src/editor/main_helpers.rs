@@ -29,7 +29,7 @@ pub(crate) fn fuzzy_filter_commands(query: &str, all_commands: &[(String, String
     // Rank on the pretty name only (the part before the "  (ctrl+...)"
     // keybinding tail). `fuzzy_match`'s score includes a -length
     // penalty, so if we rank on the full display string an entry with
-    // a keybinding ("Open File  (ctrl+o)") gets pushed below one
+    // a keybinding ("Open file  (ctrl+p)") gets pushed below one
     // without a binding ("Open User Settings") on the query "open" —
     // which is exactly backwards for users who are typing the name of
     // a command they already know has a shortcut.

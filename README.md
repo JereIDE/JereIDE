@@ -29,7 +29,7 @@ I do not intend to maintain or support this in any way, but wanted to share the 
 - **51 built-in syntax grammars** including Rust, Go, Python, TypeScript, C, C++, Java, and more
 - **Session restore** -- open files, active tab, font scale persist across restarts
 - **Native file watching** via inotify for external-change detection
-- **JSON-backed color themes** (`data/assets/themes/*.json`) with runtime cycling (Ctrl+Shift+P)
+- **JSON-backed color themes** (`data/assets/themes/*.json`) with runtime cycling (Ctrl+T)
 - **Keyboard-navigated file/folder open** with filesystem autocomplete and `:N` line support
 - **Format on paste** -- converts pasted indent whitespace to match document style
 - **Color-coded sidebar icons** by file extension (90+ extensions)
@@ -40,9 +40,10 @@ I do not intend to maintain or support this in any way, but wanted to share the 
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+P` | Command palette |
-| `Ctrl+O` | Open file (autocomplete navigator) |
-| `Ctrl+Shift+O` | Open project folder |
+| `Ctrl+P` | Open file |
+| `Ctrl+Shift+P` | Command palette |
+| `Ctrl+O` | Open project folder |
+| `Ctrl+T` | Cycle color theme |
 | `Ctrl+Shift+R` | Open recent file or folder |
 | `Ctrl+Shift+F` | Find in files |
 | `Alt+Shift+F` | Replace in files |
@@ -61,7 +62,6 @@ I do not intend to maintain or support this in any way, but wanted to share the 
 | `Ctrl+`` ` / `F5` | Toggle terminal |
 | `F12` | Go to definition (LSP) |
 | `Ctrl+K` | Hover info (LSP) |
-| `Ctrl+Shift+P` | Cycle color theme |
 | `Ctrl+W` | Close tab |
 | `Ctrl+Tab` | Next tab |
 

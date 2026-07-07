@@ -23,7 +23,7 @@ const COMMANDS: &[(&str, &str)] = &[
 #[derive(Debug)]
 pub struct EmptyView {
     rect: Rect,
-    /// Pre-resolved display strings for commands (e.g. "Open File (Ctrl+O)"),
+    /// Pre-resolved display strings for commands (e.g. "Open file (Ctrl+P)"),
     /// populated by the caller that has access to the current keymap.
     pub display_commands: Vec<String>,
     pub version: String,
@@ -164,7 +164,7 @@ mod tests {
     fn empty_view_draw_native_with_headless() {
         let mut view = EmptyView::new();
         view.version = "2.0.0".into();
-        view.display_commands = vec!["Ctrl+P to run a command".into()];
+        view.display_commands = vec!["Ctrl+Shift+P to run a command".into()];
         view.set_rect(Rect {
             x: 0.0,
             y: 0.0,

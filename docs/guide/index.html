@@ -856,15 +856,19 @@
 <tbody>
 <tr>
 <td><code>Ctrl+P</code></td>
+<td>Open file (supports <code>file:42</code> to go to line)</td>
+</tr>
+<tr>
+<td><code>Ctrl+Shift+P</code></td>
 <td>Command palette</td>
 </tr>
 <tr>
 <td><code>Ctrl+O</code></td>
-<td>Open file (supports <code>file:42</code> to go to line)</td>
+<td>Open project folder</td>
 </tr>
 <tr>
-<td><code>Ctrl+Shift+O</code></td>
-<td>Open file from project</td>
+<td><code>Ctrl+T</code></td>
+<td>Cycle theme</td>
 </tr>
 <tr>
 <td><code>Ctrl+Shift+R</code></td>
@@ -913,10 +917,6 @@
 <tr>
 <td><code>Ctrl+Shift+H</code></td>
 <td>Toggle whitespace rendering</td>
-</tr>
-<tr>
-<td><code>Ctrl+Shift+P</code></td>
-<td>Cycle theme</td>
 </tr>
 <tr>
 <td><code>F11</code></td>
@@ -1129,7 +1129,7 @@
 </tbody>
 </table>
 <h2 id="command-palette">Command Palette<a class="headerlink" href="#command-palette" title="Permanent link">&para;</a></h2>
-<p>Press <code>Ctrl+P</code> to open the command palette. All commands are searchable. The palette filters out raw key-input commands and only shows meaningful actions. Git commands are prefixed with "Git" (e.g. <code>Git Pull</code>, <code>Git Push</code>, <code>Git Commit</code>, <code>Git Stash</code>).</p>
+<p>Press <code>Ctrl+Shift+P</code> to open the command palette. All commands are searchable. The palette filters out raw key-input commands and only shows meaningful actions. Git commands are prefixed with "Git" (e.g. <code>Git Pull</code>, <code>Git Push</code>, <code>Git Commit</code>, <code>Git Stash</code>).</p>
 <p>Additional commands available from the palette:</p>
 <ul>
 <li><code>Sort Lines</code>, <code>Upper Case</code>, <code>Lower Case</code></li>
@@ -1432,9 +1432,9 @@
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>lite-anvil -v                 Verbose mode (log LSP errors to stderr)
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>lite-anvil --verbose          Same as -v
 </code></pre></div>
-<p>The <code>:N</code> line-number suffix also works in the file picker (<code>Ctrl+O</code>).</p>
+<p>The <code>:N</code> line-number suffix also works in the file picker (<code>Ctrl+P</code>).</p>
 <h3 id="themes">Themes<a class="headerlink" href="#themes" title="Permanent link">&para;</a></h3>
-<p>Cycle themes with <code>Ctrl+Shift+P</code> or the command palette. JSON theme files are in <code>data/assets/themes/</code>.</p>
+<p>Cycle themes with <code>Ctrl+T</code> or the command palette. JSON theme files are in <code>data/assets/themes/</code>.</p>
 <h2 id="nano-anvil">Nano Anvil<a class="headerlink" href="#nano-anvil" title="Permanent link">&para;</a></h2>
 <p>Nano Anvil is a minimal single-file editor included alongside Lite Anvil.</p>
 <h3 id="running-nano-anvil">Running Nano Anvil<a class="headerlink" href="#running-nano-anvil" title="Permanent link">&para;</a></h3>
@@ -1506,7 +1506,15 @@
 </tr>
 <tr>
 <td><code>Ctrl+P</code></td>
-<td>Command Palette</td>
+<td>Open file</td>
+</tr>
+<tr>
+<td><code>Ctrl+Shift+P</code></td>
+<td>Command palette</td>
+</tr>
+<tr>
+<td><code>Ctrl+T</code></td>
+<td>Cycle theme</td>
 </tr>
 <tr>
 <td><code>Ctrl+=</code> / <code>Ctrl+-</code></td>

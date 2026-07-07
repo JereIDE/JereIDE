@@ -161,13 +161,12 @@ fn format_stroke(stroke: &str) -> String {
 
 /// Default keybindings, merged with any user overrides from config.toml.
 const DEFAULT_BINDINGS: &[(&str, &[&str])] = &[
-    ("ctrl+p", &["core:find-command"]),
+    ("ctrl+p", &["core:open-file"]),
     ("ctrl+q", &["core:quit"]),
-    ("ctrl+o", &["core:open-file"]),
     ("ctrl+shift+r", &["core:open-recent"]),
     ("ctrl+n", &["core:new-doc"]),
     ("ctrl+shift+n", &["core:new-window"]),
-    ("ctrl+shift+o", &["core:open-project-folder"]),
+    ("ctrl+o", &["core:open-project-folder"]),
     ("ctrl+alt+w", &["core:close-project-folder"]),
     ("ctrl+alt+r", &["core:restart"]),
     ("alt+return", &["core:toggle-fullscreen"]),
@@ -331,7 +330,8 @@ const DEFAULT_BINDINGS: &[(&str, &[&str])] = &[
     ("ctrl+shift+[", &["doc:fold"]),
     ("ctrl+shift+]", &["doc:unfold"]),
     ("ctrl+shift+\\", &["doc:unfold-all"]),
-    ("ctrl+shift+p", &["core:cycle-theme"]),
+    ("ctrl+shift+p", &["core:find-command"]),
+    ("ctrl+t", &["core:cycle-theme"]),
     ("ctrl+shift+g", &["core:git-status"]),
     ("ctrl+shift+m", &["core:toggle-markdown-preview"]),
     ("ctrl+f4", &["doc:toggle-bookmark"]),

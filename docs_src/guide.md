@@ -11,9 +11,8 @@ description: Keyboard shortcuts, LSP language server setup, configuration, and s
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+P` | Command palette |
-| `Ctrl+O` | Open file (supports `file:42` to go to line) |
-| `Ctrl+Shift+O` | Open file from project |
+| `Ctrl+P` | Open file (supports `file:42` to go to line) |
+| `Ctrl+O` | Open project folder |
 | `Ctrl+Shift+R` | Open recent file / project |
 | `Ctrl+N` | New file |
 | `Ctrl+S` | Save (save-as for unnamed files) |
@@ -26,7 +25,8 @@ description: Keyboard shortcuts, LSP language server setup, configuration, and s
 | `Ctrl+M` | Toggle minimap |
 | `Alt+Z` | Toggle line wrapping |
 | `Ctrl+Shift+H` | Toggle whitespace rendering |
-| `Ctrl+Shift+P` | Cycle theme |
+| `Ctrl+Shift+P` | Command palette |
+| `Ctrl+T` | Cycle theme |
 | `F11` | Toggle fullscreen |
 | `Ctrl+`` ` / `F5` | Toggle terminal |
 | `Ctrl+Shift+T` | New terminal |
@@ -95,7 +95,7 @@ Bookmarked lines show an accent-colored marker in the gutter. Bookmarks wrap aro
 
 ## Command Palette
 
-Press `Ctrl+P` to open the command palette. All commands are searchable. The palette filters out raw key-input commands and only shows meaningful actions. Git commands are prefixed with "Git" (e.g. `Git Pull`, `Git Push`, `Git Commit`, `Git Stash`).
+Press `Ctrl+Shift+P` to open the command palette. All commands are searchable. The palette filters out raw key-input commands and only shows meaningful actions. Git commands are prefixed with "Git" (e.g. `Git Pull`, `Git Push`, `Git Commit`, `Git Stash`).
 
 Additional commands available from the palette:
 
@@ -269,8 +269,8 @@ jereide -v                 Verbose mode (log LSP errors to stderr)
 jereide --verbose          Same as -v
 ```
 
-The `:N` line-number suffix also works in the file picker (`Ctrl+O`).
+The `:N` line-number suffix also works in the file picker (`Ctrl+P`).
 
 ### Themes
 
-Cycle themes with `Ctrl+Shift+P` or the command palette. JSON theme files are in `data/assets/themes/`.
+Cycle themes with `Ctrl+T` or the command palette. JSON theme files are in `data/assets/themes/`.
