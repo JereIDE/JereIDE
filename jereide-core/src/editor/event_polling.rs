@@ -95,7 +95,7 @@
                             | "ralt"
                             | "left gui"
                             | "right gui"
-    i                        | "lgui"
+                            | "lgui"
                             | "rgui"
                             | "left meta"
                             | "right meta"
