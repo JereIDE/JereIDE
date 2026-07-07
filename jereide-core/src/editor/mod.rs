@@ -12,6 +12,7 @@ pub mod event;
 pub mod field_history;
 pub mod filesystem;
 pub mod git;
+pub mod git_helpers;
 pub mod keymap;
 pub mod lsp;
 pub mod lsp_client;
@@ -21,6 +22,7 @@ pub mod markdown_preview;
 pub mod nag_view;
 pub mod open_doc;
 pub mod picker;
+pub mod project_search;
 #[cfg(unix)]
 pub mod process;
 pub mod regex;

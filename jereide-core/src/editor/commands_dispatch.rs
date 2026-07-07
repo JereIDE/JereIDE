@@ -697,7 +697,7 @@ match cmd.as_str() {
         // poll so a large repo never freezes the editor.
         if git_status_job.is_none() {
             let root = project_root.clone();
-            git_status_job = Some(std::thread::spawn(move || run_git_status(&root)));
+            git_status_job = Some(std::thread::spawn(move || git_helpers::run_git_status(&root)));
         }
     }
 }
@@ -710,7 +710,7 @@ match cmd.as_str() {
                 if git_blame_active && git_blame_job.is_none() {
                     git_blame_lines.clear();
                     let path = doc.path.clone();
-                    git_blame_job = Some(std::thread::spawn(move || run_git_blame(&path)));
+                    git_blame_job = Some(std::thread::spawn(move || git_helpers::run_git_blame(&path)));
                 }
             }
         }
@@ -725,7 +725,7 @@ match cmd.as_str() {
                 // Log off the UI thread; the poll fills in the entries.
                 if git_log_job.is_none() {
                     let path = doc.path.clone();
-                    git_log_job = Some(std::thread::spawn(move || run_git_log(&path)));
+                    git_log_job = Some(std::thread::spawn(move || git_helpers::run_git_log(&path)));
                 }
             }
         }
