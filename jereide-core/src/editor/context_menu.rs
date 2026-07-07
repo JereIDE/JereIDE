@@ -19,6 +19,9 @@ pub struct ContextMenu {
     pub items: Vec<MenuItem>,
     pub selected: Option<usize>,
     pub position: Point,
+    /// Actual on-screen rect after auto-flip in draw_native, used
+    /// by the mouse click handler for hit-testing.
+    pub render_rect: (f64, f64, f64, f64),
 }
 
 impl ContextMenu {
@@ -29,6 +32,7 @@ impl ContextMenu {
             items: Vec::new(),
             selected: None,
             position: Point::default(),
+            render_rect: (0.0, 0.0, 0.0, 0.0),
         }
     }
 
@@ -45,6 +49,7 @@ impl ContextMenu {
         self.visible = false;
         self.items.clear();
         self.selected = None;
+        self.render_rect = (0.0, 0.0, 0.0, 0.0);
     }
 }
 
@@ -58,7 +63,7 @@ impl ContextMenu {
     /// Draw the context menu natively, auto-flipping above/below and
     /// left/right so the menu stays within the given `screen_w` x `screen_h` area.
     pub fn draw_native(
-        &self,
+        &mut self,
         ctx: &mut dyn DrawContext,
         style: &crate::editor::style_ctx::StyleContext,
         screen_w: f64,
@@ -91,6 +96,9 @@ impl ContextMenu {
         } else {
             (self.position.y - total_h).max(0.0)
         };
+
+        // Stash the actual rendered position for mouse hit-testing.
+        self.render_rect = (x, y, max_w, total_h);
 
         // Background + border
         ctx.draw_rect(

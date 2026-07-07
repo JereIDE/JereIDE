@@ -41,12 +41,12 @@ use crate::editor::event::{EditorEvent, MouseButton};
 use crate::editor::keymap::NativeKeymap;
 use crate::editor::lsp;
 use crate::editor::lsp_client::*;
-use crate::editor::word_index::WordIndex;
 use crate::editor::status_view::{StatusItem, StatusView};
 use crate::editor::storage;
 use crate::editor::terminal_panel::*;
 use crate::editor::tokenizer::{self, CompiledSyntax};
 use crate::editor::view::{UpdateContext, View};
+use crate::editor::word_index::WordIndex;
 
 /// Append a timestamped message to the log file in the user directory.
 #[cfg(feature = "sdl")]
@@ -740,11 +740,7 @@ pub fn run(
     // No TitleView -- the OS window title bar is sufficient.
 
     let mut empty_view = EmptyView::new();
-    empty_view.version = format!(
-        "{} v{}",
-        "JereIDE",
-        env!("CARGO_PKG_VERSION"),
-    );
+    empty_view.version = format!("{} v{}", "JereIDE", env!("CARGO_PKG_VERSION"),);
     for (fmt, cmd) in EmptyView::commands() {
         if let Some(binding) = keymap.get_binding_display(cmd) {
             empty_view
@@ -2292,8 +2288,7 @@ pub fn run(
                                     completion.selected += 1;
                                     // Scroll the window so the selected item stays visible.
                                     let max_visible = 10usize;
-                                    if completion.selected
-                                        >= completion.scroll_offset + max_visible
+                                    if completion.selected >= completion.scroll_offset + max_visible
                                     {
                                         completion.scroll_offset =
                                             completion.selected - max_visible + 1;
@@ -5674,9 +5669,8 @@ pub fn run(
                                 && lsp_state.initialized;
                             if !lsp_handles {
                                 if word_index.dirty {
-                                    if let Some(buf_id) = docs
-                                        .get(active_tab)
-                                        .and_then(|d| d.view.buffer_id)
+                                    if let Some(buf_id) =
+                                        docs.get(active_tab).and_then(|d| d.view.buffer_id)
                                     {
                                         let _ = buffer::with_buffer(buf_id, |b| {
                                             word_index.rebuild(&b.lines);
@@ -5684,41 +5678,33 @@ pub fn run(
                                         });
                                     }
                                 }
-                                if let Some(buf_id) = docs
-                                    .get(active_tab)
-                                    .and_then(|d| d.view.buffer_id)
+                                if let Some(buf_id) =
+                                    docs.get(active_tab).and_then(|d| d.view.buffer_id)
                                 {
-                                    let (cl, cc, prefix) =
-                                        buffer::with_buffer(buf_id, |b| {
-                                            let l = *b.selections.get(2).unwrap_or(&1);
-                                            let c = *b.selections.get(3).unwrap_or(&1);
-                                            let line = b
-                                                .lines
-                                                .get(l - 1)
-                                                .map(String::as_str)
-                                                .unwrap_or("");
-                                            let prefix_chars: Vec<char> =
-                                                line.chars().collect();
-                                            let col = (c - 1).min(prefix_chars.len());
-                                            let mut start = col;
-                                            while start > 0 {
-                                                if prefix_chars[start - 1].is_alphanumeric()
-                                                    || prefix_chars[start - 1] == '_'
-                                                {
-                                                    start -= 1;
-                                                } else {
-                                                    break;
-                                                }
+                                    let (cl, cc, prefix) = buffer::with_buffer(buf_id, |b| {
+                                        let l = *b.selections.get(2).unwrap_or(&1);
+                                        let c = *b.selections.get(3).unwrap_or(&1);
+                                        let line =
+                                            b.lines.get(l - 1).map(String::as_str).unwrap_or("");
+                                        let prefix_chars: Vec<char> = line.chars().collect();
+                                        let col = (c - 1).min(prefix_chars.len());
+                                        let mut start = col;
+                                        while start > 0 {
+                                            if prefix_chars[start - 1].is_alphanumeric()
+                                                || prefix_chars[start - 1] == '_'
+                                            {
+                                                start -= 1;
+                                            } else {
+                                                break;
                                             }
-                                            Ok((
-                                                l,
-                                                c,
-                                                prefix_chars[start..col]
-                                                    .iter()
-                                                    .collect::<String>(),
-                                            ))
-                                        })
-                                        .unwrap_or((1, 1, String::new()));
+                                        }
+                                        Ok((
+                                            l,
+                                            c,
+                                            prefix_chars[start..col].iter().collect::<String>(),
+                                        ))
+                                    })
+                                    .unwrap_or((1, 1, String::new()));
                                     if !prefix.is_empty() {
                                         let items = word_index.query(&prefix, 20);
                                         if !items.is_empty() {
@@ -5803,27 +5789,10 @@ pub fn run(
                     // Context menu: left-click outside dismisses, right-click shows.
                     if context_menu.visible && *button == MouseButton::Left {
                         use crate::editor::view::DrawContext as _;
-                        // Check if click is inside the context menu area.
+                        let (menu_x, menu_y, menu_w, menu_h) = context_menu.render_rect;
                         let item_h = style.font_height + style.padding_y;
-                        let menu_h = item_h * context_menu.items.len() as f64 + style.padding_y;
-                        let menu_x = context_menu.position.x;
-                        let menu_y = context_menu.position.y;
-                        // Compute the actual menu width from its items so hits
-                        // don't fall outside the drawn area (the old 200px
-                        // approximation missed wider labels like
-                        // "Close All to the Right").
-                        let mut menu_w = 0.0_f64;
-                        for it in &context_menu.items {
-                            let w = draw_ctx.font_width(style.font, &it.text);
-                            let total_w = if let Some(ref info) = it.info {
-                                w + draw_ctx.font_width(style.font, info) + style.padding_x * 3.0
-                            } else {
-                                w + style.padding_x * 2.0
-                            };
-                            menu_w = menu_w.max(total_w);
-                        }
-                        menu_w = menu_w.max(120.0);
-                        if *x >= menu_x
+                        if menu_h > 0.0
+                            && *x >= menu_x
                             && *x <= menu_x + menu_w
                             && *y >= menu_y
                             && *y <= menu_y + menu_h
@@ -6207,14 +6176,18 @@ pub fn run(
                             } else {
                                 (0..sidebar_entries.len()).collect()
                             };
-                            let disp_idx =
-                                ((*y - sidebar_toolbar_h_rc - sidebar_dir_header_h - notes_ui_h_rc
-                                    + sidebar_scroll)
-                                    / entry_h)
-                                    .floor() as i64;
+                            // Clamp sidebar_scroll so the entry index computation stays correct.
+                            let real_max_scroll =
+                                (sidebar_content_h - sidebar_sb_h).max(0.0);
+                            let clamped_scroll = sidebar_scroll.min(real_max_scroll);
+                            let raw_idx = ((*y - sidebar_toolbar_h_rc - sidebar_dir_header_h
+                                - notes_ui_h_rc + clamped_scroll)
+                                / entry_h)
+                                .floor() as usize;
+                            let disp_idx = raw_idx.min(notes_display_rc.len().saturating_sub(1));
                             let click_idx: i64 =
-                                if disp_idx >= 0 && (disp_idx as usize) < notes_display_rc.len() {
-                                    notes_display_rc[disp_idx as usize] as i64
+                                if !notes_display_rc.is_empty() {
+                                    notes_display_rc[disp_idx] as i64
                                 } else {
                                     -1
                                 };
@@ -6398,23 +6371,23 @@ pub fn run(
                             let min_thumb = style.scrollbar_size * 2.0;
                             let thumb_h = (sidebar_sb_h * ratio).max(min_thumb).min(sidebar_sb_h);
                             let max_scroll = (sidebar_content_h - sidebar_sb_h).max(1.0);
-                                let scroll_frac = (sidebar_scroll / max_scroll).clamp(0.0, 1.0);
-                                let thumb_y = sidebar_sb_top + scroll_frac * (sidebar_sb_h - thumb_h);
-                                if *y >= thumb_y && *y < thumb_y + thumb_h {
-                                    sidebar_sb_drag_offset = *y - thumb_y;
-                                } else {
-                                    sidebar_sb_drag_offset = thumb_h / 2.0;
-                                    let new_top = (*y - thumb_h / 2.0)
-                                        .clamp(sidebar_sb_top, sidebar_sb_top + sidebar_sb_h - thumb_h);
-                                    let travel = (sidebar_sb_h - thumb_h).max(1.0);
-                                    let new_frac = (new_top - sidebar_sb_top) / travel;
-                                    sidebar_scroll_vel = 0.0;
-                                    sidebar_scroll = (new_frac * max_scroll).max(0.0);
-                                }
-                                sidebar_sb_dragging = true;
-                                redraw = true;
-                                continue;
+                            let scroll_frac = (sidebar_scroll / max_scroll).clamp(0.0, 1.0);
+                            let thumb_y = sidebar_sb_top + scroll_frac * (sidebar_sb_h - thumb_h);
+                            if *y >= thumb_y && *y < thumb_y + thumb_h {
+                                sidebar_sb_drag_offset = *y - thumb_y;
+                            } else {
+                                sidebar_sb_drag_offset = thumb_h / 2.0;
+                                let new_top = (*y - thumb_h / 2.0)
+                                    .clamp(sidebar_sb_top, sidebar_sb_top + sidebar_sb_h - thumb_h);
+                                let travel = (sidebar_sb_h - thumb_h).max(1.0);
+                                let new_frac = (new_top - sidebar_sb_top) / travel;
+                                sidebar_scroll_vel = 0.0;
+                                sidebar_scroll = (new_frac * max_scroll).max(0.0);
                             }
+                            sidebar_sb_dragging = true;
+                            redraw = true;
+                            continue;
+                        }
                     }
 
                     // Sidebar resize drag: click near the right edge.
@@ -6446,9 +6419,7 @@ pub fn run(
                     }
 
                     // Terminal panel resize drag: click on the terminal divider.
-                    if subsystems.has_terminal()
-                        && terminal.visible
-                        && *button == MouseButton::Left
+                    if subsystems.has_terminal() && terminal.visible && *button == MouseButton::Left
                     {
                         let (_, wh, _, _) = crate::window::get_window_size();
                         let status_h = style.font_height + style.padding_y * 2.0;
@@ -6457,10 +6428,11 @@ pub fn run(
                         } else {
                             0.0
                         };
-                        let term_h = terminal_h_override
-                            .unwrap_or((wh as f64 * 0.3)
+                        let term_h = terminal_h_override.unwrap_or(
+                            (wh as f64 * 0.3)
                                 .min(wh as f64 - tab_h - status_h - 50.0)
-                                .max(80.0));
+                                .max(80.0),
+                        );
                         let term_y = wh as f64 - term_h - status_h;
                         if (*y - term_y).abs() < 5.0 && *x >= sidebar_w {
                             terminal_divider_dragging = true;
@@ -7405,38 +7377,27 @@ pub fn run(
                                         if let Some(buf_id) = doc.view.buffer_id {
                                             let _ = buffer::with_buffer_mut(buf_id, |b| {
                                                 buffer::push_undo(b);
-                                                let line =
-                                                    *b.selections.first().unwrap_or(&1);
-                                                let col =
-                                                    *b.selections.get(1).unwrap_or(&1);
+                                                let line = *b.selections.first().unwrap_or(&1);
+                                                let col = *b.selections.get(1).unwrap_or(&1);
                                                 if line <= b.lines.len() {
                                                     let l = &b.lines[line - 1];
-                                                    let chars: Vec<char> =
-                                                        l.chars().collect();
-                                                    let col_idx =
-                                                        (col - 1).min(chars.len());
+                                                    let chars: Vec<char> = l.chars().collect();
+                                                    let col_idx = (col - 1).min(chars.len());
                                                     let mut word_start = col_idx;
                                                     while word_start > 0 {
                                                         let c = chars[word_start - 1];
-                                                        if c.is_alphanumeric() || c == '_'
-                                                        {
+                                                        if c.is_alphanumeric() || c == '_' {
                                                             word_start -= 1;
                                                         } else {
                                                             break;
                                                         }
                                                     }
                                                     let l = &mut b.lines[line - 1];
-                                                    let byte_start =
-                                                        char_to_byte(l, word_start);
-                                                    let byte_end =
-                                                        char_to_byte(l, col - 1);
-                                                    l.replace_range(
-                                                        byte_start..byte_end,
-                                                        &text,
-                                                    );
-                                                    let new_col = word_start
-                                                        + 1
-                                                        + text.chars().count();
+                                                    let byte_start = char_to_byte(l, word_start);
+                                                    let byte_end = char_to_byte(l, col - 1);
+                                                    l.replace_range(byte_start..byte_end, &text);
+                                                    let new_col =
+                                                        word_start + 1 + text.chars().count();
                                                     b.selections[0] = line;
                                                     b.selections[1] = new_col;
                                                     b.selections[2] = line;
@@ -7465,8 +7426,7 @@ pub fn run(
                         let line_h = style.font_height + style.padding_y;
                         let max_visible = 15usize;
                         let visible_count = cmdview_suggestions.len().min(max_visible);
-                        let cv_h = line_h * (visible_count as f64 + 1.0)
-                            + style.padding_y * 2.0;
+                        let cv_h = line_h * (visible_count as f64 + 1.0) + style.padding_y * 2.0;
                         let nag_offset = if matches!(
                             nag,
                             Nag::OverwriteFile { .. }
@@ -7483,8 +7443,7 @@ pub fn run(
                             let input_y = cv_y + style.padding_y;
                             let suggestion_start = input_y + line_h + style.divider_size;
                             if *y >= suggestion_start {
-                                let row =
-                                    ((*y - suggestion_start) / line_h) as usize;
+                                let row = ((*y - suggestion_start) / line_h) as usize;
                                 if row < cmdview_suggestions.len() {
                                     cmdview_selected = row;
                                 }
@@ -7511,8 +7470,7 @@ pub fn run(
                             let input_y = pal_y + style.padding_y;
                             let suggestion_start = input_y + line_h + style.divider_size;
                             if *y >= suggestion_start {
-                                let row =
-                                    ((*y - suggestion_start) / line_h) as usize;
+                                let row = ((*y - suggestion_start) / line_h) as usize;
                                 if row < palette_results.len() {
                                     palette_selected = row;
                                     let (cmd, _) = &palette_results[palette_selected];
@@ -7622,42 +7580,29 @@ pub fn run(
                     // keyboard up/down, so a freshly-opened menu had no
                     // active-row indicator.
                     if context_menu.visible {
-                        use crate::editor::view::DrawContext as _;
+                        // Use the actual flipped draw position so hover matches
+                        // the on-screen rect (auto-flipped when near edges).
+                        let (menu_x, menu_y, menu_w, menu_h) = context_menu.render_rect;
                         let item_h = style.font_height + style.padding_y;
-                        let menu_x = context_menu.position.x;
-                        let menu_y = context_menu.position.y;
-                        let mut menu_w = 0.0_f64;
-                        for it in &context_menu.items {
-                            let w = draw_ctx.font_width(style.font, &it.text);
-                            let total_w = if let Some(ref info) = it.info {
-                                w + draw_ctx.font_width(style.font, info) + style.padding_x * 3.0
-                            } else {
-                                w + style.padding_x * 2.0
-                            };
-                            menu_w = menu_w.max(total_w);
-                        }
-                        menu_w = menu_w.max(120.0);
-                        let menu_h = item_h * context_menu.items.len() as f64 + style.padding_y;
-                        let new_sel = if *x >= menu_x
+                        if menu_h > 0.0
+                            && *x >= menu_x
                             && *x <= menu_x + menu_w
                             && *y >= menu_y
                             && *y <= menu_y + menu_h
                         {
                             let rel = (*y - menu_y - style.padding_y / 2.0) / item_h;
                             let idx = rel.floor().max(0.0) as usize;
-                            if idx < context_menu.items.len() && !context_menu.items[idx].separator
+                            if idx < context_menu.items.len()
+                                && !context_menu.items[idx].separator
                             {
-                                Some(idx)
+                                context_menu.selected = Some(idx);
                             } else {
-                                None
+                                context_menu.selected = None;
                             }
                         } else {
-                            None
-                        };
-                        if context_menu.selected != new_sel {
-                            context_menu.selected = new_sel;
-                            redraw = true;
+                            context_menu.selected = None;
                         }
+                        redraw = true;
                     }
                     // Tab drag reorder.
                     if let Some(drag_idx) = tab_dragging {
@@ -7886,9 +7831,7 @@ pub fn run(
                     } else if terminal_divider_dragging {
                         let (_, wh, _, _) = crate::window::get_window_size();
                         let status_h = style.font_height + style.padding_y * 2.0;
-                        let new_h = (wh as f64 - y - status_h)
-                            .max(80.0)
-                            .min(wh as f64 * 0.8);
+                        let new_h = (wh as f64 - y - status_h).max(80.0).min(wh as f64 * 0.8);
                         terminal_h_override = Some(new_h);
                         redraw = true;
                     } else if preview_dragging {
@@ -7962,12 +7905,11 @@ pub fn run(
                         } else {
                             0.0
                         };
-                        let term_h = terminal_h_override
-                            .unwrap_or(
-                                (wh as f64 * 0.3)
-                                    .min(wh as f64 - tab_h - status_h - 50.0)
-                                    .max(80.0),
-                            );
+                        let term_h = terminal_h_override.unwrap_or(
+                            (wh as f64 * 0.3)
+                                .min(wh as f64 - tab_h - status_h - 50.0)
+                                .max(80.0),
+                        );
                         let term_y = wh as f64 - term_h - status_h;
                         (*y - term_y).abs() < 5.0 && *x >= sidebar_w
                     } else {
@@ -7984,7 +7926,11 @@ pub fn run(
                         || hover_terminal_divider
                     {
                         crate::window::set_cursor("sizev");
-                    } else if !sidebar_dragging && !editor_mouse_down && !preview_dragging && !terminal_divider_dragging {
+                    } else if !sidebar_dragging
+                        && !editor_mouse_down
+                        && !preview_dragging
+                        && !terminal_divider_dragging
+                    {
                         crate::window::set_cursor("arrow");
                     } else if editor_mouse_down {
                         crate::window::set_cursor("ibeam");
@@ -9856,12 +9802,18 @@ pub fn run(
                     if let Some(doc) = docs.get_mut(active_tab) {
                         let dv = &mut doc.view;
                         // Max scroll with 1.5 lines of overscroll past end.
-                        let editor_max_scroll = dv.buffer_id.and_then(|id| {
-                            let line_count = buffer::with_buffer(id, |b| Ok(b.lines.len())).ok()?;
-                            let line_h = style.code_font_height * 1.2;
-                            let view_h = dv.rect().h;
-                            Some(((line_count as f64 * line_h) - view_h + line_h * 1.5).max(0.0))
-                        }).unwrap_or(0.0);
+                        let editor_max_scroll = dv
+                            .buffer_id
+                            .and_then(|id| {
+                                let line_count =
+                                    buffer::with_buffer(id, |b| Ok(b.lines.len())).ok()?;
+                                let line_h = style.code_font_height * 1.2;
+                                let view_h = dv.rect().h;
+                                Some(
+                                    ((line_count as f64 * line_h) - view_h + line_h * 1.5).max(0.0),
+                                )
+                            })
+                            .unwrap_or(0.0);
                         if editor_scroll_vel.abs() > 0.5 {
                             dv.scroll_y += editor_scroll_vel * dt;
                             dv.scroll_y = dv.scroll_y.clamp(0.0, editor_max_scroll);
@@ -9891,7 +9843,9 @@ pub fn run(
                     if let Some(doc) = docs.get_mut(active_tab) {
                         if doc.preview.enabled && preview_scroll_vel.abs() > 0.5 {
                             let rect = doc.preview.rect;
-                            let max_scroll = (doc.preview.content_height - rect.h).max(0.0);
+                            let line_h_pr = style.code_font_height * 1.2;
+                            let max_scroll =
+                                (doc.preview.content_height - rect.h + line_h_pr * 1.5).max(0.0);
                             doc.preview.scroll_y += preview_scroll_vel * dt;
                             doc.preview.scroll_y = doc.preview.scroll_y.clamp(0.0, max_scroll);
                             doc.preview.target_scroll_y = doc.preview.scroll_y;
@@ -12809,15 +12763,11 @@ pub fn run(
                                         fg,
                                     );
                                     if !detail.is_empty() {
-                                        let label_w =
-                                            draw_ctx.font_width(style.font, label);
+                                        let label_w = draw_ctx.font_width(style.font, label);
                                         draw_ctx.draw_text(
                                             style.font,
                                             detail,
-                                            popup_x
-                                                + style.padding_x
-                                                + label_w
-                                                + style.padding_x,
+                                            popup_x + style.padding_x + label_w + style.padding_x,
                                             iy + style.padding_y / 2.0,
                                             style.dim.to_array(),
                                         );
