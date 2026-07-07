@@ -47,10 +47,10 @@ impl DrawContext for NativeDrawContext {
         with_cache(|c| {
             c.push_draw_rect(
                 RenRect {
-                    x: x as i32,
-                    y: y as i32,
-                    w: w as i32,
-                    h: h as i32,
+                    x: x.round() as i32,
+                    y: y.round() as i32,
+                    w: w.round() as i32,
+                    h: h.round() as i32,
                 },
                 RenColor {
                     r: color[0],
@@ -74,7 +74,7 @@ impl DrawContext for NativeDrawContext {
                 fonts,
                 text,
                 x as f32,
-                y as i32,
+                y.round() as i32,
                 RenColor {
                     r: color[0],
                     g: color[1],
@@ -90,10 +90,10 @@ impl DrawContext for NativeDrawContext {
     fn set_clip_rect(&mut self, x: f64, y: f64, w: f64, h: f64) {
         with_cache(|c| {
             c.push_set_clip(RenRect {
-                x: x as i32,
-                y: y as i32,
-                w: w as i32,
-                h: h as i32,
+                x: x.round() as i32,
+                y: y.round() as i32,
+                w: w.round() as i32,
+                h: h.round() as i32,
             });
         });
     }
