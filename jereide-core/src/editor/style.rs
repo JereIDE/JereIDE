@@ -11,6 +11,7 @@ pub const STYLE_COLOR_KEYS: &[&str] = &[
     "dim",
     "divider",
     "selection",
+    "selection_match",
     "line_number",
     "line_number2",
     "line_highlight",

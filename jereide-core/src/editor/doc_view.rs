@@ -274,6 +274,7 @@ impl DocView {
         git_changes: &std::collections::HashMap<usize, crate::editor::git::LineChange>,
         extra_cursors: &[(usize, usize)],
         occurrence: &str,
+        bracket_pair: Option<(usize, usize, usize, usize)>,
     ) {
         // Background
         ctx.draw_rect(
@@ -361,6 +362,21 @@ impl DocView {
                     line_h,
                     style.line_highlight.to_array(),
                 );
+            }
+
+            // Bracket match background highlight.
+            if let Some((l1, c1, l2, c2)) = bracket_pair {
+                let char_w = ctx.font_width(style.code_font, "m");
+                let col = style.selection_match.to_array();
+                let text_x_with_pad = text_x + style.padding_x;
+                if line.line_number == l1 {
+                    let bx = text_x_with_pad + (c1 as f64 - 1.0) * char_w - self.scroll_x;
+                    ctx.draw_rect(bx, y, char_w, line_h, col);
+                }
+                if line.line_number == l2 {
+                    let bx = text_x_with_pad + (c2 as f64 - 1.0) * char_w - self.scroll_x;
+                    ctx.draw_rect(bx, y, char_w, line_h, col);
+                }
             }
 
             let is_first_row = line.wrap_start_col == 0;
@@ -542,16 +558,8 @@ impl DocView {
                                         &line.tokens,
                                         ci + needle.len(),
                                     );
-                                // Outline box, not a fill: an accent border stays
-                                // visible over the current-line highlight and reads
-                                // distinctly from the filled selection.
                                 let ow = (oex - ox).max(0.0);
-                                let bw = 1.0;
-                                let col = style.accent.to_array();
-                                ctx.draw_rect(ox, y, ow, bw, col);
-                                ctx.draw_rect(ox, y + line_h - bw, ow, bw, col);
-                                ctx.draw_rect(ox, y, bw, line_h, col);
-                                ctx.draw_rect(ox + ow - bw, y, bw, line_h, col);
+                                ctx.draw_rect(ox, y, ow, line_h, style.selection_match.to_array());
                             }
                             ci += needle.len();
                         } else {

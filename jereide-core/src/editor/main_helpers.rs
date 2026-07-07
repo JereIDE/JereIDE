@@ -1678,6 +1678,11 @@ pub(crate) fn apply_theme_to_style(style: &mut StyleContext, palette: &crate::ed
     set(&mut style.dim, "dim");
     set(&mut style.divider, "divider");
     set(&mut style.selection, "selection");
+    set(&mut style.selection_match, "selection_match");
+    if palette.colors.get("selection_match").is_none() {
+        let c = style.selection.to_array();
+        style.selection_match = crate::editor::types::Color::new(c[0], c[1], c[2], (c[3] as u16 / 3).min(255) as u8);
+    }
     set(&mut style.line_number, "line_number");
     set(&mut style.line_number2, "line_number2");
     set(&mut style.line_highlight, "line_highlight");

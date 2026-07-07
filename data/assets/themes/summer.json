@@ -10,6 +10,7 @@
     "dim": "#b0b0b0",
     "divider": "#e8e8e8",
     "selection": "#b7dce8",
+    "selection_match": "rgba(183, 220, 232, 0.30)",
     "line_number": "#d0d0d0",
     "line_number2": "#808080",
     "line_highlight": "#f2f2f2",

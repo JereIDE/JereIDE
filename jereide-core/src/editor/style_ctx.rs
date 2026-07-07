@@ -29,6 +29,7 @@ pub struct StyleContext {
     pub dim: Color,
     pub divider: Color,
     pub selection: Color,
+    pub selection_match: Color,
     pub line_number: Color,
     pub line_number2: Color,
     pub line_highlight: Color,
