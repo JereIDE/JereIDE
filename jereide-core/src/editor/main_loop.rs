@@ -966,6 +966,8 @@ pub fn run(
     let mut sidebar_content_h: f64 = 0.0;
     let mut sidebar_sb_top: f64 = 0.0;
     let mut sidebar_sb_h: f64 = 0.0;
+    let mut sidebar_hovered_index: Option<usize> = None;
+    let mut sidebar_menu_pinned_index: Option<usize> = None;
 
     // Determine project root for sidebar.
     // Notes-mode forces the configured notes folder so the sidebar
@@ -6237,6 +6239,7 @@ pub fn run(
                                     separator: false,
                                 });
                                 context_menu.show(*x, *y, items);
+                                sidebar_menu_pinned_index = Some(disp_idx);
                                 redraw = true;
                                 continue;
                             }
@@ -10392,9 +10395,23 @@ pub fn run(
                         (0..sidebar_entries.len()).collect()
                     };
                     let mut ey = toolbar_h + dir_header_h + notes_row_h - sidebar_scroll;
+                    sidebar_hovered_index = None;
+                    if !context_menu.visible {
+                        sidebar_menu_pinned_index = None;
+                    }
                     for &disp_idx in &notes_display {
                         let entry = &sidebar_entries[disp_idx];
                         if ey + entry_h > sidebar_content_top && ey < height {
+                            // Track which entry the mouse is over.
+                            if mouse_x >= 0.0
+                                && mouse_x < sidebar_w
+                                && mouse_y >= ey
+                                && mouse_y < ey + entry_h
+                            {
+                                sidebar_hovered_index = Some(disp_idx);
+                            }
+                            let is_highlighted = sidebar_hovered_index == Some(disp_idx)
+                                || sidebar_menu_pinned_index == Some(disp_idx);
                             let indent = entry.depth as f64 * style.padding_x * 1.5;
                             let x = style.padding_x + indent;
                             let text_y = ey + (entry_h - style.font_height) / 2.0;
@@ -10423,7 +10440,11 @@ pub fn run(
                                     icon,
                                     folder_x,
                                     icon_y,
-                                    style.accent.to_array(),
+                                    if is_highlighted {
+                                        style.accent.to_array()
+                                    } else {
+                                        style.text.to_array()
+                                    },
                                 );
                             } else {
                                 // Seti file-type icon glyph.
@@ -10477,7 +10498,7 @@ pub fn run(
                             // Name (vertically centered, same baseline alignment).
                             // Add spacing between icon and name.
                             let name_x = x + icon_w + style.padding_x * 0.7;
-                            let name_color = if entry.is_dir {
+                            let name_color = if is_highlighted {
                                 style.accent.to_array()
                             } else {
                                 style.text.to_array()
