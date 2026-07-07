@@ -1893,16 +1893,6 @@
                         terminal_h - style.divider_size,
                         style.background.to_array(),
                     );
-                    // Focus indicator.
-                    if terminal.focused {
-                        draw_ctx.draw_rect(
-                            term_x,
-                            term_y,
-                            term_w,
-                            style.divider_size,
-                            style.accent.to_array(),
-                        );
-                    }
                     // Resize terminal buffer to match panel dimensions.
                     let tab_bar_h_for_resize = if !terminal.terminals.is_empty() {
                         style.font_height + style.padding_y * 3.0

@@ -4694,6 +4694,7 @@
                                 }
                             }
                         }
+                        terminal.focused = false;
                         redraw = true;
                         continue;
                     }
@@ -4793,6 +4794,7 @@
                     }
 
                     if *y < tab_h && !docs.is_empty() {
+                        terminal.focused = false;
                         use crate::editor::view::DrawContext as _;
                         let (ww_tab_click, _, _, _) = crate::window::get_window_size();
                         let width = ww_tab_click as f64;
@@ -4889,6 +4891,7 @@
                     }
                     // Terminal click: focus the terminal panel, handle tab/close clicks.
                     if terminal.visible {
+                        terminal.focused = true;
                         let (ww, wh, _, _) = crate::window::get_window_size();
                         let win_w = ww as f64;
                         let win_h = wh as f64;
@@ -5478,6 +5481,7 @@
                     }
 
                     if let Some(doc) = docs.get_mut(active_tab) {
+                        terminal.focused = false;
                         let dv = &mut doc.view;
                         if let Some(buf_id) = dv.buffer_id {
                             // When the editor is split-paned with a preview,
@@ -5565,40 +5569,7 @@
                 EditorEvent::MouseMoved { x, y, .. } => {
                     mouse_x = *x;
                     mouse_y = *y;
-                    // Hover-focus: focus the terminal when the mouse enters
-                    // its area, unfocus when the mouse leaves.
-                    if subsystems.has_terminal() && terminal.visible {
-                        let (_, wh, _, _) = crate::window::get_window_size();
-                        let win_h = wh as f64;
-                        let status_h_hf = style.font_height + style.padding_y * 2.0;
-                        let tab_h_hf = if !single_file_mode && !docs.is_empty() {
-                            style.font_height + style.padding_y * 3.0
-                        } else {
-                            0.0
-                        };
-                        let terminal_h_hf = terminal_h_override
-                            .unwrap_or(
-                                (win_h * 0.3)
-                                    .min(win_h - tab_h_hf - status_h_hf - 50.0)
-                                    .max(80.0),
-                            )
-                            .min(win_h - tab_h_hf - status_h_hf - 50.0)
-                            .max(80.0);
-                        let term_y_hf = win_h - terminal_h_hf - status_h_hf;
-                        let sidebar_w_hf = if subsystems.has_sidebar() && sidebar_visible {
-                            sidebar_width
-                        } else {
-                            0.0
-                        };
-                        let in_terminal = *y >= term_y_hf
-                            && *y < win_h - status_h_hf
-                            && *x >= sidebar_w_hf;
-                        let was_focused = terminal.focused;
-                        terminal.focused = in_terminal;
-                        if terminal.focused != was_focused {
-                            redraw = true;
-                        }
-                    }
+
                     // Hover highlight for the context menu (right-click on a
                     // tab, sidebar entry, doc area, or the tab-overflow
                     // dropdown). Without this `selected` only changes via
@@ -5873,9 +5844,10 @@
                         redraw = true;
                     } else if editor_mouse_down {
                         // Drag selection: update cursor position while keeping anchor.
-                        if let Some(doc) = docs.get_mut(active_tab) {
-                            let dv = &mut doc.view;
-                            if let Some(buf_id) = dv.buffer_id {
+                    if let Some(doc) = docs.get_mut(active_tab) {
+                        terminal.focused = false;
+                        let dv = &mut doc.view;
+                        if let Some(buf_id) = dv.buffer_id {
                                 let line_h = style.line_height();
                                 let gutter_w = dv.gutter_width;
                                 let text_x_start =
