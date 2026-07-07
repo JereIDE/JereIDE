@@ -77,6 +77,11 @@ pub struct StyleContext {
 }
 
 impl StyleContext {
+    /// Document line height (code_font_height * 1.2).
+    pub fn line_height(&self) -> f64 {
+        self.code_font_height * 1.2
+    }
+
     /// Color for indent guide lines (uses selection color with reduced alpha).
     pub fn guide_color(&self) -> [u8; 4] {
         let c = self.selection.to_array();

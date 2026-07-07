@@ -13,14 +13,12 @@ pub mod field_history;
 pub mod filesystem;
 pub mod git;
 pub mod keymap;
-pub mod log_view;
 pub mod lsp;
 pub mod lsp_client;
 pub mod main_loop;
 pub mod markdown;
 pub mod markdown_preview;
 pub mod nag_view;
-pub mod node_view;
 pub mod open_doc;
 pub mod picker;
 #[cfg(unix)]
@@ -38,10 +36,8 @@ pub mod terminal_panel;
 #[cfg(windows)]
 pub mod terminal_windows;
 pub mod test_runner;
-pub mod title_view;
 pub mod tokenizer;
 pub mod toolbar_view;
-pub mod tree_view;
 pub mod types;
 pub mod utf8;
 pub mod view;

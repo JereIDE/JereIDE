@@ -772,7 +772,7 @@ pub fn run(
     let mut docs: Vec<OpenDoc> = Vec::new();
     let mut active_tab: usize = 0;
 
-    let line_h_for_scroll = style.code_font_height * 1.2;
+    let line_h_for_scroll = style.line_height();
     let mut has_cli_files = false;
     let mut cli_project_root: Option<String> = None;
     for arg in _args.iter().skip(1) {
@@ -966,8 +966,7 @@ pub fn run(
     let mut sidebar_content_h: f64 = 0.0;
     let mut sidebar_sb_top: f64 = 0.0;
     let mut sidebar_sb_h: f64 = 0.0;
-    #[allow(unused_assignments)]
-    let mut sidebar_hovered_index: Option<usize> = None;
+    let mut sidebar_hovered_index: Option<usize>;
     let mut sidebar_menu_pinned_index: Option<usize> = None;
 
     // Determine project root for sidebar.
@@ -2747,7 +2746,7 @@ pub fn run(
                                                     b.selections = vec![ln, 1, ln, 1];
                                                     Ok(())
                                                 });
-                                                let line_h = style.code_font_height * 1.2;
+                                                let line_h = style.line_height();
                                                 doc.view.scroll_y = ((target as f64 - 1.0)
                                                     * line_h
                                                     - doc.view.rect().h / 2.0)
@@ -2844,7 +2843,7 @@ pub fn run(
                                                             scroll_new_doc_to_line(
                                                                 &mut docs,
                                                                 ln,
-                                                                style.code_font_height * 1.2,
+                                                                style.line_height(),
                                                             );
                                                         }
                                                     }
@@ -3944,7 +3943,7 @@ pub fn run(
                             } else {
                                 0.0
                             };
-                            let char_h_a = style.code_font_height * 1.2;
+                            let char_h_a = style.line_height();
                             let rows_visible = (((terminal_h_a
                                 - style.divider_size
                                 - tab_bar_h_a
@@ -4000,7 +3999,7 @@ pub fn run(
                                         } else {
                                             0.0
                                         };
-                                        let char_h_c = style.code_font_height * 1.2;
+                                        let char_h_c = style.line_height();
                                         let rows_visible = (((terminal_h_c
                                             - style.divider_size
                                             - tab_bar_h_c
@@ -5772,10 +5771,7 @@ pub fn run(
                                         }
                                         // No (i == 1): just dismiss the nag.
                                         nag = Nag::None;
-                                        #[allow(unused_assignments)]
-                                        {
-                                            redraw = true;
-                                        }
+                                        redraw = true;
                                         continue;
                                     }
                                     bx += lw + btn_pad;
@@ -6965,7 +6961,7 @@ pub fn run(
                             // edge, fall through so the dedicated scrollbar
                             // handler below can grab the thumb.
                             use crate::editor::view::DrawContext as _;
-                            let char_h_v = style.code_font_height * 1.2;
+                            let char_h_v = style.line_height();
                             let char_w_v = draw_ctx.font_width(style.code_font, "m");
                             let ty_start =
                                 term_y_click + style.divider_size + tab_bar_h_click + 2.0;
@@ -7050,7 +7046,7 @@ pub fn run(
                                     })
                                     .unwrap_or(0);
                                 if total_lines > 0 {
-                                    let doc_line_h = style.code_font_height * 1.2;
+                                    let doc_line_h = style.line_height();
                                     let visible_lines = (dv.rect().h / doc_line_h).ceil() as usize;
                                     let first_visible =
                                         (dv.scroll_y / doc_line_h).floor() as usize + 1;
@@ -7165,7 +7161,7 @@ pub fn run(
                             && *y < dv_rect.y + dv_rect.h
                             && dv_rect.h > 0.0
                         {
-                            let line_h_sb = style.code_font_height * 1.2;
+                            let line_h_sb = style.line_height();
                             let total_lines = doc
                                 .view
                                 .buffer_id
@@ -7231,7 +7227,7 @@ pub fn run(
                         } else {
                             0.0
                         };
-                        let char_h_sc = style.code_font_height * 1.2;
+                        let char_h_sc = style.line_height();
                         let ty_start = term_y_sc + style.divider_size + tab_bar_h_sc + 2.0;
                         let visible_h =
                             (term_y_sc + terminal_h_sc - ty_start - style.padding_y).max(0.0);
@@ -7313,7 +7309,7 @@ pub fn run(
                                     && *y >= dvr.y
                                     && *y < dvr.y + dvr.h;
                                 if in_editor {
-                                    let line_h = style.code_font_height * 1.2;
+                                    let line_h = style.line_height();
                                     let gutter_w = dv.gutter_width;
                                     let text_x_start =
                                         dv.rect().x + gutter_w + style.padding_x - dv.scroll_x;
@@ -7491,7 +7487,7 @@ pub fn run(
                                 redraw = true;
                                 continue;
                             }
-                            let line_h = style.code_font_height * 1.2;
+                            let line_h = style.line_height();
                             let gutter_w = dv.gutter_width;
                             let text_x_start =
                                 dv.rect().x + gutter_w + style.padding_x - dv.scroll_x;
@@ -7704,7 +7700,7 @@ pub fn run(
                     if editor_sb_dragging {
                         if let Some(doc) = docs.get_mut(active_tab) {
                             let dv_rect = doc.view.rect();
-                            let line_h_sb = style.code_font_height * 1.2;
+                            let line_h_sb = style.line_height();
                             let total_lines = doc
                                 .view
                                 .buffer_id
@@ -7756,7 +7752,7 @@ pub fn run(
                         } else {
                             0.0
                         };
-                        let char_h_sm = style.code_font_height * 1.2;
+                        let char_h_sm = style.line_height();
                         let ty_start = term_y_sm + style.divider_size + tab_bar_h_sm + 2.0;
                         let visible_h =
                             (term_y_sm + terminal_h_sm - ty_start - style.padding_y).max(0.0);
@@ -7816,7 +7812,7 @@ pub fn run(
                         } else {
                             0.0
                         };
-                        let char_h_m = style.code_font_height * 1.2;
+                        let char_h_m = style.line_height();
                         let char_w_m = draw_ctx.font_width(style.code_font, "m");
                         let ty_start = term_y_m + style.divider_size + tab_bar_h_m + 2.0;
                         let visible_h =
@@ -7879,7 +7875,7 @@ pub fn run(
                         if let Some(doc) = docs.get_mut(active_tab) {
                             let dv = &mut doc.view;
                             if let Some(buf_id) = dv.buffer_id {
-                                let line_h = style.code_font_height * 1.2;
+                                let line_h = style.line_height();
                                 let gutter_w = dv.gutter_width;
                                 let text_x_start =
                                     dv.rect().x + gutter_w + style.padding_x - dv.scroll_x;
@@ -7981,7 +7977,7 @@ pub fn run(
                         if *x < dvr.x || *x >= dvr.x + dvr.w || *y < dvr.y || *y >= dvr.y + dvr.h {
                             return None;
                         }
-                        let line_h = style.code_font_height * 1.2;
+                        let line_h = style.line_height();
                         let gutter_w = dv.gutter_width;
                         let text_x_start = dv.rect().x + gutter_w + style.padding_x - dv.scroll_x;
                         if *x < text_x_start - style.padding_x {
@@ -8090,7 +8086,7 @@ pub fn run(
                     continue;
                 }
                 EditorEvent::MouseWheel { y, .. } => {
-                    let line_h = style.code_font_height * 1.2;
+                    let line_h = style.line_height();
                     let scroll_amt = y * line_h * 3.0;
                     // Wheel routes to the terminal panel when the cursor is over it.
                     let over_terminal = subsystems.has_terminal() && terminal.visible && {
@@ -9835,7 +9831,7 @@ pub fn run(
                             .and_then(|id| {
                                 let line_count =
                                     buffer::with_buffer(id, |b| Ok(b.lines.len())).ok()?;
-                                let line_h = style.code_font_height * 1.2;
+                                let line_h = style.line_height();
                                 let view_h = dv.rect().h;
                                 Some(
                                     ((line_count as f64 * line_h) - view_h + line_h * 1.5).max(0.0),
@@ -9871,7 +9867,7 @@ pub fn run(
                     if let Some(doc) = docs.get_mut(active_tab) {
                         if doc.preview.enabled && preview_scroll_vel.abs() > 0.5 {
                             let rect = doc.preview.rect;
-                            let line_h_pr = style.code_font_height * 1.2;
+                            let line_h_pr = style.line_height();
                             let max_scroll =
                                 (doc.preview.content_height - rect.h + line_h_pr * 1.5).max(0.0);
                             doc.preview.scroll_y += preview_scroll_vel * dt;
@@ -10882,7 +10878,7 @@ pub fn run(
                             // Render loops over `active_tests`, which is empty
                             // when no runner was detected, so this is a no-op in
                             // that case without a second guard.
-                            let line_h = style.code_font_height * 1.2;
+                            let line_h = style.line_height();
                             let dv_rect = dv.rect();
                             // Plain ASCII text so no font has to carry a
                             // triangle glyph; the previous "▶" rendered as
@@ -10947,7 +10943,7 @@ pub fn run(
                             && is_lsp_file
                             && let Some(diags) = lsp_state.diagnostics.get(&doc.path)
                         {
-                            let line_h = style.code_font_height * 1.2;
+                            let line_h = style.line_height();
                             let gutter_w = dv.gutter_width;
                             let doc_x = dv.rect().x + gutter_w + style.padding_x;
                             let doc_y = dv.rect().y;
@@ -10983,7 +10979,7 @@ pub fn run(
                         if let Some(doc) = docs.get(active_tab) {
                             let dv = &doc.view;
                             use crate::editor::view::DrawContext as _;
-                            let line_h = style.code_font_height * 1.2;
+                            let line_h = style.line_height();
                             let first = ((dv.scroll_y / line_h).floor() as usize) + 1;
                             let vis = ((dv.rect().h / line_h).ceil() as usize) + 2;
                             let blame_color = style.dim.to_array();
@@ -11034,7 +11030,7 @@ pub fn run(
                             buffer::with_buffer(dv.buffer_id.unwrap_or(0), |b| Ok(b.lines.len()))
                                 .unwrap_or(0);
                         if total_lines > 0 {
-                            let doc_line_h = style.code_font_height * 1.2;
+                            let doc_line_h = style.line_height();
                             let visible_lines = (dv.rect().h / doc_line_h).ceil() as usize;
                             let first_visible = (dv.scroll_y / doc_line_h).floor() as usize + 1;
                             let last_visible = first_visible + visible_lines;
@@ -11286,7 +11282,7 @@ pub fn run(
                     } else {
                         0.0
                     };
-                    let char_h_resize = style.code_font_height * 1.2;
+                    let char_h_resize = style.line_height();
                     let char_w_resize = draw_ctx.font_width(style.code_font, "m");
                     if char_w_resize > 0.0 && char_h_resize > 0.0 {
                         let avail_h = terminal_h
@@ -11383,7 +11379,7 @@ pub fn run(
                     };
                     // Draw active terminal buffer text using TerminalBufferInner cell grid.
                     if let Some(inst) = terminal.terminals.get_mut(terminal.active) {
-                        let char_h = style.code_font_height * 1.2;
+                        let char_h = style.line_height();
                         let char_w = draw_ctx.font_width(style.code_font, "m");
                         let ty_start = term_y + style.divider_size + tab_bar_h + 2.0;
                         let visible_h = (term_y + terminal_h - ty_start - style.padding_y).max(0.0);
@@ -12711,7 +12707,7 @@ pub fn run(
                         let dv = &doc.view;
                         crate::editor::app_state::clip_init(width, height);
                         use crate::editor::view::DrawContext as _;
-                        let line_h_comp = style.code_font_height * 1.2;
+                        let line_h_comp = style.line_height();
                         let gutter_w = dv.gutter_width;
                         let popup_x = dv.rect().x
                             + gutter_w
@@ -12828,7 +12824,7 @@ pub fn run(
                     let dv = &doc.view;
                     crate::editor::app_state::clip_init(width, height);
                     use crate::editor::view::DrawContext as _;
-                    let line_h_sig = style.code_font_height * 1.2;
+                    let line_h_sig = style.line_height();
                     let gutter_w = dv.gutter_width;
                     let sig_x = dv.rect().x
                         + gutter_w
@@ -12872,7 +12868,7 @@ pub fn run(
                         let dv = &doc.view;
                         crate::editor::app_state::clip_init(width, height);
                         use crate::editor::view::DrawContext as _;
-                        let line_h_hover = style.code_font_height * 1.2;
+                        let line_h_hover = style.line_height();
                         let gutter_w = dv.gutter_width;
                         let hover_x = dv.rect().x
                             + gutter_w

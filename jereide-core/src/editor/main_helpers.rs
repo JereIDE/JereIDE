@@ -251,7 +251,7 @@ pub(crate) fn select_find_match(dv: &mut DocView, m: (usize, usize, usize, usize
     // scroll target landed nowhere near the match and F3 / Enter
     // appeared to do nothing when the match was off-screen.
     let style = crate::editor::style_ctx::current_style();
-    let line_h = style.code_font_height * 1.2;
+    let line_h = style.line_height();
     // The find bar overlays the top of the doc view (2 rows normally,
     // 3 with Replace open). Subtract its height so "centered" means
     // centered in the *visible* area rather than under the bar.
@@ -678,7 +678,7 @@ pub(crate) fn handle_doc_command(
     line_wrapping: bool,
 ) {
     let Some(buf_id) = dv.buffer_id else { return };
-    let line_h = style.code_font_height * 1.2;
+    let line_h = style.line_height();
 
     match cmd {
         "doc:copy" | "doc:cut" => {
@@ -955,13 +955,13 @@ pub(crate) fn handle_doc_command(
                     line += 1;
                 }
             "doc:move-to-previous-page" | "doc:select-to-previous-page" => {
-                let page = (dv.rect().h / (style.code_font_height * 1.2)) as usize;
+                let page = (dv.rect().h / (style.line_height())) as usize;
                 line = line.saturating_sub(page).max(1);
                 let max_col = char_count(b.lines[line - 1].trim_end_matches('\n')) + 1;
                 col = col.min(max_col);
             }
             "doc:move-to-next-page" | "doc:select-to-next-page" => {
-                let page = (dv.rect().h / (style.code_font_height * 1.2)) as usize;
+                let page = (dv.rect().h / (style.line_height())) as usize;
                 line = (line + page).min(line_count);
                 let max_col = char_count(b.lines[line - 1].trim_end_matches('\n')) + 1;
                 col = col.min(max_col);

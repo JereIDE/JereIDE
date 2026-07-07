@@ -285,7 +285,7 @@ impl DocView {
             style.background.to_array(),
         );
 
-        let line_h = style.code_font_height * 1.2; // line_height multiplier
+        let line_h = style.line_height(); // line_height multiplier
         let gutter_w = self.gutter_width;
         let text_x = self.rect.x + gutter_w;
         let text_w = (self.rect.w - gutter_w).max(0.0);
@@ -1369,7 +1369,7 @@ pub(crate) fn build_render_lines(
     inlay_hints: &[InlayHint],
     token_cache: Option<&std::cell::RefCell<crate::editor::open_doc::TokenCache>>,
 ) -> Vec<RenderLine> {
-    let line_h = style.code_font_height * 1.2;
+    let line_h = style.line_height();
     let visible_lines = ((dv.rect().h / line_h).ceil() as usize).max(1);
     let hint_color = SYNTAX_COLORS.with(|s| {
         s.borrow()
