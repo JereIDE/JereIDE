@@ -3896,11 +3896,6 @@ pub fn run(
 
                     // Terminal intercepts all keys when focused.
                     if terminal.visible && terminal.focused {
-                        if key == "escape" {
-                            terminal.focused = false;
-                            redraw = true;
-                            continue;
-                        }
                         // Ctrl+PageUp/PageDown switch terminal tabs.
                         if mods.ctrl && !mods.alt && !mods.shift {
                             match key.as_str() {
