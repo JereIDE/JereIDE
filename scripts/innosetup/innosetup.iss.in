@@ -1,8 +1,8 @@
-#define MyAppName      "Lite Anvil"
+#define MyAppName      "JereIDE"
 #define MyAppVersion   "@PROJECT_VERSION@"
-#define MyAppPublisher "Lite Anvil contributors"
-#define MyAppURL       "https://github.com/lite-xl/lite-anvil"
-#define MyAppExeName   "lite-anvil.exe"
+#define MyAppPublisher "JereIDE contributors"
+#define MyAppURL       "https://github.com/jeremy-qian/jereide"
+#define MyAppExeName   "jereide.exe"
 #define BuildDir       "@PROJECT_BUILD_DIR@"
 #define SourceDir      "@PROJECT_SOURCE_DIR@"
 
@@ -75,10 +75,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 6.2; Check: not IsAdminInstallMode
 Name: "portablemode"; Description: "Extract only, do not install"; Flags: unchecked
-Name: "envPath"; Description: "Add Lite Anvil to PATH"; Flags: unchecked
+Name: "envPath"; Description: "Add JereIDE to PATH"; Flags: unchecked
 
 [Files]
-Source: "{#BuildDir}/lite-anvil/*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+Source: "{#BuildDir}/jereide/*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

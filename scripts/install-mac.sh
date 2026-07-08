@@ -60,15 +60,12 @@ install_cli_symlink() {
 echo ""
 echo "Installing CLI symlinks (may prompt for sudo)..."
 for bin_dir in /usr/local/bin /opt/homebrew/bin; do
-    install_cli_symlink "/Applications/LiteAnvil.app/Contents/MacOS/lite-anvil" lite-anvil "$bin_dir"
-    install_cli_symlink "/Applications/NanoAnvil.app/Contents/MacOS/nano-anvil" nano-anvil "$bin_dir"
-    install_cli_symlink "/Applications/NoteAnvil.app/Contents/MacOS/note-anvil" note-anvil "$bin_dir"
+    install_cli_symlink "/Applications/JereIDE.app/Contents/MacOS/jereide" jereide "$bin_dir"
 done
 
 echo ""
 echo "Done. Launch from /Applications or run:"
-echo "  lite-anvil"
-echo "  nano-anvil"
+echo "  jereide"
 
 path_has() {
     case ":${PATH}:" in *":$1:"*) return 0 ;; *) return 1 ;; esac
@@ -82,7 +79,7 @@ if ! path_has /usr/local/bin && ! path_has /opt/homebrew/bin; then
     esac
     echo ""
     echo "Note: neither /usr/local/bin nor /opt/homebrew/bin is in your PATH,"
-    echo "so 'lite-anvil' and 'nano-anvil' won't resolve in the shell."
+    echo "so 'jereide' won't resolve in the shell."
     echo "Add one of them to $shell_rc — for zsh or bash:"
     echo ""
     echo "    export PATH=\"/usr/local/bin:\$PATH\""
