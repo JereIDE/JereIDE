@@ -540,7 +540,6 @@
                 // Draw tab bar (hidden in single-file mode).
                 let _tab_bar_h = if !single_file_mode && !docs.is_empty() {
                     let tbh = style.font_height + style.padding_y * 3.0;
-                    let accent_h = 3.0;
                     use crate::editor::view::DrawContext as _;
                     draw_ctx.draw_rect(
                         sidebar_w,
@@ -629,11 +628,8 @@
                         // Clip this tab to the area left of the dropdown button.
                         let tab_visible_w = (tabs_right_limit - tx).max(0.0).min(tw);
                         draw_ctx.set_clip_rect(tx, 0.0, tab_visible_w, tbh);
-                        draw_ctx.draw_rect(tx, accent_h, tw, tbh - accent_h, bg);
-                        if i == active_tab {
-                            draw_ctx.draw_rect(tx, 0.0, tw, accent_h, style.accent.to_array());
-                        }
-                        let text_y_tab = accent_h + (tbh - accent_h - style.font_height) / 2.0;
+                        draw_ctx.draw_rect(tx, 0.0, tw, tbh, bg);
+                        let text_y_tab = (tbh - style.font_height) / 2.0;
                         draw_ctx.draw_text(
                             style.font,
                             &display_label,
@@ -648,9 +644,9 @@
                         if close_hovered {
                             draw_ctx.draw_rect(
                                 close_x,
-                                accent_h,
+                                0.0,
                                 close_w,
-                                tbh - accent_h,
+                                tbh,
                                 style.line_highlight.to_array(),
                             );
                         }
@@ -663,8 +659,7 @@
                             style.icon_font,
                             "C",
                             close_x + style.padding_x * 0.5,
-                            accent_h
-                                + (tbh - accent_h - draw_ctx.font_height(style.icon_font)) / 2.0,
+                            (tbh - draw_ctx.font_height(style.icon_font)) / 2.0,
                             close_color,
                         );
                         draw_ctx.draw_rect(
@@ -705,19 +700,19 @@
                         } else {
                             style.background2.to_array()
                         };
-                        draw_ctx.draw_rect(btn_x, accent_h, dropdown_btn_w, tbh - accent_h, btn_bg);
+                        draw_ctx.draw_rect(btn_x, 0.0, dropdown_btn_w, tbh, btn_bg);
                         draw_ctx.draw_rect(
                             btn_x,
-                            accent_h,
+                            0.0,
                             style.divider_size,
-                            tbh - accent_h,
+                            tbh,
                             style.divider.to_array(),
                         );
                         let arrow_color = style.text.to_array();
                         let arrow_h = (style.font_height * 0.45).round().max(4.0);
                         let arrow_w_px = arrow_h * 2.0;
                         let arrow_cx = btn_x + dropdown_btn_w / 2.0;
-                        let arrow_top = accent_h + (tbh - accent_h - arrow_h) / 2.0;
+                        let arrow_top = (tbh - arrow_h) / 2.0;
                         let rows = arrow_h as i32;
                         for i in 0..rows {
                             let progress = i as f64 / rows as f64;
@@ -1920,7 +1915,7 @@
                     // Draw terminal title/tab bar using the same layout as the doc tab bar.
                     let tab_bar_h = if !terminal.terminals.is_empty() {
                         let tbh = style.font_height + style.padding_y * 3.0;
-                        let accent_h = 3.0;
+
                         let tby = term_y + style.divider_size;
                         draw_ctx.draw_rect(term_x, tby, term_w, tbh, style.background2.to_array());
                         let close_w = draw_ctx.font_width(style.icon_font, "C") + style.padding_x;
@@ -1939,12 +1934,8 @@
                             } else {
                                 style.dim.to_array()
                             };
-                            draw_ctx.draw_rect(tx, tby + accent_h, tw, tbh - accent_h, bg);
-                            if i == terminal.active {
-                                draw_ctx.draw_rect(tx, tby, tw, accent_h, style.accent.to_array());
-                            }
-                            let text_y =
-                                tby + accent_h + (tbh - accent_h - style.font_height) / 2.0;
+                            draw_ctx.draw_rect(tx, tby, tw, tbh, bg);
+                            let text_y = tby + (tbh - style.font_height) / 2.0;
                             draw_ctx.draw_text(style.font, label, tx + style.padding_x, text_y, fg);
                             let close_x = tx + tw - close_w;
                             let close_hovered = mouse_y >= tby
@@ -1954,9 +1945,9 @@
                             if close_hovered {
                                 draw_ctx.draw_rect(
                                     close_x,
-                                    tby + accent_h,
+                                    tby,
                                     close_w,
-                                    tbh - accent_h,
+                                    tbh,
                                     style.line_highlight.to_array(),
                                 );
                             }
@@ -1969,9 +1960,7 @@
                                 style.icon_font,
                                 "C",
                                 close_x + style.padding_x * 0.5,
-                                tby + accent_h
-                                    + (tbh - accent_h - draw_ctx.font_height(style.icon_font))
-                                        / 2.0,
+                                tby + (tbh - draw_ctx.font_height(style.icon_font)) / 2.0,
                                 close_color,
                             );
                             draw_ctx.draw_rect(
