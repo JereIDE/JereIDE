@@ -38,32 +38,32 @@ I do not intend to maintain or support this in any way, but wanted to share the 
 
 ## Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `Ctrl+P` | Open file |
-| `Ctrl+Shift+P` | Command palette |
-| `Ctrl+O` | Open project folder |
-| `Ctrl+T` | Cycle color theme |
-| `Ctrl+Shift+R` | Open recent file or folder |
-| `Ctrl+Shift+F` | Find in files |
-| `Alt+Shift+F` | Replace in files |
-| `Ctrl+F` | Find in file |
-| `Alt+F` | Replace in file |
-| `F3` / `Shift+F3` | Next / previous match |
-| `Ctrl+/` | Toggle line comment |
-| `Ctrl+Up` / `Ctrl+Down` | Move line up / down |
-| `Ctrl+F4` | Toggle bookmark |
-| `F4` / `Shift+F4` | Next / previous bookmark |
-| `Ctrl+Shift+[` / `]` | Fold / unfold code block |
-| `Ctrl+=` / `Ctrl+-` | Font zoom in / out |
-| `Ctrl+M` | Toggle minimap |
-| `Alt+Z` | Toggle line wrapping |
-| `Ctrl+B` | Toggle sidebar |
-| `Ctrl+`` ` / `F5` | Toggle terminal |
-| `F12` | Go to definition (LSP) |
-| `Ctrl+K` | Hover info (LSP) |
-| `Ctrl+W` | Close tab |
-| `Ctrl+Tab` | Next tab |
+| Key                     | Action                     |
+| ----------------------- | -------------------------- |
+| `Ctrl+P`                | Open file                  |
+| `Ctrl+Shift+P`          | Command palette            |
+| `Ctrl+O`                | Open project folder        |
+| `Ctrl+T`                | Cycle color theme          |
+| `Ctrl+Shift+R`          | Open recent file or folder |
+| `Ctrl+Shift+F`          | Find in files              |
+| `Alt+Shift+F`           | Replace in files           |
+| `Ctrl+F`                | Find in file               |
+| `Alt+F`                 | Replace in file            |
+| `F3` / `Shift+F3`       | Next / previous match      |
+| `Ctrl+/`                | Toggle line comment        |
+| `Ctrl+Up` / `Ctrl+Down` | Move line up / down        |
+| `Ctrl+F4`               | Toggle bookmark            |
+| `F4` / `Shift+F4`       | Next / previous bookmark   |
+| `Ctrl+Shift+[` / `]`    | Fold / unfold code block   |
+| `Ctrl+=` / `Ctrl+-`     | Font zoom in / out         |
+| `Ctrl+M`                | Toggle minimap             |
+| `Alt+Z`                 | Toggle line wrapping       |
+| `Ctrl+B`                | Toggle sidebar             |
+| `Ctrl+`` ` / `F5`       | Toggle terminal            |
+| `F12`                   | Go to definition (LSP)     |
+| `Ctrl+K`                | Hover info (LSP)           |
+| `Ctrl+W`                | Close tab                  |
+| `Ctrl+Tab`              | Next tab                   |
 
 ## Building
 
@@ -96,19 +96,19 @@ MIT -- see [LICENSE](LICENSE).
 
 This project is being rebranded from Lite Anvil to JereIDE. See `PLAN.md` for the full implementation plan.
 
-| Item | Decision |
-|------|----------|
-| Display name | `JereIDE` (no space) |
-| Binary name | `jereide` (no hyphen) |
-| Config dirs | `jereide` |
-| macOS bundle ID | `com.jeremy.jereide` |
-| Linux app IDs | `com.jeremy.jereide` |
-| Changelog | Delete entirely |
-| Update check URL | Remove |
-| Icons | Placeholder |
-| Generated docs/ | Leave as-is |
-| .gitignore | Keep as-is |
-| LICENSE | Append `Jeremy-Qian` to line 4 |
-| Sub-editors (nano/note) | Remove entirely |
-| Package description | `JereIDE - a fast code editor built in Rust with SDL3` |
-| Cargo.toml authors | Replace with `Jeremy-Qian` |
+| Item                    | Decision                                               |
+| ----------------------- | ------------------------------------------------------ |
+| Display name            | `JereIDE` (no space)                                   |
+| Binary name             | `jereide` (no hyphen)                                  |
+| Config dirs             | `jereide`                                              |
+| macOS bundle ID         | `com.jeremy.jereide`                                   |
+| Linux app IDs           | `com.jeremy.jereide`                                   |
+| Changelog               | Delete entirely                                        |
+| Update check URL        | Remove                                                 |
+| Icons                   | Placeholder                                            |
+| Generated docs/         | Leave as-is                                            |
+| .gitignore              | Keep as-is                                             |
+| LICENSE                 | Append `Jeremy-Qian` to line 4                         |
+| Sub-editors (nano/note) | Remove entirely                                        |
+| Package description     | `JereIDE - a fast code editor built in Rust with SDL3` |
+| Cargo.toml authors      | Replace with `Jeremy-Qian`                             |

@@ -58,7 +58,7 @@ jobs:
           if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
             BODY="$(git log -1 --format=%b)"
             if [[ -n "$BODY" ]]; then
-              printf "## What's Changed\n%s" "$BODY" > /tmp/release_notes.md
+              printf "## What's Changed\n%s\n\n> **⚠️ macOS users:** The app is unsigned, so after unzipping run \`bash install-mac.sh\` in Terminal to bypass Gatekeeper.\n" "$BODY" > /tmp/release_notes.md
               NOTES_FLAG="--notes-file /tmp/release_notes.md"
             fi
           fi
