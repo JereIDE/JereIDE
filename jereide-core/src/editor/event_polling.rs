@@ -3316,9 +3316,12 @@
                         for cmd in Vec::from(cmds) {
                             {
                                 let cmd: String = cmd;
-                                // Close any active palette before dispatching.
+                                // Close any active palette or cmdview before dispatching.
                                 if palette_active {
                                     palette_active = false;
+                                }
+                                if cmdview_active {
+                                    cmdview_active = false;
                                 }
                                 if theme_picker_active {
                                     if let Some(orig) = theme_picker_original_style.take() {
