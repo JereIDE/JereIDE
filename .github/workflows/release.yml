@@ -772,6 +772,6 @@ jobs:
 
       - name: Upload artifacts to draft release
         run: |
-          gh release upload "${{ needs.parse-commit.outputs.release_tag }}" artifacts/* --clobber
+          gh release upload "${{ needs.parse-commit.outputs.release_tag }}" artifacts/* --clobber --repo "${{ github.repository }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
