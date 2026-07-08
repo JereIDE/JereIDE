@@ -113,9 +113,8 @@ pub(crate) fn run_project_search(
     if cache.inflight.insert(key.clone()) {
         let job_key = key.clone();
         std::thread::spawn(move || {
-            let val = project_search_blocking(
-                &job_key.0, &job_key.1, job_key.2, job_key.3, job_key.4,
-            );
+            let val =
+                project_search_blocking(&job_key.0, &job_key.1, job_key.2, job_key.3, job_key.4);
             let mut cache = CACHE.lock();
             cache.inflight.remove(&job_key);
             cache.most_recent = val.clone();

@@ -40,9 +40,9 @@ use crate::editor::empty_view::EmptyView;
 use crate::editor::event::{EditorEvent, MouseButton};
 use crate::editor::git_helpers;
 use crate::editor::keymap::NativeKeymap;
-use crate::editor::project_search;
 use crate::editor::lsp;
 use crate::editor::lsp_client::*;
+use crate::editor::project_search;
 use crate::editor::status_view::{StatusItem, StatusView};
 use crate::editor::storage;
 use crate::editor::terminal_panel::*;
@@ -1677,10 +1677,7 @@ pub fn run(
 
         include!("event_polling.rs");
 
-
-
         include!("post_event.rs");
-
 
         include!("render_pass.rs");
 

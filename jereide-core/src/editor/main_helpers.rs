@@ -3,9 +3,7 @@
 
 use crate::editor::buffer;
 use crate::editor::config::NativeConfig;
-use crate::editor::doc_view::{
-    DocView, SYNTAX_COLORS,
-};
+use crate::editor::doc_view::{DocView, SYNTAX_COLORS};
 use crate::editor::keymap::NativeKeymap;
 use crate::editor::picker;
 use crate::editor::style_ctx::StyleContext;

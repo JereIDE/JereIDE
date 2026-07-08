@@ -94,8 +94,15 @@ pub struct DrawImageCmd {
 
 pub enum Command {
     SetClip(RenRect),
-    DrawRect { rect: RenRect, color: RenColor },
-    DrawRoundedRect { rect: RenRect, color: RenColor, radius: i32 },
+    DrawRect {
+        rect: RenRect,
+        color: RenColor,
+    },
+    DrawRoundedRect {
+        rect: RenRect,
+        color: RenColor,
+        radius: i32,
+    },
     DrawText(DrawTextCmd),
     DrawImage(DrawImageCmd),
 }
@@ -193,7 +200,11 @@ impl RenCache {
         if rect.w == 0 || rect.h == 0 || !self.last_clip.overlaps(rect) {
             return;
         }
-        self.commands.push(Command::DrawRoundedRect { rect, color, radius });
+        self.commands.push(Command::DrawRoundedRect {
+            rect,
+            color,
+            radius,
+        });
     }
 
     /// Push a DrawImage (RGBA bitmap) command.
@@ -327,7 +338,11 @@ fn cmd_hash(cmd: &Command, arena: &str) -> (RenRect, u32) {
             fnv1a_update(&mut h, &[c.r, c.g, c.b, c.a]);
             (*r, h)
         }
-        Command::DrawRoundedRect { rect: r, color: c, radius } => {
+        Command::DrawRoundedRect {
+            rect: r,
+            color: c,
+            radius,
+        } => {
             let rect_bytes = bytepack_i32x4(r.x, r.y, r.w, r.h);
             fnv1a_update(&mut h, &rect_bytes);
             fnv1a_update(&mut h, &[c.r, c.g, c.b, c.a]);
@@ -517,8 +532,14 @@ pub unsafe fn render_dirty_rects(
                     Command::DrawRect { rect, color } => unsafe {
                         draw_rect_surface(surface, pixels, pitch, &fmt, *rect, *color, clip);
                     },
-                    Command::DrawRoundedRect { rect, color, radius } => unsafe {
-                        draw_rounded_rect_surface(surface, pixels, pitch, &fmt, *rect, *color, *radius, clip);
+                    Command::DrawRoundedRect {
+                        rect,
+                        color,
+                        radius,
+                    } => unsafe {
+                        draw_rounded_rect_surface(
+                            surface, pixels, pitch, &fmt, *rect, *color, *radius, clip,
+                        );
                     },
                     Command::DrawText(dt) => {
                         let text = arena

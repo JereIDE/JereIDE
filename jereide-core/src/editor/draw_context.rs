@@ -151,7 +151,16 @@ pub struct HeadlessDrawContext;
 
 impl DrawContext for HeadlessDrawContext {
     fn draw_rect(&mut self, _x: f64, _y: f64, _w: f64, _h: f64, _color: [u8; 4]) {}
-    fn draw_rounded_rect(&mut self, _x: f64, _y: f64, _w: f64, _h: f64, _radius: f64, _color: [u8; 4]) {}
+    fn draw_rounded_rect(
+        &mut self,
+        _x: f64,
+        _y: f64,
+        _w: f64,
+        _h: f64,
+        _radius: f64,
+        _color: [u8; 4],
+    ) {
+    }
     fn draw_text(&mut self, _font_id: u64, _text: &str, x: f64, _y: f64, _color: [u8; 4]) -> f64 {
         x
     }
