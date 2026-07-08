@@ -779,6 +779,7 @@ jobs:
             \( -name '*.tar.gz' -o -name '*.zip' -o -name '*.deb' \
                -o -name '*.rpm' -o -name '*.AppImage' -o -name '*.exe' \) \
             -exec mv {} artifacts/ \;
+          rm -rf artifacts/*/
 
       - name: Upload artifacts to draft release
         run: |
