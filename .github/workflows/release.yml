@@ -54,10 +54,20 @@ jobs:
             git push origin "v$VERSION"
           fi
 
+          NOTES_FLAG=""
+          if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
+            BODY="$(git log -1 --format=%b)"
+            if [[ -n "$BODY" ]]; then
+              printf "## What's Changed\n%s" "$BODY" > /tmp/release_notes.md
+              NOTES_FLAG="--notes-file /tmp/release_notes.md"
+            fi
+          fi
+
           if gh release view "v$VERSION" >/dev/null 2>&1; then
             echo "Release v$VERSION already exists, skipping creation"
           else
-            gh release create "v$VERSION" --title "v$VERSION: $TITLE" --draft
+            # shellcheck disable=SC2086
+            gh release create "v$VERSION" --title "v$VERSION: $TITLE" --draft $NOTES_FLAG
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
