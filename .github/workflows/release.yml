@@ -2,12 +2,69 @@ name: Build Release Binaries
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (without v prefix)'
+        required: true
+      title:
+        description: 'Release title'
+        required: true
 
 jobs:
+  parse-commit:
+    name: Parse commit for release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      should_release: ${{ steps.parse.outputs.should_release }}
+      release_tag: ${{ steps.parse.outputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Parse release info from commit or workflow_dispatch
+        id: parse
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+            TITLE="${{ github.event.inputs.title }}"
+          else
+            COMMIT_MSG="$(git log -1 --format=%s)"
+            if [[ "$COMMIT_MSG" =~ ^\[RELEASE\ v([^#]+)#(.+)\]$ ]]; then
+              VERSION="${BASH_REMATCH[1]}"
+              TITLE="${BASH_REMATCH[2]}"
+            else
+              echo "commit message does not match [RELEASE v{version}#{title}]"
+              echo "should_release=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
+          echo "release_tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Tag v$VERSION already exists, skipping tag creation"
+          else
+            git tag "v$VERSION"
+            git push origin "v$VERSION"
+          fi
+
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists, skipping creation"
+          else
+            gh release create "v$VERSION" --title "v$VERSION: $TITLE" --draft
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-linux:
+    needs: [parse-commit]
+    if: needs.parse-commit.outputs.should_release == 'true'
     name: Linux x86_64
     runs-on: ubuntu-22.04
     steps:
@@ -176,6 +233,8 @@ jobs:
 
   build-windows:
     name: Windows x86_64
+    needs: [parse-commit]
+    if: needs.parse-commit.outputs.should_release == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
@@ -285,6 +344,8 @@ jobs:
 
   build-macos-intel:
     name: macOS Intel (x86_64)
+    needs: [parse-commit]
+    if: needs.parse-commit.outputs.should_release == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
@@ -481,6 +542,8 @@ jobs:
 
   build-macos-arm:
     name: macOS Apple Silicon (aarch64)
+    needs: [parse-commit]
+    if: needs.parse-commit.outputs.should_release == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
@@ -689,10 +752,10 @@ jobs:
           path: jereide-*-macos-aarch64.zip
 
   release:
-    name: Create Release
-    needs: [build-linux, build-windows, build-macos-intel, build-macos-arm]
+    name: Upload to Draft Release
+    needs: [parse-commit, build-linux, build-windows, build-macos-intel, build-macos-arm]
+    if: needs.parse-commit.outputs.should_release == 'true'
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: write
     steps:
@@ -707,13 +770,8 @@ jobs:
                -o -name '*.rpm' -o -name '*.AppImage' -o -name '*.exe' \) \
             -exec mv {} artifacts/ \;
 
-      - uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          files: |
-            artifacts/*.tar.gz
-            artifacts/*.zip
-            artifacts/*.deb
-            artifacts/*.rpm
-            artifacts/*.AppImage
-            artifacts/*.exe
+      - name: Upload artifacts to draft release
+        run: |
+          gh release upload "${{ needs.parse-commit.outputs.release_tag }}" artifacts/* --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
