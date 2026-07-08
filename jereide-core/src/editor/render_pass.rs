@@ -11,7 +11,7 @@
                 0.0
             };
 
-            let tab_h = if !single_file_mode && !docs.is_empty() {
+            let tab_h = if !docs.is_empty() {
                 style.font_height + style.padding_y * 3.0
             } else {
                 0.0
@@ -41,13 +41,6 @@
                 h: height - tab_h - breadcrumb_h - terminal_h - status_h,
             };
             empty_view.set_rect(content_rect);
-            // Note-Anvil keeps the markdown preview pinned on for every
-            // doc — it's not toggleable in notes mode.
-            if subsystems.has_notes_mode() {
-                for d in docs.iter_mut() {
-                    d.preview.enabled = true;
-                }
-            }
             if let Some(doc) = docs.get_mut(active_tab) {
                 if doc.preview.enabled {
                     // Split the content area into editor | preview panes at the
@@ -130,9 +123,9 @@
                         break;
                     };
                     let path = doc.path.clone();
-                    // We watch the parent directory, so our own writes --
-                    // notably notes-mode autosave -- echo back as change
-                    // events too. A watcher event is only a hint to check;
+                    // We watch the parent directory, so our own writes echo
+                    // back as change events too. A watcher event is only a
+                    // hint to check;
                     // the authoritative test is whether the bytes on disk
                     // differ from what we last persisted. Read the file and
                     // compare its signature against the one recorded at our
@@ -194,7 +187,6 @@
                     .map(|e| e.path.clone())
                     .collect();
                 sidebar_entries = scan_for_sidebar(
-                    subsystems.has_notes_mode(),
                     &project_root,
                     sidebar_show_hidden,
                 );
@@ -209,45 +201,7 @@
                 redraw = true;
             }
 
-            // Notes-mode autosave: any dirty doc that has been idle (no
-            // edit) for at least the debounce window gets persisted.
-            // Keeps writes off the per-keystroke path while still
-            // flushing within ~250 ms of typing pause.
-            if subsystems.has_notes_mode() {
-                let idle_threshold_secs = 0.25;
-                let now = buffer::now_secs();
-                for doc in docs.iter_mut() {
-                    if doc.path.is_empty() {
-                        continue;
-                    }
-                    let Some(buf_id) = doc.view.buffer_id else {
-                        continue;
-                    };
-                    let needs_save = buffer::with_buffer(buf_id, |b| {
-                        let dirty = b.change_id != doc.saved_change_id;
-                        let idle = b
-                            .last_edit
-                            .map(|le| now - le.0 >= idle_threshold_secs)
-                            .unwrap_or(true);
-                        Ok(dirty && idle)
-                    })
-                    .unwrap_or(false);
-                    if !needs_save {
-                        continue;
-                    }
-                    let path = doc.path.clone();
-                    let saved = buffer::with_buffer_mut(buf_id, |b| {
-                        let crlf = b.crlf;
-                        buffer::save_file(b, &path, crlf, false)
-                            .map_err(|_| buffer::BufferError::UnknownBuffer)?;
-                        Ok((b.change_id, buffer::content_signature(&b.lines)))
-                    });
-                    if let Ok((cid, sig)) = saved {
-                        doc.saved_change_id = cid;
-                        doc.saved_signature = sig;
-                    }
-                }
-            }
+
 
             // Apply deferred render cache unconditionally so it never goes
             // stale. This MUST be outside the `if redraw` block -- otherwise
@@ -537,8 +491,8 @@
                 let mut tab_overlay_btn_right: f64 = width;
                 let mut tab_overlay_btn_w: f64 = 0.0;
 
-                // Draw tab bar (hidden in single-file mode).
-                let _tab_bar_h = if !single_file_mode && !docs.is_empty() {
+                // Draw tab bar.
+                let _tab_bar_h = if !docs.is_empty() {
                     let tbh = style.font_height + style.padding_y * 3.0;
                     use crate::editor::view::DrawContext as _;
                     draw_ctx.draw_rect(
@@ -863,162 +817,25 @@
                         style.divider.to_array(),
                     );
 
-                    // Notes-mode: sort toggle + search box between the
-                    // directory header and the file list.
-                    let notes_row_h = if subsystems.has_notes_mode() {
-                        let row_h = style.font_height + style.padding_y * 2.0;
-                        let search_h = style.font_height + style.padding_y * 2.0;
-                        let bar_y = toolbar_h + dir_header_h;
-                        // Sort-toggle row background.
-                        draw_ctx.draw_rect(
-                            0.0,
-                            bar_y,
-                            sidebar_w,
-                            row_h,
-                            style.background2.to_array(),
-                        );
-                        let half = (sidebar_w / 2.0).floor();
-                        let is_alpha = notes_sort_mode <= 1;
-                        let is_recent = notes_sort_mode >= 2;
-                        let arrow = |asc: bool| if asc { "\u{2191}" } else { "\u{2193}" };
-                        let alpha_arrow = arrow(notes_sort_mode == 0);
-                        let recent_arrow = arrow(notes_sort_mode == 3);
-                        let alpha_label = format!("A-Z {alpha_arrow}");
-                        let recent_label = format!("Recent {recent_arrow}");
-                        if is_alpha {
-                            draw_ctx.draw_rect(
-                                0.0,
-                                bar_y,
-                                half,
-                                row_h,
-                                style.line_highlight.to_array(),
-                            );
-                        }
-                        if is_recent {
-                            draw_ctx.draw_rect(
-                                half,
-                                bar_y,
-                                sidebar_w - half,
-                                row_h,
-                                style.line_highlight.to_array(),
-                            );
-                        }
-                        let alpha_w = draw_ctx.font_width(style.font, &alpha_label);
-                        let recent_w = draw_ctx.font_width(style.font, &recent_label);
-                        let text_y = bar_y + (row_h - style.font_height) / 2.0;
-                        draw_ctx.draw_text(
-                            style.font,
-                            &alpha_label,
-                            (half - alpha_w) / 2.0,
-                            text_y,
-                            if is_alpha {
-                                style.accent.to_array()
-                            } else {
-                                style.dim.to_array()
-                            },
-                        );
-                        draw_ctx.draw_text(
-                            style.font,
-                            &recent_label,
-                            half + (sidebar_w - half - recent_w) / 2.0,
-                            text_y,
-                            if is_recent {
-                                style.accent.to_array()
-                            } else {
-                                style.dim.to_array()
-                            },
-                        );
-                        draw_ctx.draw_rect(
-                            half,
-                            bar_y + style.padding_y * 0.3,
-                            style.divider_size,
-                            row_h - style.padding_y * 0.6,
-                            style.divider.to_array(),
-                        );
-                        // Search input row.
-                        let search_y = bar_y + row_h;
-                        let search_bg = if notes_search_focused {
-                            style.background.to_array()
-                        } else {
-                            style.background3.to_array()
-                        };
-                        draw_ctx.draw_rect(
-                            style.padding_x,
-                            search_y + style.padding_y * 0.4,
-                            sidebar_w - style.padding_x * 2.0,
-                            search_h - style.padding_y * 0.8,
-                            search_bg,
-                        );
-                        let label = if notes_search.is_empty() && !notes_search_focused {
-                            "Search notes..."
-                        } else {
-                            notes_search.as_str()
-                        };
-                        let label_color = if notes_search.is_empty() && !notes_search_focused {
-                            style.dim.to_array()
-                        } else {
-                            style.text.to_array()
-                        };
-                        draw_ctx.draw_text(
-                            style.font,
-                            label,
-                            style.padding_x * 2.0,
-                            search_y + (search_h - style.font_height) / 2.0,
-                            label_color,
-                        );
-                        // Caret when focused.
-                        if notes_search_focused {
-                            let caret_x = style.padding_x * 2.0
-                                + draw_ctx.font_width(style.font, &notes_search);
-                            draw_ctx.draw_rect(
-                                caret_x,
-                                search_y + style.padding_y * 0.5,
-                                1.0,
-                                style.font_height,
-                                style.caret.to_array(),
-                            );
-                        }
-                        draw_ctx.draw_rect(
-                            0.0,
-                            bar_y + row_h + search_h - style.divider_size,
-                            sidebar_w,
-                            style.divider_size,
-                            style.divider.to_array(),
-                        );
-                        row_h + search_h
-                    } else {
-                        0.0
-                    };
-
                     // File tree entries — clip to the area below the header so
                     // scrolled entries don't overdraw the toolbar or folder name.
                     let entry_h = style.font_height + style.padding_y;
                     let icon_font_h = draw_ctx.font_height(style.icon_font);
                     let icon_w = draw_ctx.font_width(style.icon_font, "D") + style.padding_x * 0.5;
                     let active_path = docs.get(active_tab).map(|d| d.path.as_str()).unwrap_or("");
-                    let sidebar_content_top = toolbar_h + dir_header_h + notes_row_h;
+                    let sidebar_content_top = toolbar_h + dir_header_h;
                     draw_ctx.set_clip_rect(
                         0.0,
                         sidebar_content_top,
                         sidebar_w,
                         height - sidebar_content_top,
                     );
-                    let notes_display: Vec<usize> = if subsystems.has_notes_mode() {
-                        compute_notes_display_order(
-                            &sidebar_entries,
-                            &notes_search,
-                            notes_sort_mode,
-                        )
-                    } else {
-                        (0..sidebar_entries.len()).collect()
-                    };
-                    let mut ey = toolbar_h + dir_header_h + notes_row_h - sidebar_scroll;
+                    let mut ey = toolbar_h + dir_header_h - sidebar_scroll;
                     sidebar_hovered_index = None;
                     if !context_menu.visible {
                         sidebar_menu_pinned_index = None;
                     }
-                    for &disp_idx in &notes_display {
-                        let entry = &sidebar_entries[disp_idx];
+                    for (disp_idx, entry) in sidebar_entries.iter().enumerate() {
                         if ey + entry_h > sidebar_content_top && ey < height {
                             // Track which entry the mouse is over.
                             if mouse_x >= 0.0
@@ -1158,11 +975,10 @@
                     if let Some(ref new_dir) = sidebar_new_file_dir {
                         // Find the display row to insert after (the last entry
                         // still inside `new_dir`, or right after the dir itself).
-                        let mut insert_disp_row = notes_display.len();
+                        let mut insert_disp_row = sidebar_entries.len();
                         let mut nf_dir_depth = 0usize;
                         let mut found_dir = false;
-                        for (row, &disp_idx) in notes_display.iter().enumerate() {
-                            let e = &sidebar_entries[disp_idx];
+                        for (row, e) in sidebar_entries.iter().enumerate() {
                             if !found_dir {
                                 if e.is_dir && &e.path == new_dir {
                                     found_dir = true;
@@ -1175,7 +991,7 @@
                         }
                         let nf_indent = (nf_dir_depth + 1) as f64 * style.padding_x * 1.5;
                         let nf_x = style.padding_x + nf_indent;
-                        let nf_y = toolbar_h + dir_header_h + notes_row_h - sidebar_scroll
+                        let nf_y = toolbar_h + dir_header_h - sidebar_scroll
                             + insert_disp_row as f64 * entry_h;
                         if nf_y + entry_h > sidebar_content_top && nf_y < height {
                             // Selection-tinted row background.
@@ -1216,7 +1032,7 @@
                     // Sidebar scrollbar (lite-xl style): proportional thumb
                     // with a minimum size, drawn just inside the right edge.
                     let extra_row = sidebar_new_file_dir.is_some() as usize;
-                    let total_entries_h = (notes_display.len() + extra_row) as f64 * entry_h;
+                    let total_entries_h = (sidebar_entries.len() + extra_row) as f64 * entry_h;
                     let sb_area_y = sidebar_content_top;
                     let sb_area_h = (height - sidebar_content_top).max(0.0);
                     sidebar_content_h = total_entries_h;

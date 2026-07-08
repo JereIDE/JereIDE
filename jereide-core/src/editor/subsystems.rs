@@ -75,19 +75,6 @@ pub trait UpdateCheckSubsystem {
     }
 }
 
-/// Notes-app mode. Implies: sidebar is a flat list of `*.md`
-/// files in `notes_folder`, markdown preview is always on, every edit
-/// autosaves, project / file / folder pickers are hidden in favour of the
-/// note-list. Carries the configured notes folder so the editor can open
-/// it as the project root automatically.
-pub trait NotesModeSubsystem {
-    fn is_enabled(&self) -> bool {
-        true
-    }
-    /// Absolute path to the directory that holds the user's `*.md` notes.
-    fn notes_folder(&self) -> &str;
-}
-
 /// Marker type for enabled subsystems.
 pub struct Enabled;
 
@@ -118,7 +105,6 @@ pub struct EditorSubsystems {
     pub bookmarks: Option<Box<dyn BookmarkSubsystem>>,
     pub folding: Option<Box<dyn FoldingSubsystem>>,
     pub update_check: Option<Box<dyn UpdateCheckSubsystem>>,
-    pub notes_mode: Option<Box<dyn NotesModeSubsystem>>,
 }
 
 impl EditorSubsystems {
@@ -135,7 +121,6 @@ impl EditorSubsystems {
             bookmarks: None,
             folding: None,
             update_check: None,
-            notes_mode: None,
         }
     }
 
@@ -152,7 +137,6 @@ impl EditorSubsystems {
             bookmarks: Some(Box::new(Enabled)),
             folding: Some(Box::new(Enabled)),
             update_check: Some(Box::new(Enabled)),
-            notes_mode: None,
         }
     }
 
@@ -186,44 +170,6 @@ impl EditorSubsystems {
     pub fn has_update_check(&self) -> bool {
         self.update_check.is_some()
     }
-    pub fn has_notes_mode(&self) -> bool {
-        self.notes_mode.is_some()
-    }
-    pub fn notes_folder(&self) -> Option<&str> {
-        self.notes_mode.as_ref().map(|n| n.notes_folder())
-    }
 }
 
-/// Concrete carrier for the notes-mode subsystem so binaries can hand a
-/// notes folder path in without writing their own impl.
-pub struct NotesMode {
-    pub folder: String,
-}
 
-impl NotesModeSubsystem for NotesMode {
-    fn notes_folder(&self) -> &str {
-        &self.folder
-    }
-}
-
-impl EditorSubsystems {
-    /// Notes mode: sidebar + picker only, plus the notes-mode flag with
-    /// the user's notes folder. All other subsystems off.
-    pub fn notes(folder: impl Into<String>) -> Self {
-        Self {
-            sidebar: Some(Box::new(Enabled)),
-            terminal: None,
-            lsp: None,
-            git: None,
-            picker: Some(Box::new(Enabled)),
-            find_in_files: None,
-            toolbar: None,
-            bookmarks: None,
-            folding: None,
-            update_check: None,
-            notes_mode: Some(Box::new(NotesMode {
-                folder: folder.into(),
-            })),
-        }
-    }
-}

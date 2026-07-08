@@ -7,7 +7,6 @@
 //! are bulk-gated via the `sdl_only!` macro below so each one doesn't
 //! need its own `#[cfg(feature = "sdl")]` attribute.
 
-use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -15,19 +14,9 @@ use std::time::Instant;
 use crossbeam_channel::Receiver;
 use notify::{Event, RecursiveMode, Watcher};
 
-// Module-level editor mode. Set once at startup, read by helper functions.
-thread_local! {
-    static SINGLE_FILE_MODE: Cell<bool> = const { Cell::new(false) };
-}
-
-/// Whether the editor is running in single-file mode.
-pub(crate) fn is_single_file() -> bool {
-    SINGLE_FILE_MODE.with(|c| c.get())
-}
-
-/// Whether git integration is active (inverse of single-file mode).
+/// Git integration is always active.
 fn use_git() -> bool {
-    !is_single_file()
+    true
 }
 
 use crate::editor::buffer;
@@ -120,72 +109,9 @@ pub(crate) fn normalize_path(p: &str) -> String {
     }
 }
 
-/// Filter + sort `sidebar_entries` for notes-mode display.
-/// Returns indices into `sidebar_entries` in the order they should be
-/// rendered. `sort_mode`: 0 = A-Z asc, 1 = A-Z desc, 2 = recent-first,
-/// 3 = oldest-first. Filter is a case-insensitive substring match on
-/// the entry name (empty = no filter).
-fn compute_notes_display_order(
-    entries: &[SidebarEntry],
-    search: &str,
-    sort_mode: u8,
-) -> Vec<usize> {
-    let needle = search.to_lowercase();
-    let mut indices: Vec<usize> = (0..entries.len())
-        .filter(|&i| {
-            if needle.is_empty() {
-                true
-            } else {
-                entries[i].name.to_lowercase().contains(&needle)
-            }
-        })
-        .collect();
-    match sort_mode {
-        0 => indices.sort_by(|&a, &b| {
-            entries[a]
-                .name
-                .to_lowercase()
-                .cmp(&entries[b].name.to_lowercase())
-        }),
-        1 => indices.sort_by(|&a, &b| {
-            entries[b]
-                .name
-                .to_lowercase()
-                .cmp(&entries[a].name.to_lowercase())
-        }),
-        2 | 3 => {
-            let mtime = |path: &str| -> std::time::SystemTime {
-                std::fs::metadata(path)
-                    .and_then(|m| m.modified())
-                    .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
-            };
-            indices.sort_by(|&a, &b| {
-                let ta = mtime(&entries[a].path);
-                let tb = mtime(&entries[b].path);
-                if sort_mode == 2 {
-                    tb.cmp(&ta)
-                } else {
-                    ta.cmp(&tb)
-                }
-            });
-        }
-        _ => {}
-    }
-    indices
-}
-
-/// Wrapper around `scan_directory` that, in notes-mode, flattens to a
-/// `*.md`-only top-level list (no folders, no recursion).
-fn scan_for_sidebar(notes_mode: bool, dir: &str, show_hidden: bool) -> Vec<SidebarEntry> {
-    let entries = scan_directory(dir, 0, show_hidden);
-    if notes_mode {
-        entries
-            .into_iter()
-            .filter(|e| !e.is_dir && e.name.to_lowercase().ends_with(".md"))
-            .collect()
-    } else {
-        entries
-    }
+/// Scan a directory and return sidebar entries.
+fn scan_for_sidebar(dir: &str, show_hidden: bool) -> Vec<SidebarEntry> {
+    scan_directory(dir, 0, show_hidden)
 }
 
 /// Scan a directory non-recursively and return sorted sidebar entries at the given depth.
@@ -598,19 +524,12 @@ fn markdown_lang_to_ext(lang: &str) -> &str {
 /// Run the editor main loop. Returns true if restart requested.
 #[cfg(feature = "sdl")]
 pub fn run(
-    mut config: NativeConfig,
+    config: NativeConfig,
     _args: &[String],
     datadir: &str,
     userdir: &str,
     subsystems: crate::editor::subsystems::EditorSubsystems,
 ) -> bool {
-    let single_file_mode = !subsystems.has_sidebar();
-    SINGLE_FILE_MODE.with(|c| c.set(single_file_mode));
-    if single_file_mode {
-        crate::renderer::font::set_glyph_cache_limit(1024);
-        crate::renderer::font::set_skip_prewarm(true);
-        config.max_undos = 100;
-    }
     // macOS: aggressively lower the glyph-cache ceiling + skip ASCII
     // prewarm on every auxiliary font (h1/h2/h3/big/icon_big/seti).
     // Only `ui` and `code` see sustained glyph traffic; the rest barely
@@ -791,10 +710,6 @@ pub fn run(
             cli_project_root = Some(abs);
             continue;
         }
-        // Nano-Anvil: single file only -- skip additional args.
-        if single_file_mode && has_cli_files {
-            break;
-        }
         has_cli_files = true;
         let (path, goto_line) = split_path_line(arg);
         // If path:N doesn't exist as-is but path does, use the split version.
@@ -815,7 +730,7 @@ pub fn run(
 
     // Session restore: JereIDE restores previous session.
     let mut restored_project = String::new();
-    if !single_file_mode && !has_cli_files {
+    if !has_cli_files {
         if let Ok(Some(data)) = storage::load_text(userdir_path, "session", "files") {
             if let Ok(session) = serde_json::from_str::<crate::editor::open_doc::SessionData>(&data)
             {
@@ -870,33 +785,7 @@ pub fn run(
         }
     }
 
-    // Nano-Anvil: always ensure exactly one document (blank if no CLI file).
-    if single_file_mode && docs.is_empty() {
-        let buf_state = buffer::default_buffer_state();
-        let initial_change_id = buf_state.change_id;
-        let buf_id = buffer::insert_buffer(buf_state);
-        let mut dv = DocView::new();
-        dv.buffer_id = Some(buf_id);
-        docs.push(OpenDoc {
-            view: dv,
-            path: String::new(),
-            name: "untitled".to_string(),
-            saved_change_id: initial_change_id,
-            saved_signature: 0,
-            indent_type: "soft".to_string(),
-            indent_size: 4,
-            git_changes: std::collections::HashMap::new(),
-            cached_render: std::sync::Arc::new(Vec::new()),
-            cached_change_id: -1,
-            cached_scroll_y: -1.0,
-            cached_hint_count: 0,
-            cached_rect_w: -1.0,
-            cached_rect_h: -1.0,
-            dirty_cache: std::cell::Cell::new(None),
-            token_cache: std::cell::RefCell::new(crate::editor::open_doc::TokenCache::default()),
-            preview: crate::editor::markdown_preview::MarkdownPreviewState::default(),
-        });
-    }
+
 
     // Sidebar state.
     // Load saved sidebar width.
@@ -962,9 +851,6 @@ pub fn run(
     let mut sidebar_entries: Vec<SidebarEntry>;
     let mut sidebar_watcher = SidebarWatcher::new();
     let mut sidebar_scroll: f64 = 0.0;
-    // Content height + scrollbar track geometry captured during the sidebar
-    // draw so the click/drag paths can reuse the same numbers instead of
-    // recomputing the filtered notes-mode entry list.
     let mut sidebar_content_h: f64 = 0.0;
     let mut sidebar_sb_top: f64 = 0.0;
     let mut sidebar_sb_h: f64 = 0.0;
@@ -972,14 +858,10 @@ pub fn run(
     let mut sidebar_menu_pinned_index: Option<usize> = None;
 
     // Determine project root for sidebar.
-    // Notes-mode forces the configured notes folder so the sidebar
-    // always reflects the user's notes dir even after the user changes
-    // NOTE_ANVIL_DIR. Otherwise CLI folder overrides everything, then
-    // restored project, then nothing. If a file was passed via CLI (no
-    // folder), don't open a project.
-    let mut project_root: String = if let Some(folder) = subsystems.notes_folder() {
-        folder.to_string()
-    } else if let Some(root) = cli_project_root {
+    // CLI folder overrides everything, then restored project, then
+    // nothing. If a file was passed via CLI (no folder), don't open a
+    // project.
+    let mut project_root: String = if let Some(root) = cli_project_root {
         root
     } else if has_cli_files {
         // Files passed on CLI -- no project folder.
@@ -1005,25 +887,9 @@ pub fn run(
     // reports WARN or CRITICAL, drop caches immediately.
     let mut last_mem_pressure_check: Instant = Instant::now();
     const MEM_PRESSURE_CHECK_SECS: u64 = 5;
-    // Notes-mode sidebar: search filter + sort. NoteSquirrel parity.
-    // sort_mode: 0 = A-Z asc, 1 = A-Z desc, 2 = Recent (newest first),
-    //            3 = Recent (oldest first).
-    let mut notes_search: String = String::new();
-    let mut notes_search_focused: bool = false;
-    let mut notes_sort_mode: u8 =
-        crate::editor::storage::load_text(userdir_path, "session", "notes_sort_mode")
-            .ok()
-            .flatten()
-            .and_then(|s| s.trim().parse::<u8>().ok())
-            .filter(|v| *v <= 3)
-            .unwrap_or(0);
     let file_icons = load_file_icons(datadir);
     sidebar_entries = if subsystems.has_sidebar() && !project_root.is_empty() {
-        scan_for_sidebar(
-            subsystems.has_notes_mode(),
-            &project_root,
-            sidebar_show_hidden,
-        )
+        scan_for_sidebar(&project_root, sidebar_show_hidden)
     } else {
         Vec::new()
     };
@@ -1284,7 +1150,6 @@ pub fn run(
             "root:close-or-quit",
             "doc:save-as",
             "core:toggle-markdown-preview",
-            "notes:delete-current",
             "test:run-all",
             "test:run-in-current-file",
         ];
@@ -1315,46 +1180,13 @@ pub fn run(
             cmds.retain(|c| c.0 != "core:check-for-updates");
         }
         if !subsystems.has_picker() {
-            // Nano-Anvil (single_file_mode) still supports core:open-recent
-            // as a files-only list, so only strip open-project-folder.
-            let keep_recent = single_file_mode;
-            cmds.retain(|c| {
-                c.0 != "core:open-project-folder" && (keep_recent || c.0 != "core:open-recent")
-            });
+            cmds.retain(|c| c.0 != "core:open-project-folder" && c.0 != "core:open-recent");
         }
         if !subsystems.has_bookmarks() {
             cmds.retain(|c| !c.0.contains("bookmark"));
         }
         if !subsystems.has_folding() {
             cmds.retain(|c| c.0 != "doc:fold" && c.0 != "doc:unfold" && c.0 != "doc:unfold-all");
-        }
-        if single_file_mode {
-            cmds.retain(|c| {
-                !c.0.contains("tab") && c.0 != "root:close-all" && c.0 != "root:close-all-others"
-            });
-        }
-        // Notes-mode: drop project / folder / multi-tab / preview-toggle
-        // commands. Keep only what NoteSquirrel users would expect.
-        if subsystems.has_notes_mode() {
-            cmds.retain(|c| {
-                let n = c.0.as_str();
-                !n.contains("tab")
-                    && !n.contains("project")
-                    && !n.contains("folder")
-                    && n != "core:toggle-markdown-preview"
-                    && n != "core:toggle-hidden-files"
-                    && n != "doc:save"
-                    && n != "doc:save-as"
-                    && n != "doc:reload"
-                    && n != "core:open-file"
-                    && n != "core:find-file"
-                    && n != "root:close-all"
-                    && n != "root:close-all-others"
-            });
-        } else {
-            // Outside notes-mode the delete-current command is a no-op
-            // and would only confuse the palette.
-            cmds.retain(|c| c.0 != "notes:delete-current");
         }
         cmds
     };
@@ -1394,7 +1226,6 @@ pub fn run(
     let mut project_replace_search_history = FieldHistory::default();
     let mut project_replace_with_history = FieldHistory::default();
     let mut palette_history = FieldHistory::default();
-    let mut notes_search_history = FieldHistory::default();
     let mut sidebar_new_file_history = FieldHistory::default();
 
     // Project-wide search state.
@@ -1507,21 +1338,7 @@ pub fn run(
     // Autoreload: watch open files for external changes.
     let mut autoreload = AutoreloadState::new();
 
-    // Notes-mode: restore the per-notes-folder session (the previously
-    // open note) when no doc was opened from the CLI. Mirrors NoteSquirrel's
-    // "remember last open note" behavior so launching drops
-    // the user back into whatever they were editing last.
-    if subsystems.has_notes_mode() && docs.is_empty() && !project_root.is_empty() {
-        if let Some(tab) = crate::editor::open_doc::restore_project_session(
-            userdir_path,
-            &project_root,
-            &mut docs,
-            &mut autoreload,
-            use_git(),
-        ) {
-            active_tab = tab;
-        }
-    }
+
 
     for doc in &docs {
         autoreload.watch(&doc.path);
@@ -1731,51 +1548,40 @@ pub fn run(
         );
     }
 
-    // Notes-mode: persist the per-folder session so the next launch
-    // reopens the same note. The global "session/files" path below is
-    // not used because notes-mode never keeps multiple
-    // tabs and a per-folder key keeps switching `NOTE_ANVIL_DIR` clean.
-    if subsystems.has_notes_mode() && !project_root.is_empty() {
-        save_project_session(userdir_path, &project_root, &docs, active_tab);
-    }
-
     // Session save: persist open files, active tab, and project root via storage.
-    // Save session state (JereIDE only -- Nano-Anvil has no session).
-    if !single_file_mode {
-        let mut open_files = Vec::new();
-        let mut unsaved_content = Vec::new();
-        for doc in &docs {
-            if doc.path.is_empty() {
-                open_files.push("__untitled__".to_string());
-                let content = doc
-                    .view
-                    .buffer_id
-                    .and_then(|id| buffer::with_buffer(id, |b| Ok(b.lines.join(""))).ok())
-                    .unwrap_or_default();
-                unsaved_content.push(content);
-            } else {
-                open_files.push(doc.path.clone());
-                unsaved_content.push(String::new());
+    let mut open_files = Vec::new();
+    let mut unsaved_content = Vec::new();
+    for doc in &docs {
+        if doc.path.is_empty() {
+            open_files.push("__untitled__".to_string());
+            let content = doc
+                .view
+                .buffer_id
+                .and_then(|id| buffer::with_buffer(id, |b| Ok(b.lines.join(""))).ok())
+                .unwrap_or_default();
+            unsaved_content.push(content);
+        } else {
+            open_files.push(doc.path.clone());
+            unsaved_content.push(String::new());
+        }
+    }
+    let project_root_meaningful = !project_root.is_empty()
+        && project_root != "."
+        && std::path::Path::new(&project_root).is_dir();
+    if !open_files.is_empty() || project_root_meaningful {
+        let session = crate::editor::open_doc::SessionData {
+            files: open_files,
+            active: active_tab,
+            active_project: project_root.clone(),
+            unsaved_content,
+        };
+        if let Ok(json) = serde_json::to_string_pretty(&session) {
+            if let Err(e) = storage::save_text(userdir_path, "session", "files", &json) {
+                eprintln!("Failed to save session: {e}");
             }
         }
-        let project_root_meaningful = !project_root.is_empty()
-            && project_root != "."
-            && std::path::Path::new(&project_root).is_dir();
-        if !open_files.is_empty() || project_root_meaningful {
-            let session = crate::editor::open_doc::SessionData {
-                files: open_files,
-                active: active_tab,
-                active_project: project_root.clone(),
-                unsaved_content,
-            };
-            if let Ok(json) = serde_json::to_string_pretty(&session) {
-                if let Err(e) = storage::save_text(userdir_path, "session", "files", &json) {
-                    eprintln!("Failed to save session: {e}");
-                }
-            }
-        } else if let Err(e) = storage::clear(userdir_path, "session", Some("files")) {
-            eprintln!("Failed to clear session: {e}");
-        }
+    } else if let Err(e) = storage::clear(userdir_path, "session", Some("files")) {
+        eprintln!("Failed to clear session: {e}");
     }
 
     // Save window size and position.

@@ -12,11 +12,7 @@
 
 match cmd.as_str() {
 "core:quit" => {
-    if single_file_mode && docs.iter().any(doc_is_modified) {
-        nag = Nag::UnsavedChanges { message: nag_msg_quit(&docs), tab_to_close: None };
-    } else {
-        quit = true;
-    }
+    quit = true;
 }
 "core:force-quit" => {
     quit = true;
@@ -86,27 +82,6 @@ match cmd.as_str() {
     palette_query.clear();
     palette_results = all_commands.clone();
     palette_selected = 0;
-}
-"notes:delete-current" => {
-    if subsystems.has_notes_mode()
-        && let Some(doc) = docs.get(active_tab)
-        && !doc.path.is_empty()
-    {
-        let path = doc.path.clone();
-        if std::fs::remove_file(&path).is_ok() {
-            autoreload.unwatch(&path);
-            docs.remove(active_tab);
-            if docs.is_empty() {
-                active_tab = 0;
-            } else if active_tab >= docs.len() {
-                active_tab = docs.len() - 1;
-            }
-            if subsystems.has_sidebar() && !project_root.is_empty() {
-                sidebar_entries =
-                    scan_for_sidebar(true, &project_root, sidebar_show_hidden);
-            }
-        }
-    }
 }
 "doc:save-all" => {
     let atomic = config.files.atomic_save;
@@ -241,69 +216,31 @@ match cmd.as_str() {
     }
 }
 "core:new-doc" => {
-    if subsystems.has_notes_mode() && !project_root.is_empty() {
-        // Notes mode: create a new "Note N.md" on disk and open it,
-        // matching NoteSquirrel's lifecycle. The number is the smallest
-        // integer >= existing-note-count + 1 that doesn't collide.
-        let dir = std::path::PathBuf::from(&project_root);
-        let mut count = std::fs::read_dir(&dir)
-            .map(|it| {
-                it.flatten()
-                    .filter(|e| {
-                        e.path()
-                            .extension()
-                            .and_then(|x| x.to_str())
-                            .map(|x| x.eq_ignore_ascii_case("md"))
-                            .unwrap_or(false)
-                    })
-                    .count()
-            })
-            .unwrap_or(0)
-            + 1;
-        let new_path = loop {
-            let candidate = dir.join(format!("Note {count}.md"));
-            if !candidate.exists() {
-                break candidate;
-            }
-            count += 1;
-        };
-        if std::fs::write(&new_path, "").is_ok() {
-            let path_str = new_path.to_string_lossy().to_string();
-            if open_file_into(&path_str, &mut docs, use_git()) {
-                active_tab = docs.len() - 1;
-                autoreload.watch(&path_str);
-                if subsystems.has_sidebar() {
-                    sidebar_entries = scan_for_sidebar(true, &project_root, sidebar_show_hidden);
-                }
-            }
-        }
-    } else {
-        let buf_id = buffer::insert_buffer(buffer::default_buffer_state());
-        let mut dv = DocView::new();
-        dv.buffer_id = Some(buf_id);
-        docs.push(OpenDoc {
-            view: dv,
-            path: String::new(),
-            name: "untitled".to_string(),
-            saved_change_id: 1,
-            saved_signature: buffer::content_signature(&["\n".to_string()]),
-            indent_type: "soft".to_string(),
-            indent_size: 2,
-            git_changes: std::collections::HashMap::new(),
-            cached_render: std::sync::Arc::new(Vec::new()),
-            cached_change_id: -1,
-            cached_scroll_y: -1.0,
-            cached_hint_count: 0,
-            cached_rect_w: -1.0,
-            cached_rect_h: -1.0,
-            dirty_cache: std::cell::Cell::new(None),
-            token_cache: std::cell::RefCell::new(
-                crate::editor::open_doc::TokenCache::default(),
-            ),
-            preview: crate::editor::markdown_preview::MarkdownPreviewState::default(),
-        });
-        active_tab = docs.len() - 1;
-    }
+    let buf_id = buffer::insert_buffer(buffer::default_buffer_state());
+    let mut dv = DocView::new();
+    dv.buffer_id = Some(buf_id);
+    docs.push(OpenDoc {
+        view: dv,
+        path: String::new(),
+        name: "untitled".to_string(),
+        saved_change_id: 1,
+        saved_signature: buffer::content_signature(&["\n".to_string()]),
+        indent_type: "soft".to_string(),
+        indent_size: 2,
+        git_changes: std::collections::HashMap::new(),
+        cached_render: std::sync::Arc::new(Vec::new()),
+        cached_change_id: -1,
+        cached_scroll_y: -1.0,
+        cached_hint_count: 0,
+        cached_rect_w: -1.0,
+        cached_rect_h: -1.0,
+        dirty_cache: std::cell::Cell::new(None),
+        token_cache: std::cell::RefCell::new(
+            crate::editor::open_doc::TokenCache::default(),
+        ),
+        preview: crate::editor::markdown_preview::MarkdownPreviewState::default(),
+    });
+    active_tab = docs.len() - 1;
 }
 "root:close" => {
     if !docs.is_empty() {
@@ -344,27 +281,23 @@ match cmd.as_str() {
     }
 }
 "root:close-all" => {
-    if !single_file_mode {
-        if docs.iter().any(doc_is_modified) {
-            nag = Nag::UnsavedChanges { message: nag_msg_quit(&docs), tab_to_close: None };
-        } else {
-            for d in &docs { autoreload.unwatch(&d.path); }
-            docs.clear();
-            active_tab = 0;
-        }
+    if docs.iter().any(doc_is_modified) {
+        nag = Nag::UnsavedChanges { message: nag_msg_quit(&docs), tab_to_close: None };
+    } else {
+        for d in &docs { autoreload.unwatch(&d.path); }
+        docs.clear();
+        active_tab = 0;
     }
 }
 "root:close-all-others" => {
-    if !single_file_mode {
-        let keep = active_tab;
-        for i in (0..docs.len()).rev() {
-            if i != keep {
-                autoreload.unwatch(&docs[i].path);
-                docs.remove(i);
-            }
+    let keep = active_tab;
+    for i in (0..docs.len()).rev() {
+        if i != keep {
+            autoreload.unwatch(&docs[i].path);
+            docs.remove(i);
         }
-        active_tab = 0;
     }
+    active_tab = 0;
 }
 "root:close-or-quit" => {
     if docs.is_empty() {
@@ -382,12 +315,12 @@ match cmd.as_str() {
     }
 }
 "root:switch-to-next-tab" => {
-    if !single_file_mode && !docs.is_empty() {
+    if !docs.is_empty() {
         active_tab = (active_tab + 1) % docs.len();
     }
 }
 "root:switch-to-previous-tab" => {
-    if !single_file_mode && !docs.is_empty() {
+    if !docs.is_empty() {
         active_tab = if active_tab == 0 { docs.len() - 1 } else { active_tab - 1 };
     }
 }
@@ -598,7 +531,7 @@ match cmd.as_str() {
 "core:toggle-hidden-files" => {
     if subsystems.has_sidebar() {
         sidebar_show_hidden = !sidebar_show_hidden;
-        sidebar_entries = scan_for_sidebar(subsystems.has_notes_mode(), &project_root, sidebar_show_hidden);
+        sidebar_entries = scan_for_sidebar(&project_root, sidebar_show_hidden);
         restore_expanded_folders(
             &mut sidebar_entries,
             userdir_path,
@@ -754,21 +687,16 @@ match cmd.as_str() {
     }
 }
 "core:open-recent" => {
-    if subsystems.has_picker() || single_file_mode {
+    if subsystems.has_picker() {
         cmdview_active = true;
         cmdview_mode = CmdViewMode::OpenRecent;
         cmdview_text.clear();
         cmdview_cursor = 0;
         cmdview_label = "Open Recent:".to_string();
         let mut combined: Vec<String> = Vec::new();
-        // Folders first so they're visible at the top of the list on
-        // projects with many recent files. Nano-Anvil skips the folder
-        // list entirely -- it has no project concept.
-        if !single_file_mode {
-            for p in &recent_projects {
-                if !combined.contains(p) {
-                    combined.push(p.clone());
-                }
+        for p in &recent_projects {
+            if !combined.contains(p) {
+                combined.push(p.clone());
             }
         }
         for p in &recent_files {
@@ -795,7 +723,7 @@ match cmd.as_str() {
     }
 }
 "core:open-file" | "core:open-file-from-project" => {
-    if subsystems.has_picker() || single_file_mode {
+    if subsystems.has_picker() {
         cmdview_active = true;
         cmdview_mode = CmdViewMode::OpenFile;
         let abs_root = effective_root(&project_root);
@@ -903,10 +831,8 @@ match cmd.as_str() {
             cmdview_text = doc.path.clone();
         } else {
             // Fall back to the user's home directory (via
-            // `effective_root`) rather than the cwd when
-            // there is no project folder, so Nano-Anvil
-            // doesn't default Save As to `/` when launched
-            // from a desktop entry without a working dir.
+            // `effective_root`) rather than `/` when there
+            // is no project folder.
             let abs_root = effective_root(&project_root);
             cmdview_text = dir_with_trailing_sep(&abs_root);
         }

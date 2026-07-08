@@ -1779,9 +1779,7 @@ pub(crate) fn load_fonts(
     let h2 = load_heading(1.45, &mut ctx);
     let h3 = load_heading(1.2, &mut ctx);
 
-    let (icon, big, icon_big, seti) = if crate::editor::main_loop::is_single_file() {
-        (ui, ui, ui, ui)
-    } else {
+    let (icon, big, icon_big, seti) = {
         let icon = load(&config.fonts.icon, &mut ctx)?;
         let big = if config.fonts.big.path.is_some() {
             load(&config.fonts.big, &mut ctx)?

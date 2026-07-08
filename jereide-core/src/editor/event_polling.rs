@@ -25,23 +25,13 @@
             if !palette_active {
                 palette_history.clear();
             }
-            if !notes_search_focused {
-                notes_search_history.clear();
-            }
+
             if sidebar_new_file_dir.is_none() {
                 sidebar_new_file_history.clear();
             }
             match &event {
                 EditorEvent::Quit => {
-                    if single_file_mode && docs.iter().any(doc_is_modified) {
-                        nag = Nag::UnsavedChanges {
-                            message: nag_msg_quit(&docs),
-                            tab_to_close: None,
-                        };
-                        redraw = true;
-                    } else {
-                        quit = true;
-                    }
+                    quit = true;
                 }
                 EditorEvent::Exposed | EditorEvent::Resized { .. } | EditorEvent::FocusGained => {
                     window_hidden = false;
@@ -127,82 +117,7 @@
                         mods.gui = false;
                     }
 
-                    // Notes-mode sidebar search input.
-                    if subsystems.has_notes_mode() && notes_search_focused {
-                        if let Some(is_redo) = keymap_field_undo(&keymap, key.as_str(), mods) {
-                            let restored = if is_redo {
-                                notes_search_history.redo(&notes_search, notes_search.len())
-                            } else {
-                                notes_search_history.undo(&notes_search, notes_search.len())
-                            };
-                            if let Some((t, _)) = restored {
-                                notes_search = t;
-                            }
-                            redraw = true;
-                            continue;
-                        }
-                        if let Some(action) = keymap_field_clipboard(&keymap, key.as_str(), mods) {
-                            match action {
-                                FieldClipboard::Copy => {
-                                    if !notes_search.is_empty() {
-                                        crate::window::set_clipboard_text(&notes_search);
-                                    }
-                                }
-                                FieldClipboard::Cut => {
-                                    if !notes_search.is_empty() {
-                                        crate::window::set_clipboard_text(&notes_search);
-                                        notes_search_history.record(
-                                            &notes_search,
-                                            notes_search.len(),
-                                            FieldEdit::Replace,
-                                            buffer::now_secs(),
-                                        );
-                                        notes_search.clear();
-                                    }
-                                }
-                                FieldClipboard::Paste => {
-                                    if let Some(clip) = crate::window::get_clipboard_text() {
-                                        notes_search_history.record(
-                                            &notes_search,
-                                            notes_search.len(),
-                                            FieldEdit::Replace,
-                                            buffer::now_secs(),
-                                        );
-                                        append_clipboard_line(&mut notes_search, &clip);
-                                    }
-                                }
-                            }
-                            redraw = true;
-                            continue;
-                        }
-                        match key.as_str() {
-                            "backspace" => {
-                                if !notes_search.is_empty() {
-                                    notes_search_history.record(
-                                        &notes_search,
-                                        notes_search.len(),
-                                        FieldEdit::Delete,
-                                        buffer::now_secs(),
-                                    );
-                                }
-                                notes_search.pop();
-                                redraw = true;
-                                continue;
-                            }
-                            "escape" => {
-                                notes_search.clear();
-                                notes_search_focused = false;
-                                redraw = true;
-                                continue;
-                            }
-                            "return" | "enter" => {
-                                notes_search_focused = false;
-                                redraw = true;
-                                continue;
-                            }
-                            _ => {}
-                        }
-                    }
+
 
                     // Tab overflow dropdown: Escape dismisses it.
                     if tab_dropdown_open && key.as_str() == "escape" {
@@ -462,8 +377,7 @@
                                                             .map(|e| e.path.clone())
                                                             .collect();
                                                     sidebar_entries = scan_for_sidebar(
-                                                        subsystems.has_notes_mode(),
-                                                        &project_root,
+                                                                                                                &project_root,
                                                         sidebar_show_hidden,
                                                     );
                                                     restore_expanded_folders(
@@ -665,7 +579,7 @@
                                     &project_root,
                                     &recent_files,
                                     &recent_projects,
-                                    !single_file_mode,
+                                    !false,
                                     &mut cmdview_suggestions,
                                 );
                                 cmdview_selected = 0;
@@ -697,7 +611,7 @@
                                             &project_root,
                                             &recent_files,
                                             &recent_projects,
-                                            !single_file_mode,
+                                            !false,
                                             &mut cmdview_suggestions,
                                         );
                                         cmdview_selected = 0;
@@ -722,7 +636,7 @@
                                             &project_root,
                                             &recent_files,
                                             &recent_projects,
-                                            !single_file_mode,
+                                            !false,
                                             &mut cmdview_suggestions,
                                         );
                                         cmdview_selected = 0;
@@ -820,7 +734,7 @@
                                         let ap = std::path::Path::new(&actual);
                                         if ap.is_file() {
                                             cmdview_active = false;
-                                            if single_file_mode {
+                                            if false {
                                                 // Replace current doc.
                                                 for d in &docs { autoreload.unwatch(&d.path); }
                                                 docs.clear();
@@ -890,8 +804,7 @@
                                                 if subsystems.has_sidebar() {
                                                     sidebar_watcher.unwatch_all();
                                                     sidebar_entries = scan_for_sidebar(
-                                                        subsystems.has_notes_mode(),
-                                                        &project_root,
+                                                                                                                &project_root,
                                                         sidebar_show_hidden,
                                                     );
                                                     restore_expanded_folders(
@@ -965,8 +878,7 @@
                                                 if subsystems.has_sidebar() {
                                                     sidebar_watcher.unwatch_all();
                                                     sidebar_entries = scan_for_sidebar(
-                                                        subsystems.has_notes_mode(),
-                                                        &project_root,
+                                                                                                                &project_root,
                                                         sidebar_show_hidden,
                                                     );
                                                     restore_expanded_folders(
@@ -1119,8 +1031,7 @@
                                                 .starts_with(std::path::Path::new(&project_root))
                                         {
                                             sidebar_entries = scan_for_sidebar(
-                                                subsystems.has_notes_mode(),
-                                                &project_root,
+                                                                                                &project_root,
                                                 sidebar_show_hidden,
                                             );
                                             restore_expanded_folders(
@@ -1168,8 +1079,7 @@
                                                         && !project_root.is_empty()
                                                     {
                                                         sidebar_entries = scan_for_sidebar(
-                                                            subsystems.has_notes_mode(),
-                                                            &project_root,
+                                                                                                                        &project_root,
                                                             sidebar_show_hidden,
                                                         );
                                                         restore_expanded_folders(
@@ -1290,7 +1200,7 @@
                                         &project_root,
                                         &recent_files,
                                         &recent_projects,
-                                        !single_file_mode,
+                                        !false,
                                         &mut cmdview_suggestions,
                                     );
                                     cmdview_selected = 0;
@@ -1321,7 +1231,7 @@
                                     &project_root,
                                     &recent_files,
                                     &recent_projects,
-                                    !single_file_mode,
+                                    !false,
                                     &mut cmdview_suggestions,
                                 );
                                 cmdview_selected = 0;
@@ -1926,7 +1836,7 @@
                             let (_, wh, _, _) = crate::window::get_window_size();
                             let win_h = wh as f64;
                             let status_h_a = style.font_height + style.padding_y * 2.0;
-                            let tab_h_a = if !single_file_mode && !docs.is_empty() {
+                            let tab_h_a = if !docs.is_empty() {
                                 style.font_height + style.padding_y * 3.0
                             } else {
                                 0.0
@@ -1982,7 +1892,7 @@
                                         let (_, wh, _, _) = crate::window::get_window_size();
                                         let win_h = wh as f64;
                                         let status_h_c = style.font_height + style.padding_y * 2.0;
-                                        let tab_h_c = if !single_file_mode && !docs.is_empty() {
+                                        let tab_h_c = if !docs.is_empty() {
                                             style.font_height + style.padding_y * 3.0
                                         } else {
                                             0.0
@@ -2202,8 +2112,7 @@
                                                     .map(|e| e.path.clone())
                                                     .collect();
                                             sidebar_entries = scan_for_sidebar(
-                                                subsystems.has_notes_mode(),
-                                                &project_root,
+                                                                                                &project_root,
                                                 sidebar_show_hidden,
                                             );
                                             restore_expanded_folders(
@@ -3356,17 +3265,7 @@
                         continue;
                     }
                     // Route typing into the sidebar search when focused.
-                    if subsystems.has_notes_mode() && notes_search_focused {
-                        notes_search_history.record(
-                            &notes_search,
-                            notes_search.len(),
-                            FieldEdit::Insert,
-                            buffer::now_secs(),
-                        );
-                        notes_search.push_str(text);
-                        redraw = true;
-                        continue;
-                    }
+
                     // Forward text to terminal when focused.
                     if subsystems.has_terminal() && terminal.visible && terminal.focused {
                         if let Some(inst) = terminal.active_terminal() {
@@ -3412,7 +3311,7 @@
                         if cmdview_mode == CmdViewMode::OpenRecent {
                             let query = cmdview_text.to_lowercase();
                             let mut combined: Vec<String> = Vec::new();
-                            if !single_file_mode {
+                            if !false {
                                 for p in &recent_projects {
                                     if !combined.contains(p) {
                                         combined.push(p.clone());
@@ -4089,7 +3988,7 @@
                         // dropdown button or empty tab-bar space are swallowed so
                         // the doc Cut/Copy/Paste menu doesn't spawn off-screen at
                         // the far right of the window.
-                        let tab_h_rc = if !single_file_mode && !docs.is_empty() {
+                        let tab_h_rc = if !docs.is_empty() {
                             style.font_height + style.padding_y * 3.0
                         } else {
                             0.0
@@ -4251,32 +4150,18 @@
                                 0.0
                             };
                             let sidebar_dir_header_h = style.font_height + style.padding_y;
-                            let notes_ui_h_rc = if subsystems.has_notes_mode() {
-                                (style.font_height + style.padding_y * 2.0) * 2.0
-                            } else {
-                                0.0
-                            };
-                            let notes_display_rc: Vec<usize> = if subsystems.has_notes_mode() {
-                                compute_notes_display_order(
-                                    &sidebar_entries,
-                                    &notes_search,
-                                    notes_sort_mode,
-                                )
-                            } else {
-                                (0..sidebar_entries.len()).collect()
-                            };
                             // Clamp sidebar_scroll so the entry index computation stays correct.
                             let real_max_scroll =
                                 (sidebar_content_h - sidebar_sb_h).max(0.0);
                             let clamped_scroll = sidebar_scroll.min(real_max_scroll);
                             let raw_idx = ((*y - sidebar_toolbar_h_rc - sidebar_dir_header_h
-                                - notes_ui_h_rc + clamped_scroll)
+                                + clamped_scroll)
                                 / entry_h)
                                 .floor() as usize;
-                            let disp_idx = raw_idx.min(notes_display_rc.len().saturating_sub(1));
+                            let disp_idx = raw_idx.min(sidebar_entries.len().saturating_sub(1));
                             let click_idx: i64 =
-                                if !notes_display_rc.is_empty() {
-                                    notes_display_rc[disp_idx] as i64
+                                if !sidebar_entries.is_empty() {
+                                    disp_idx as i64
                                 } else {
                                     -1
                                 };
@@ -4568,8 +4453,7 @@
                                                         .map(|e| e.path.clone())
                                                         .collect();
                                                 sidebar_entries = scan_for_sidebar(
-                                                    subsystems.has_notes_mode(),
-                                                    &project_root,
+                                                                                                        &project_root,
                                                     sidebar_show_hidden,
                                                 );
                                                 restore_expanded_folders(
@@ -4658,66 +4542,12 @@
 
                         let entry_h = style.font_height + style.padding_y;
                         let sidebar_dir_header_h = style.font_height + style.padding_y;
-                        // Notes-mode sort/search rows sit between the directory
-                        // header and the file list.
-                        let notes_sort_row_h = style.font_height + style.padding_y * 2.0;
-                        let notes_search_row_h = style.font_height + style.padding_y * 2.0;
-                        let notes_ui_h = if subsystems.has_notes_mode() {
-                            notes_sort_row_h + notes_search_row_h
-                        } else {
-                            0.0
-                        };
-                        if subsystems.has_notes_mode() {
-                            let sort_y0 = sidebar_toolbar_h + sidebar_dir_header_h;
-                            let sort_y1 = sort_y0 + notes_sort_row_h;
-                            let search_y1 = sort_y1 + notes_search_row_h;
-                            if *y >= sort_y0 && *y < sort_y1 {
-                                // Sort-mode toggle. Left half = A-Z, right = Recent.
-                                let half = (sidebar_w / 2.0).floor();
-                                if *x < half {
-                                    // A-Z: toggle between asc (0) and desc (1).
-                                    notes_sort_mode = if notes_sort_mode == 0 { 1 } else { 0 };
-                                } else {
-                                    // Recent: toggle between newest-first (2)
-                                    // and oldest-first (3).
-                                    notes_sort_mode = if notes_sort_mode == 2 { 3 } else { 2 };
-                                }
-                                notes_search_focused = false;
-                                let _ = crate::editor::storage::save_text(
-                                    userdir_path,
-                                    "session",
-                                    "notes_sort_mode",
-                                    &notes_sort_mode.to_string(),
-                                );
-                                redraw = true;
-                                continue;
-                            }
-                            if *y >= sort_y1 && *y < search_y1 {
-                                notes_search_focused = true;
-                                redraw = true;
-                                continue;
-                            }
-                            // Click outside the search row unfocuses it.
-                            notes_search_focused = false;
-                        }
-                        let notes_display_click: Vec<usize> = if subsystems.has_notes_mode() {
-                            compute_notes_display_order(
-                                &sidebar_entries,
-                                &notes_search,
-                                notes_sort_mode,
-                            )
-                        } else {
-                            (0..sidebar_entries.len()).collect()
-                        };
                         let disp_click_idx =
-                            ((*y - sidebar_toolbar_h - sidebar_dir_header_h - notes_ui_h
+                            ((*y - sidebar_toolbar_h - sidebar_dir_header_h
                                 + sidebar_scroll)
                                 / entry_h)
                                 .floor() as usize;
-                        let click_idx = notes_display_click
-                            .get(disp_click_idx)
-                            .copied()
-                            .unwrap_or(sidebar_entries.len());
+                        let click_idx = disp_click_idx.min(sidebar_entries.len().saturating_sub(1));
                         if click_idx < sidebar_entries.len() {
                             let entry = &sidebar_entries[click_idx];
                             if entry.is_dir {
@@ -4766,7 +4596,7 @@
                                     // the new one. Autosave will have
                                     // persisted the outgoing buffer
                                     // already, so just drop the tab.
-                                    if subsystems.has_notes_mode() {
+                                    if false {
                                         for d in &docs {
                                             autoreload.unwatch(&d.path);
                                         }
@@ -4795,7 +4625,7 @@
                     }
 
                     // Tab bar click detection.
-                    let tab_h = if !single_file_mode && !docs.is_empty() {
+                    let tab_h = if !docs.is_empty() {
                         style.font_height + style.padding_y * 3.0
                     } else {
                         0.0
@@ -4806,7 +4636,7 @@
                     // closed, a click on the dropdown button opens it. Left-click
                     // only — right-click in the tab bar should fall through to the
                     // regular context menu path, not toggle the dropdown.
-                    if !docs.is_empty() && !single_file_mode && *button == MouseButton::Left {
+                    if !docs.is_empty() && !false && *button == MouseButton::Left {
                         use crate::editor::view::DrawContext as _;
                         let (ww_tab, _, _, _) = crate::window::get_window_size();
                         let width = ww_tab as f64;
@@ -5300,7 +5130,7 @@
                         let win_w = ww as f64;
                         let win_h = wh as f64;
                         let status_h_sc = style.font_height + style.padding_y * 2.0;
-                        let tab_h_sc = if !single_file_mode && !docs.is_empty() {
+                        let tab_h_sc = if !docs.is_empty() {
                             style.font_height + style.padding_y * 3.0
                         } else {
                             0.0
@@ -5838,7 +5668,7 @@
                         let (_, wh, _, _) = crate::window::get_window_size();
                         let win_h = wh as f64;
                         let status_h_sm = style.font_height + style.padding_y * 2.0;
-                        let tab_h_sm = if !single_file_mode && !docs.is_empty() {
+                        let tab_h_sm = if !docs.is_empty() {
                             style.font_height + style.padding_y * 3.0
                         } else {
                             0.0
@@ -5892,7 +5722,7 @@
                         let (_, wh, _, _) = crate::window::get_window_size();
                         let win_h = wh as f64;
                         let status_h_m = style.font_height + style.padding_y * 2.0;
-                        let tab_h_m = if !single_file_mode && !docs.is_empty() {
+                        let tab_h_m = if !docs.is_empty() {
                             style.font_height + style.padding_y * 3.0
                         } else {
                             0.0
@@ -6199,7 +6029,7 @@
                         let (_, wh, _, _) = crate::window::get_window_size();
                         let win_h = wh as f64;
                         let status_h_c = style.font_height + style.padding_y * 2.0;
-                        let tab_h_c = if !single_file_mode && !docs.is_empty() {
+                        let tab_h_c = if !docs.is_empty() {
                             style.font_height + style.padding_y * 3.0
                         } else {
                             0.0
