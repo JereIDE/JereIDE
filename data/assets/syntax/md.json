@@ -265,16 +265,10 @@
 },
   "132": {
   "kind": "object",
-  "values": {
-  "pattern": {
-  "$ref": "133"
-},
-  "type": "literal"
-}
-},
-  "133": {
-  "kind": "array",
-  "values": ["==", "=="]
+    "values": {
+      "regex": "(?<!\\w)==(?=\\S)(?:[^=]|=(?!=))*?(?<=\\S)==(?!\\w)",
+      "type": "literal"
+    }
 },
   "134": {
   "kind": "object",
