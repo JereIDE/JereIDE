@@ -12,7 +12,9 @@
             };
 
             let tab_h = if !docs.is_empty() {
-                style.font_height + style.padding_y * 3.0
+                use crate::editor::view::DrawContext as _;
+                let icon_h = draw_ctx.font_height(style.icon_big_font);
+                icon_h + style.padding_y * 2.0
             } else {
                 0.0
             };
@@ -30,7 +32,7 @@
             };
             let minimap_w = if minimap_visible { 120.0 } else { 0.0 };
             let breadcrumb_h = if docs.get(active_tab).is_some() {
-                style.font_height + style.padding_y * 0.5
+                style.font_height + style.padding_y
             } else {
                 0.0
             };
@@ -493,14 +495,15 @@
 
                 // Draw tab bar.
                 let _tab_bar_h = if !docs.is_empty() {
-                    let tbh = style.font_height + style.padding_y * 3.0;
                     use crate::editor::view::DrawContext as _;
+                    let icon_h = draw_ctx.font_height(style.icon_big_font);
+                    let tbh = icon_h + style.padding_y * 2.0;
                     draw_ctx.draw_rect(
                         sidebar_w,
                         0.0,
                         width - sidebar_w,
                         tbh,
-                        style.background2.to_array(),
+                        style.background3.to_array(),
                     );
 
                     let close_w = draw_ctx.font_width(style.icon_font, "C") + style.padding_x;
@@ -1730,7 +1733,9 @@
                     }
                     // Draw terminal title/tab bar using the same layout as the doc tab bar.
                     let tab_bar_h = if !terminal.terminals.is_empty() {
-                        let tbh = style.font_height + style.padding_y * 3.0;
+                        use crate::editor::view::DrawContext as _;
+                        let icon_h = draw_ctx.font_height(style.icon_big_font);
+                        let tbh = icon_h + style.padding_y * 2.0;
 
                         let tby = term_y + style.divider_size;
                         draw_ctx.draw_rect(term_x, tby, term_w, tbh, style.background2.to_array());
