@@ -2,7 +2,7 @@
 
 A fast, simple code editor built in Rust.
 
-![JereIDE screenshot](.github/images/MacOS-1.png)
+![JereIDE screenshot](.github/images/MacOS-1.jpeg)
 
 <div align="center">
 
