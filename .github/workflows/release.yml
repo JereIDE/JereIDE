@@ -6,10 +6,10 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (without v prefix)'
+        description: "Release version (without v prefix)"
         required: true
       title:
-        description: 'Release title'
+        description: "Release title"
         required: true
 
 jobs:
@@ -61,6 +61,7 @@ jobs:
               {
                 printf "## What's Changed\n%s" "$BODY"
           cat <<-EONOTICE
+          ---
 
           > [!CAUTION]
           > **⚠️ macOS users:** The app is unsigned, so after unzipping run \`bash install-mac.sh\` in Terminal to bypass Gatekeeper, otherwise please deal with Gatekeeper yourselves.
@@ -773,7 +774,14 @@ jobs:
 
   release:
     name: Upload to Draft Release
-    needs: [parse-commit, build-linux, build-windows, build-macos-intel, build-macos-arm]
+    needs:
+      [
+        parse-commit,
+        build-linux,
+        build-windows,
+        build-macos-intel,
+        build-macos-arm,
+      ]
     if: needs.parse-commit.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     permissions:
