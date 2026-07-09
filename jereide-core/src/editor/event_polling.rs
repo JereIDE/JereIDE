@@ -2550,6 +2550,17 @@
                                 // Confirm selected theme.
                                 if let Some((name, _)) = theme_picker_results.get(theme_picker_selected) {
                                     current_theme_idx = available_themes.iter().position(|t| t == name).unwrap_or(0);
+                                    // Persist to config.toml
+                                    let config_path = std::path::Path::new(userdir).join("config.toml");
+                                    let existing = std::fs::read_to_string(&config_path).unwrap_or_default();
+                                    if let Ok(mut doc) = existing.parse::<toml::Value>() {
+                                        if let toml::Value::Table(ref mut map) = doc {
+                                            map.insert("theme".to_string(), toml::Value::String(name.clone()));
+                                        }
+                                        if let Ok(out) = toml::to_string(&doc) {
+                                            let _ = std::fs::write(&config_path, out);
+                                        }
+                                    }
                                 }
                                 theme_picker_active = false;
                                 theme_picker_original_style = None;
@@ -5426,6 +5437,17 @@
                                     // Confirm selected theme.
                                     if let Some((name, _)) = theme_picker_results.get(theme_picker_selected) {
                                         current_theme_idx = available_themes.iter().position(|t| t == name).unwrap_or(0);
+                                        // Persist to config.toml
+                                        let config_path = std::path::Path::new(userdir).join("config.toml");
+                                        let existing = std::fs::read_to_string(&config_path).unwrap_or_default();
+                                        if let Ok(mut doc) = existing.parse::<toml::Value>() {
+                                            if let toml::Value::Table(ref mut map) = doc {
+                                                map.insert("theme".to_string(), toml::Value::String(name.clone()));
+                                            }
+                                            if let Ok(out) = toml::to_string(&doc) {
+                                                let _ = std::fs::write(&config_path, out);
+                                            }
+                                        }
                                     }
                                     theme_picker_active = false;
                                     theme_picker_original_style = None;
