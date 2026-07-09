@@ -1,18 +1,10 @@
 # JereIDE
 
-A fast code editor built in Rust with SDL3.
+A fast, simple code editor built in Rust.
 
-![JereIDE screenshot](docs_src/assets/screenshot.png)
+![JereIDE screenshot](.github/images/screenshot.png)
 
-JereIDE is a fork of [Lite XL](https://github.com/lite-xl/lite-xl), rewritten from the ground up in Rust.
-
-## Purpose & Forking
-
-This project exists partially as an experiment, and partially as something I just wanted for myself.
-
-**No Support**
-
-I do not intend to maintain or support this in any way, but wanted to share the code so anyone interested can freely use, learn from, or fork this project into something new.
+JereIDE began as a fork of [lite-anvil](https://github.com/danpozmanter/lite-anvil), and many useful features have been added after that.
 
 ## Features
 
@@ -91,24 +83,3 @@ including macOS, Windows, and packaging.
 ## License
 
 MIT -- see [LICENSE](LICENSE).
-
-## Rebranding Decisions
-
-This project is being rebranded from Lite Anvil to JereIDE. See `PLAN.md` for the full implementation plan.
-
-| Item                    | Decision                                               |
-| ----------------------- | ------------------------------------------------------ |
-| Display name            | `JereIDE` (no space)                                   |
-| Binary name             | `jereide` (no hyphen)                                  |
-| Config dirs             | `jereide`                                              |
-| macOS bundle ID         | `com.jeremy.jereide`                                   |
-| Linux app IDs           | `com.jeremy.jereide`                                   |
-| Changelog               | Delete entirely                                        |
-| Update check URL        | Remove                                                 |
-| Icons                   | Placeholder                                            |
-| Generated docs/         | Leave as-is                                            |
-| .gitignore              | Keep as-is                                             |
-| LICENSE                 | Append `Jeremy-Qian` to line 4                         |
-| Sub-editors (nano/note) | Remove entirely                                        |
-| Package description     | `JereIDE - a fast code editor built in Rust with SDL3` |
-| Cargo.toml authors      | Replace with `Jeremy-Qian`                             |

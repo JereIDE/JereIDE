@@ -7,6 +7,12 @@ version = "2.14.1"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT"
+authors = ["Jeremy-Qian"]
+repository = "https://github.com/Jeremy-Qian/JereIDE_Pro"
+homepage = "https://github.com/Jeremy-Qian/JereIDE_Pro"
+documentation = "https://github.com/Jeremy-Qian/JereIDE_Pro#readme"
+keywords = ["editor", "ide", "sdl3", "rust", "lsp"]
+categories = ["development-tools", "gui"]
 
 [profile.release]
 opt-level = 2

@@ -8,13 +8,21 @@ use jereide_core::editor::buffer;
 use jereide_core::editor::syntax;
 use jereide_core::editor::tokenizer;
 
+/// Syntax data directory. Override with `JEREIDE_DATA_DIR`; otherwise the
+/// workspace `data/` directory is used (the test crate lives in
+/// `jereide-core/tests`, so `CARGO_MANIFEST_DIR/../../data` reaches it).
+fn data_dir() -> String {
+    std::env::var("JEREIDE_DATA_DIR")
+        .unwrap_or_else(|_| concat!(env!("CARGO_MANIFEST_DIR"), "/../../data").to_string())
+}
+
 fn time_tokenize(path: &str, label: &str) {
     let Ok(text) = std::fs::read_to_string(path) else {
         eprintln!("{label}: file {path} not present; skipping");
         return;
     };
-    let datadir = "/home/daniel/dev/jereide/data";
-    let index = syntax::load_syntax_index(datadir);
+    let datadir = data_dir();
+    let index = syntax::load_syntax_index(&datadir);
     let filename = path.rsplit('/').next().unwrap_or(path);
     let Some(entry) = syntax::match_syntax_entry(filename, &index) else {
         eprintln!("{label}: no syntax for {filename}");
@@ -65,29 +73,24 @@ fn time_tokenize(path: &str, label: &str) {
     );
 }
 
+/// Profiles the files listed in `JEREIDE_PERF_PATHS` (space-separated). Each
+/// file is timed over a viewport and over a full-document pass. Run with:
+/// `JEREIDE_PERF_PATHS="/path/a.md /path/b.rs" cargo test --release \
+///   --test baseline_perf -- --ignored --nocapture`
 #[test]
 #[ignore]
-fn baseline_web_ready() {
-    time_tokenize("/home/daniel/dev/contexts/gos/web_ready.md", "web_ready.md");
-}
-
-#[test]
-#[ignore]
-fn baseline_changelog() {
-    time_tokenize("/home/daniel/dev/jereide/changelog.md", "changelog.md");
-}
-
-#[test]
-#[ignore]
-fn baseline_gossamer_changelog() {
-    time_tokenize(
-        "/home/daniel/dev/gossamer/CHANGELOG.md",
-        "gossamer CHANGELOG.md",
-    );
-    full_document_profile(
-        "/home/daniel/dev/gossamer/CHANGELOG.md",
-        "gossamer CHANGELOG.md",
-    );
+fn baseline_profiles() {
+    let paths = std::env::var("JEREIDE_PERF_PATHS").unwrap_or_default();
+    if paths.is_empty() {
+        eprintln!(
+            "baseline_profiles: set JEREIDE_PERF_PATHS (space-separated paths) to run; skipping"
+        );
+        return;
+    }
+    for path in paths.split_whitespace() {
+        time_tokenize(path, path);
+        full_document_profile(path, path);
+    }
 }
 
 /// One full-document tokenize pass, reporting total time and the slowest
@@ -97,8 +100,8 @@ fn full_document_profile(path: &str, label: &str) {
     let Ok(text) = std::fs::read_to_string(path) else {
         return;
     };
-    let datadir = "/home/daniel/dev/jereide/data";
-    let index = syntax::load_syntax_index(datadir);
+    let datadir = data_dir();
+    let index = syntax::load_syntax_index(&datadir);
     let filename = path.rsplit('/').next().unwrap_or(path);
     let entry = syntax::match_syntax_entry(filename, &index).unwrap();
     let def = entry.load_full().unwrap();
