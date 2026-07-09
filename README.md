@@ -4,11 +4,11 @@ A fast, simple code editor built in Rust.
 
 ![JereIDE screenshot](.github/images/MacOS-1.png)
 
-<center>
+<div align="center">
 
 _For all the screenshots, see [demo.md](.github/images/demo.md)._
 
-</center>
+</div>
 
 JereIDE began as a fork of [lite-anvil](https://github.com/danpozmanter/lite-anvil), and many useful features have been added after that.
 
