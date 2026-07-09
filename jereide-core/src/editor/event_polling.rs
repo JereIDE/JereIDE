@@ -2603,6 +2603,12 @@
                                     .into_owned();
                                 if let Ok(palette) = crate::editor::style::load_theme_palette(&tp) {
                                     apply_theme_to_style(&mut style, &palette);
+                                    crate::editor::style_ctx::set_current_style(style.clone());
+                                    // Invalidate all render caches so syntax colours refresh.
+                                    pending_render_cache = None;
+                                    for doc in &mut docs {
+                                        doc.cached_change_id = -1;
+                                    }
                                 }
                             }
                             redraw = true;
@@ -5437,6 +5443,22 @@
                                     // Confirm selected theme.
                                     if let Some((name, _)) = theme_picker_results.get(theme_picker_selected) {
                                         current_theme_idx = available_themes.iter().position(|t| t == name).unwrap_or(0);
+                                        // Apply theme & invalidate cache so syntax colours refresh.
+                                        let tp = Path::new(datadir)
+                                            .join("assets")
+                                            .join("themes")
+                                            .join(format!("{name}.json"))
+                                            .to_string_lossy()
+                                            .into_owned();
+                                        if let Ok(palette) = crate::editor::style::load_theme_palette(&tp) {
+                                            apply_theme_to_style(&mut style, &palette);
+                                            crate::editor::style_ctx::set_current_style(style.clone());
+                                            // Invalidate all render caches so syntax colours refresh.
+                                            pending_render_cache = None;
+                                            for doc in &mut docs {
+                                                doc.cached_change_id = -1;
+                                            }
+                                        }
                                         // Persist to config.toml
                                         let config_path = std::path::Path::new(userdir).join("config.toml");
                                         let existing = std::fs::read_to_string(&config_path).unwrap_or_default();
