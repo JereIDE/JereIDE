@@ -2158,7 +2158,7 @@
                     let mut bx = style.padding_x + msg_w + btn_pad * 2.0;
                     for label in &["Yes", "No"] {
                         let lw = draw_ctx.font_width(style.font, label) + btn_pad * 2.0;
-                        draw_ctx.draw_rect(bx, btn_y, lw, btn_h, style.nagbar_text.to_array());
+                        draw_ctx.draw_rounded_rect(bx, btn_y, lw, btn_h, 4.0, style.nagbar_text.to_array());
                         draw_ctx.draw_text(
                             style.font,
                             label,
