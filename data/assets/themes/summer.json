@@ -16,6 +16,17 @@
     "line_highlight": "#f2f2f2",
     "scrollbar": "#e0e0e0",
     "scrollbar2": "#c0c0c0",
+    "scrollbar_track": "#fbfbfb",
+    "nagbar": "#e0e0e0",
+    "nagbar_text": "#404040",
+    "nagbar_dim": "rgba(0, 0, 0, 0.15)",
+    "drag_overlay": "rgba(0, 0, 0, 0.04)",
+    "drag_overlay_tab": "#fc1785",
+    "good": "#22a21f",
+    "warn": "#fb6620",
+    "error": "#fc1785",
+    "modified": "#1586d2",
+    "guide": "#e8e8e8",
     "syntax": {
       "normal": "#181818",
       "symbol": "#181818",
@@ -26,7 +37,22 @@
       "literal": "#1586d2",
       "string": "#1586d2",
       "operator": "#fb6620",
-      "function": "#fc1785"
+      "function": "#fc1785",
+      "type": "#1586d2",
+      "field": "#181818",
+      "property": "#181818",
+      "tag": "#fb6620",
+      "attribute": "#1586d2",
+      "boolean": "#fb6620",
+      "constant": "#1586d2",
+      "preprocessor": "#fc1785",
+      "punctuation": "#181818"
+    },
+    "lint": {
+      "info": "#1586d2",
+      "hint": "#22a21f",
+      "warning": "#fb6620",
+      "error": "#fc1785"
     }
   }
 }
