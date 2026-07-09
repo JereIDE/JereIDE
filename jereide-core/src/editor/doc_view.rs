@@ -712,11 +712,11 @@ impl DocView {
                     style.scrollbar_track.to_array(),
                 );
                 let ratio = self.rect.h / total_h;
-                let min_thumb = style.scrollbar_size * 2.0;
+                let min_thumb = (style.scrollbar_size * 2.0).max(16.0);
                 let thumb_h = (self.rect.h * ratio).max(min_thumb).min(self.rect.h);
                 let scroll_frac = self.scroll_y / (total_h - self.rect.h).max(1.0);
                 let thumb_y = self.rect.y + scroll_frac * (self.rect.h - thumb_h);
-                ctx.draw_rect(sb_x, thumb_y, sb_w, thumb_h, style.scrollbar.to_array());
+                ctx.draw_rounded_rect(sb_x, thumb_y, sb_w, thumb_h, sb_w / 2.0, style.scrollbar.to_array());
             }
         }
 
@@ -751,11 +751,11 @@ impl DocView {
                 let track_w = text_w;
                 ctx.draw_rect(sb_x, sb_y, track_w, sb_h, style.scrollbar_track.to_array());
                 let ratio = (text_w / max_line_w).clamp(0.0, 1.0);
-                let min_thumb = style.scrollbar_size * 2.0;
+                let min_thumb = (style.scrollbar_size * 2.0).max(16.0);
                 let thumb_w = (track_w * ratio).max(min_thumb).min(track_w);
                 let scroll_frac = self.scroll_x / (max_line_w - text_w).max(1.0);
                 let thumb_x = sb_x + scroll_frac * (track_w - thumb_w);
-                ctx.draw_rect(thumb_x, sb_y, thumb_w, sb_h, style.scrollbar.to_array());
+                ctx.draw_rounded_rect(thumb_x, sb_y, thumb_w, sb_h, sb_h / 2.0, style.scrollbar.to_array());
             }
         }
     }
@@ -1705,9 +1705,9 @@ pub(crate) fn draw_breadcrumb(
     let bx_start = bar_x + style.padding_x;
     let by = bar_y + style.padding_y * 0.25;
     let available = (bar_w - style.padding_x * 2.0).max(0.0);
-    let arrow = " > ";
+    let arrow = " / ";
     let arrow_w = ctx.font_width(style.font, arrow);
-    let ellipsis_prefix = "… > ";
+    let ellipsis_prefix = "…/";
     let ellipsis_prefix_w = ctx.font_width(style.font, ellipsis_prefix);
 
     // Start with the last segment (possibly shrunk) and prepend ancestors
