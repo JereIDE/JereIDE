@@ -8,9 +8,9 @@ edition = "2024"
 rust-version = "1.85"
 license = "MIT"
 authors = ["Jeremy-Qian"]
-repository = "https://github.com/Jeremy-Qian/JereIDE_Pro"
-homepage = "https://github.com/Jeremy-Qian/JereIDE_Pro"
-documentation = "https://github.com/Jeremy-Qian/JereIDE_Pro#readme"
+repository = "https://github.com/JereIDE/jereide"
+homepage = "https://github.com/JereIDE/jereide"
+documentation = "https://github.com/JereIDE/jereide#readme"
 keywords = ["editor", "ide", "sdl3", "rust", "lsp"]
 categories = ["development-tools", "gui"]
 
