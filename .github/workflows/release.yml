@@ -64,7 +64,7 @@ jobs:
 
           > [!CAUTION]
           > **⚠️ macOS users:** The app is unsigned, so after unzipping run \`bash install-mac.sh\` in Terminal to bypass Gatekeeper, otherwise please deal with Gatekeeper yourselves.
-          >
+
           > [!TIP]
           > Invoking via \`bash\` (rather than double-clicking) is what lets the quarantine-removal and ad-hoc re-sign steps actually take effect — Gatekeeper enforces quarantine on app launch, not on interpreted scripts run by a shell. On macOS Sequoia+, right-click -> Open no longer bypasses the "unverified developer" block for ad-hoc signed apps, so this script is the reliable path for unsigned builds.
           EONOTICE
