@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install Lite Anvil and Nano Anvil to /Applications.
+# Install JereIDE to /Applications.
 #
 # Usage: bash install-mac.sh
 #
@@ -31,15 +31,7 @@ install_app() {
     echo "  Installed to $dest"
 }
 
-install_app "$SCRIPT_DIR/LiteAnvil.app"
-
-if [ -d "$SCRIPT_DIR/NanoAnvil.app" ]; then
-    install_app "$SCRIPT_DIR/NanoAnvil.app"
-fi
-
-if [ -d "$SCRIPT_DIR/NoteAnvil.app" ]; then
-    install_app "$SCRIPT_DIR/NoteAnvil.app"
-fi
+install_app "$SCRIPT_DIR/JereIDE.app"
 
 install_cli_symlink() {
     local binary="$1"
