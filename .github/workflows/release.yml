@@ -357,11 +357,17 @@ jobs:
 
           Move-Item scripts\innosetup\JereIDE-*-setup.exe . -Force
 
+      - name: Package portable zip
+        run: |
+          Compress-Archive -Path build\jereide\* -DestinationPath "jereide-${env:APP_VERSION}-windows-x86_64.zip"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
           name: jereide-windows-x86_64
-          path: JereIDE-*-setup.exe
+          path: |
+            JereIDE-*-setup.exe
+            jereide-*-windows-x86_64.zip
 
   build-macos-intel:
     name: macOS Intel (x86_64)
