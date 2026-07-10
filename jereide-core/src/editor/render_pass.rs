@@ -1057,11 +1057,12 @@
                         let max_scroll = (total_entries_h - sb_area_h).max(1.0);
                         let scroll_frac = (sidebar_scroll / max_scroll).clamp(0.0, 1.0);
                         let thumb_y = sb_area_y + scroll_frac * (sb_area_h - thumb_h);
-                        draw_ctx.draw_rect(
+                        draw_ctx.draw_rounded_rect(
                             sb_x,
                             thumb_y,
                             sb_w,
                             thumb_h,
+                            sb_w / 2.0,
                             style.scrollbar.to_array(),
                         );
                     }
