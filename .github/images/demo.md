@@ -10,3 +10,7 @@ Here's all the screenshots of JereIDE.
 
 ![Ubuntu](Ubuntu-1.jpeg)
 ![Ubuntu](Ubuntu-2.jpeg)
+
+## Windows
+
+![Windows](Windows.jpg)
