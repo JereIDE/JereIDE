@@ -709,13 +709,6 @@
                         tab_dropdown_open = false;
                     }
 
-                    draw_ctx.draw_rect(
-                        sidebar_w,
-                        tbh - style.divider_size,
-                        width - sidebar_w,
-                        style.divider_size,
-                        style.divider.to_array(),
-                    );
                     crate::editor::app_state::clip_init(width, height);
 
                     // Hand off per-tab rects to the deferred overlay pass. That
@@ -741,6 +734,23 @@
                         breadcrumb_h,
                         &style,
                     );
+                }
+
+                // Single unified border below the combined tab + breadcrumb
+                // chrome strip, separating it from the document area. The tabs
+                // and breadcrumb now share one continuous `background3` strip,
+                // so only one divider (at the very bottom) is needed.
+                {
+                    use crate::editor::view::DrawContext as _;
+                    if tab_h + breadcrumb_h > 0.0 {
+                    draw_ctx.draw_rect(
+                        sidebar_w,
+                        tab_h + breadcrumb_h - style.divider_size,
+                        width - sidebar_w - minimap_w,
+                        style.divider_size,
+                        style.divider.to_array(),
+                    );
+                    }
                 }
 
                 // Draw sidebar.

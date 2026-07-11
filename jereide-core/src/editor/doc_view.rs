@@ -1695,7 +1695,7 @@ pub(crate) fn draw_breadcrumb(
 ) {
     use crate::editor::view::DrawContext as _;
 
-    ctx.draw_rect(bar_x, bar_y, bar_w, bar_h, style.background2.to_array());
+    ctx.draw_rect(bar_x, bar_y, bar_w, bar_h, style.background3.to_array());
 
     let segments: Vec<&str> = path.split(['/', '\\']).filter(|s| !s.is_empty()).collect();
     if segments.is_empty() {
