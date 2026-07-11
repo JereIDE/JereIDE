@@ -661,7 +661,7 @@ pub fn run(
     // No TitleView -- the OS window title bar is sufficient.
 
     let mut empty_view = EmptyView::new();
-    empty_view.version = format!("{} v{}", "JereIDE", env!("CARGO_PKG_VERSION"),);
+    empty_view.version = format!("v{}", env!("CARGO_PKG_VERSION"));
     for (fmt, cmd) in EmptyView::commands() {
         if let Some(binding) = keymap.get_binding_display(cmd) {
             empty_view
