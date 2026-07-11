@@ -6,11 +6,9 @@
 # future dynamic dep ends up pulling them in.
 [target.x86_64-pc-windows-msvc]
 rustflags = ["-C", "target-feature=+crt-static"]
-target-applies-to-host = false
 
 [target.i686-pc-windows-msvc]
 rustflags = ["-C", "target-feature=+crt-static"]
-target-applies-to-host = false
 
 # Force bundled C-library deps for every build, on every platform, so
 # the editor binary never silently picks up (or drifts with) a system
