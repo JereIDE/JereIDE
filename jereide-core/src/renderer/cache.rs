@@ -603,9 +603,9 @@ unsafe fn draw_image_surface(
                 } else {
                     let (dr, dg, db, da) = fmt.unpack(*dst_ptr);
                     let ia = 255 - sa;
-                    let nr = ((sr * sa + dr as u32 * ia) >> 8) as u8;
-                    let ng = ((sg * sa + dg as u32 * ia) >> 8) as u8;
-                    let nb = ((sb * sa + db as u32 * ia) >> 8) as u8;
+                    let nr = ((sr * sa + dr as u32 * ia + 127) / 255) as u8;
+                    let ng = ((sg * sa + dg as u32 * ia + 127) / 255) as u8;
+                    let nb = ((sb * sa + db as u32 * ia + 127) / 255) as u8;
                     *dst_ptr = fmt.pack(nr, ng, nb, da);
                 }
             }
@@ -652,9 +652,9 @@ unsafe fn draw_rect_surface(
                 for col in r.x..r.x + r.w {
                     let dst_ptr = row_ptr.add(col as usize);
                     let (dr, dg, db, da) = fmt.unpack(*dst_ptr);
-                    let nr = ((color.r as u32 * color.a as u32 + dr as u32 * ia) >> 8) as u8;
-                    let ng = ((color.g as u32 * color.a as u32 + dg as u32 * ia) >> 8) as u8;
-                    let nb = ((color.b as u32 * color.a as u32 + db as u32 * ia) >> 8) as u8;
+                    let nr = ((color.r as u32 * color.a as u32 + dr as u32 * ia + 127) / 255) as u8;
+                    let ng = ((color.g as u32 * color.a as u32 + dg as u32 * ia + 127) / 255) as u8;
+                    let nb = ((color.b as u32 * color.a as u32 + db as u32 * ia + 127) / 255) as u8;
                     *dst_ptr = fmt.pack(nr, ng, nb, da);
                 }
             }
@@ -684,7 +684,11 @@ unsafe fn draw_rounded_rect_surface(
         return;
     }
 
-    let rad = radius as f64;
+    let rad = (radius as f64).min((rect.w as f64 - 1.0) / 2.0).min((rect.h as f64 - 1.0) / 2.0);
+    if rad <= 0.0 {
+        unsafe { draw_rect_surface(surface, pixels, pitch, fmt, rect, color, clip) };
+        return;
+    }
     let rad_sq = rad * rad;
     // Centre of each corner arc (in rect-local coords).
     let cx0 = rad; // left
@@ -718,9 +722,9 @@ unsafe fn draw_rounded_rect_surface(
                         *dst_ptr = fmt.pack(color.r, color.g, color.b, 255);
                     } else {
                         let (dr, dg, db, da) = fmt.unpack(*dst_ptr);
-                        let nr = ((color.r as u32 * color.a as u32 + dr as u32 * ia) >> 8) as u8;
-                        let ng = ((color.g as u32 * color.a as u32 + dg as u32 * ia) >> 8) as u8;
-                        let nb = ((color.b as u32 * color.a as u32 + db as u32 * ia) >> 8) as u8;
+                        let nr = ((color.r as u32 * color.a as u32 + dr as u32 * ia + 127) / 255) as u8;
+                        let ng = ((color.g as u32 * color.a as u32 + dg as u32 * ia + 127) / 255) as u8;
+                        let nb = ((color.b as u32 * color.a as u32 + db as u32 * ia + 127) / 255) as u8;
                         *dst_ptr = fmt.pack(nr, ng, nb, da);
                     }
                 }
@@ -758,9 +762,9 @@ unsafe fn draw_rounded_rect_surface(
                 } else {
                     let (dr, dg, db, da) = fmt.unpack(*dst_ptr);
                     let blend_ia = 255 - alpha as u32;
-                    let nr = ((color.r as u32 * alpha as u32 + dr as u32 * blend_ia) >> 8) as u8;
-                    let ng = ((color.g as u32 * alpha as u32 + dg as u32 * blend_ia) >> 8) as u8;
-                    let nb = ((color.b as u32 * alpha as u32 + db as u32 * blend_ia) >> 8) as u8;
+                    let nr = ((color.r as u32 * alpha as u32 + dr as u32 * blend_ia + 127) / 255) as u8;
+                    let ng = ((color.g as u32 * alpha as u32 + dg as u32 * blend_ia + 127) / 255) as u8;
+                    let nb = ((color.b as u32 * alpha as u32 + db as u32 * blend_ia + 127) / 255) as u8;
                     *dst_ptr = fmt.pack(nr, ng, nb, da);
                 }
             }
