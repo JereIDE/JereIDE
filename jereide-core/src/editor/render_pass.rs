@@ -509,6 +509,15 @@
                     let close_w = draw_ctx.font_width(style.icon_font, "C") + style.padding_x;
                     let dropdown_btn_w = (style.font_height + style.padding_x * 2.0).ceil();
 
+                    // Modern tab strip: floating rounded "pill" tabs separated by
+                    // gaps instead of hard vertical divider lines. The active tab
+                    // is a filled pill that matches the document background, the
+                    // hovered tab gets a soft highlight pill, and inactive tabs
+                    // float transparently on the rail.
+                    let tab_gap = style.padding_x * 0.6;
+                    let tab_inset = style.padding_y * 0.5;
+                    let tab_radius = ((tbh - tab_inset * 2.0) * 0.32).clamp(4.0, 9.0);
+
                     // Measure full-width tab bar (no truncation) to decide whether to
                     // enter overflow mode. Reserving the dropdown button space keeps
                     // the decision stable once overflow is on.
@@ -523,7 +532,7 @@
                         full_total += draw_ctx.font_width(style.font, &label)
                             + style.padding_x * 2.0
                             + close_w
-                            + style.divider_size;
+                            + tab_gap;
                     }
                     let tabs_overflow = full_total > avail_full;
                     if !tabs_overflow {
@@ -569,23 +578,50 @@
                         // Don't draw tabs that fall entirely past the dropdown limit;
                         // they're still reachable via the dropdown menu.
                         if tx >= tabs_right_limit {
-                            tx += tw + style.divider_size;
+                            tx += tw + tab_gap;
                             continue;
                         }
-                        let bg = if i == active_tab {
-                            style.background.to_array()
+                        let is_active = i == active_tab;
+                        // Clip this tab to the area left of the dropdown button.
+                        let tab_visible_w = (tabs_right_limit - tx).max(0.0).min(tw);
+                        draw_ctx.set_clip_rect(tx, 0.0, tab_visible_w, tbh);
+
+                        // Close button hit-test (needed for both hover highlight
+                        // and whole-tab hover detection below).
+                        let close_x = tx + tw - close_w;
+                        let close_hovered =
+                            mouse_y < tbh && mouse_x >= close_x && mouse_x < close_x + close_w;
+                        let is_hover = mouse_y < tbh
+                            && mouse_x >= tx
+                            && mouse_x < (tx + tw).min(tabs_right_limit)
+                            && !close_hovered;
+
+                        // Floating rounded pill behind the tab. The active tab is
+                        // filled with the document background (a "cutout" look that
+                        // matches the editor area); the hovered tab gets a soft
+                        // highlight; inactive tabs stay transparent on the rail.
+                        let pill_x = tx;
+                        let pill_y = tab_inset;
+                        let pill_w = tw;
+                        let pill_h = tbh - tab_inset * 2.0;
+                        let pill_bg: Option<[u8; 4]> = if is_active {
+                            Some(style.background.to_array())
+                        } else if is_hover {
+                            Some(style.line_highlight.to_array())
                         } else {
-                            style.background2.to_array()
+                            None
                         };
-                        let fg = if i == active_tab {
+                        if let Some(bg) = pill_bg {
+                            draw_ctx.draw_rounded_rect(
+                                pill_x, pill_y, pill_w, pill_h, tab_radius, bg,
+                            );
+                        }
+
+                        let fg = if is_active {
                             style.text.to_array()
                         } else {
                             style.dim.to_array()
                         };
-                        // Clip this tab to the area left of the dropdown button.
-                        let tab_visible_w = (tabs_right_limit - tx).max(0.0).min(tw);
-                        draw_ctx.set_clip_rect(tx, 0.0, tab_visible_w, tbh);
-                        draw_ctx.draw_rect(tx, 0.0, tw, tbh, bg);
                         let text_y_tab = (tbh - style.font_height) / 2.0;
                         draw_ctx.draw_text(
                             style.font,
@@ -594,16 +630,14 @@
                             text_y_tab,
                             fg,
                         );
-                        // Close button with hover highlight.
-                        let close_x = tx + tw - close_w;
-                        let close_hovered =
-                            mouse_y < tbh && mouse_x >= close_x && mouse_x < close_x + close_w;
+                        // Close button with a rounded hover highlight.
                         if close_hovered {
-                            draw_ctx.draw_rect(
+                            draw_ctx.draw_rounded_rect(
                                 close_x,
-                                0.0,
+                                tab_inset,
                                 close_w,
-                                tbh,
+                                pill_h,
+                                tab_radius.min(close_w / 2.0),
                                 style.line_highlight.to_array(),
                             );
                         }
@@ -619,13 +653,6 @@
                             (tbh - draw_ctx.font_height(style.icon_font)) / 2.0,
                             close_color,
                         );
-                        draw_ctx.draw_rect(
-                            tx + tw,
-                            style.padding_y * 0.5,
-                            style.divider_size,
-                            tbh - style.padding_y,
-                            style.dim.to_array(),
-                        );
                         // Restore clip for the rest of the tab bar / dropdown draw.
                         crate::editor::app_state::clip_init(width, height);
 
@@ -638,7 +665,7 @@
                         {
                             tab_hover = Some(i);
                         }
-                        tx += tw + style.divider_size;
+                        tx += tw + tab_gap;
                     }
                     if mouse_y >= tbh {
                         tab_tooltip_suppressed = false;
