@@ -310,7 +310,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "jereide"
-version = "0.11.0"
+version = "0.12.1"
 dependencies = [
  "anyhow",
  "env_logger",
@@ -319,7 +319,7 @@ dependencies = [
 
 [[package]]
 name = "jereide-core"
-version = "0.11.0"
+version = "0.12.1"
 dependencies = [
  "anyhow",
  "bitflags 2.13.0",
