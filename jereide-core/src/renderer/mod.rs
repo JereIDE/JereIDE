@@ -60,6 +60,51 @@ pub fn native_begin_frame() {
     });
 }
 
+// Canonical render target: a private `RGBA32` surface at the window's physical
+// resolution. The window surface's pixel format differs per platform (BGRA on
+// Windows/Linux, RGBA on macOS) and its native resolution may also differ from
+// `SDL_GetWindowSizeInPixels`, which previously caused an R/B channel swap
+// (everything pink/blue) and inconsistent scaling on non-macOS backends. By
+// always drawing into our own RGBA32 surface and blitting it to the window
+// surface, SDL performs the format conversion and any needed scaling, so the
+// result is identical on every platform.
+thread_local! {
+    static OFFSCREEN: std::cell::RefCell<Option<*mut SDL_Surface>> =
+        const { std::cell::RefCell::new(None) };
+    static OFFSCREEN_SIZE: std::cell::RefCell<(i32, i32)> =
+        const { std::cell::RefCell::new((0, 0)) };
+}
+
+/// Return a private `RGBA32` surface sized to `(w, h)`, recreating it only when
+/// the size changes. Caller must not store the pointer across frames; it is
+/// owned by this module and destroyed on resize / `destroy_offscreen`.
+unsafe fn ensure_offscreen(w: i32, h: i32) -> *mut SDL_Surface {
+    OFFSCREEN.with(|os| {
+        let mut guard = os.borrow_mut();
+        let size = OFFSCREEN_SIZE.with(|s| *s.borrow());
+        let mismatch = guard.is_none() || size != (w, h);
+        if mismatch {
+            if let Some(old) = guard.take() {
+                unsafe { SDL_DestroySurface(old) };
+            }
+            let surf = unsafe { SDL_CreateSurface(w.max(1), h.max(1), SDL_PIXELFORMAT_RGBA32) };
+            *guard = if surf.is_null() { None } else { Some(surf) };
+            OFFSCREEN_SIZE.with(|s| *s.borrow_mut() = (w, h));
+        }
+        guard.unwrap_or(std::ptr::null_mut())
+    })
+}
+
+/// Drop the offscreen surface (e.g. on cache teardown).
+pub fn destroy_offscreen() {
+    OFFSCREEN.with(|os| {
+        if let Some(old) = os.borrow_mut().take() {
+            unsafe { SDL_DestroySurface(old) };
+        }
+        OFFSCREEN_SIZE.with(|s| *s.borrow_mut() = (0, 0));
+    });
+}
+
 /// Native end_frame: compute dirty rects and render to the SDL surface.
 pub fn native_end_frame() {
     CACHE.with(|cell| {
@@ -71,32 +116,41 @@ pub fn native_end_frame() {
         }
         let commands = &cache.commands;
         let arena = &cache.text_arena;
-        crate::window::with_window_surface(|surface, window| {
-            // SAFETY: surface is valid for this call; we're on the main thread.
+        crate::window::with_window_surface(|win_surface, window| {
+            let (pw, ph) = crate::window::get_drawable_size();
+            // SAFETY: surfaces are valid for this call; we're on the main thread.
             unsafe {
-                cache::render_dirty_rects(surface, commands, arena, &dirty);
-            }
-            let sdl_rects: Vec<SDL_Rect> = dirty
-                .iter()
-                .map(|r| SDL_Rect {
-                    x: r.x,
-                    y: r.y,
-                    w: r.w,
-                    h: r.h,
-                })
-                .collect();
-            // SAFETY: window is valid; sdl_rects is a valid slice.
-            unsafe {
-                SDL_UpdateWindowSurfaceRects(
-                    window,
-                    sdl_rects.as_ptr(),
-                    sdl_rects.len() as libc::c_int,
-                );
+                let off = ensure_offscreen(pw, ph);
+                if off.is_null() {
+                    // Fallback: draw straight to the window surface (legacy path).
+                    cache::render_dirty_rects(win_surface, commands, arena, &dirty);
+                } else {
+                    cache::render_dirty_rects(off, commands, arena, &dirty);
+                    // Convert RGBA->window format and scale to the window's
+                    // native buffer in one blit. Null rects = full-surface copy.
+                    SDL_BlitSurfaceScaled(
+                        off,
+                        std::ptr::null(),
+                        win_surface,
+                        std::ptr::null(),
+                        SDL_ScaleMode::PIXELART,
+                    );
+                }
+                // Update the whole window surface to avoid partial-update seams
+                // when the blit scales between offscreen and window resolutions.
+                let full = SDL_Rect {
+                    x: 0,
+                    y: 0,
+                    w: (*win_surface).w,
+                    h: (*win_surface).h,
+                };
+                SDL_UpdateWindowSurfaceRects(window, &full, 1);
             }
             crate::window::show_if_hidden();
         });
     });
 }
+
 
 /// Drop per-window caches that are cheap to rebuild on next draw.
 /// Called when the window is occluded/hidden so we don't hold onto
@@ -106,6 +160,7 @@ pub fn drop_caches() {
     CACHE.with(|c| {
         *c.borrow_mut() = None;
     });
+    destroy_offscreen();
     font::clear_glyph_caches();
 }
 
