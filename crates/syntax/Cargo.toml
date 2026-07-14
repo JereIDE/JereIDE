@@ -1,0 +1,9 @@
+[package]
+name = "jereide-syntax"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = "0.34"
+jereide-settings = { path = "../settings" }
+syntect = { version = "5", default-features = false, features = ["default-syntaxes", "default-themes", "regex-fancy", "parsing", "dump-load"] }

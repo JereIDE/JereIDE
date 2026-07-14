@@ -1,0 +1,13 @@
+[package]
+name = "JereIDE"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "JereIDE"
+path = "src/main.rs"
+
+[dependencies]
+eframe = "0.34"
+jereide-settings = { path = "../settings" }
+jereide-main-window = { path = "../main-window" }

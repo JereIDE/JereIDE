@@ -1,91 +1,52 @@
-# JereIDE
-
-A fast, simple code editor built in Rust.
-
-![JereIDE screenshot](.github/images/MacOS-1.jpeg)
-
 <div align="center">
 
-_For all the screenshots, see [demo.md](.github/images/demo.md)._
+# JereIDER
+  
+**the fast simple code editor, rust edition**
+
+![](https://img.shields.io/badge/Built_with-Rust-turquoise)
+![](https://img.shields.io/badge/Egui-3.5+-green?logo=rust&logoColor=white)
+![](https://img.shields.io/badge/macOS-12+-skyblue)
+
+*JereIDE's temporary Rust edition, will replace it soon.*  
+
+
 
 </div>
 
-JereIDE began as a fork of [lite-anvil](https://github.com/danpozmanter/lite-anvil), and many useful features have been added after that.
+---
 
-## Features
+A Rust+egui+ObjC2 implementation/replacement of [JereIDE](https://github.com/Jeremy-Qian/JereIDE). 
 
-- **Built-in LSP** with diagnostics, completion, hover, go-to-definition, references, inlay hints
-- **Embedded terminal** with ANSI colors, scrollback, and multi-terminal support
-- **Find & Replace** with live search, match counter, regex/whole-word/case toggles, and find-in-selection
-- **Bookmarks** -- toggle with Ctrl+F4, navigate with F4 / Shift+F4, accent marker in gutter
-- **Code folding** with indent-based fold detection
-- **Project-wide search** (Ctrl+Shift+F) with grep-based results
-- **Git integration** -- gutter markers, status view, blame annotations, file log, push/pull/commit/stash
-- **Multi-cursor editing** -- Ctrl+Shift+Up/Down to add cursors, Ctrl+D to select next occurrence
-- **Minimap** with syntax-colored blocks, click to scroll
-- **Language-aware line comments** -- Ctrl+/ picks the correct marker for 51 languages
-- **51 built-in syntax grammars** including Rust, Go, Python, TypeScript, C, C++, Java, and more
-- **Session restore** -- open files, active tab, font scale persist across restarts
-- **Native file watching** via inotify for external-change detection
-- **JSON-backed color themes** (`data/assets/themes/*.json`) with runtime cycling (Ctrl+T)
-- **Keyboard-navigated file/folder open** with filesystem autocomplete and `:N` line support
-- **Format on paste** -- converts pasted indent whitespace to match document style
-- **Color-coded sidebar icons** by file extension (90+ extensions)
-- **Check for Updates** from the command palette
-- **Graceful font fallback** -- falls back to built-in fonts with a warning if custom fonts fail
+> [!NOTE]
+> JereIDE is still in beta and is not for production use. Check out [Zed](https://zed.dev) if you want a production-ready code editor. I am not responsible for any data loss or damage caused by using JereIDE.
 
-## Shortcuts
+## Installation
 
-| Key                     | Action                     |
-| ----------------------- | -------------------------- |
-| `Ctrl+P`                | Open file                  |
-| `Ctrl+Shift+P`          | Command palette            |
-| `Ctrl+O`                | Open project folder        |
-| `Ctrl+T`                | Cycle color theme          |
-| `Ctrl+Shift+R`          | Open recent file or folder |
-| `Ctrl+Shift+F`          | Find in files              |
-| `Alt+Shift+F`           | Replace in files           |
-| `Ctrl+F`                | Find in file               |
-| `Alt+F`                 | Replace in file            |
-| `F3` / `Shift+F3`       | Next / previous match      |
-| `Ctrl+/`                | Toggle line comment        |
-| `Ctrl+Up` / `Ctrl+Down` | Move line up / down        |
-| `Ctrl+F4`               | Toggle bookmark            |
-| `F4` / `Shift+F4`       | Next / previous bookmark   |
-| `Ctrl+Shift+[` / `]`    | Fold / unfold code block   |
-| `Ctrl+=` / `Ctrl+-`     | Font zoom in / out         |
-| `Ctrl+M`                | Toggle minimap             |
-| `Alt+Z`                 | Toggle line wrapping       |
-| `Ctrl+B`                | Toggle sidebar             |
-| `Ctrl+`` ` / `F5`       | Toggle terminal            |
-| `F12`                   | Go to definition (LSP)     |
-| `Ctrl+K`                | Hover info (LSP)           |
-| `Ctrl+W`                | Close tab                  |
-| `Ctrl+Tab`              | Next tab                   |
-
-## Building
-
-### Quick start
+### Build from source
 
 ```bash
-# Ubuntu / Debian
-apt install libsdl3-dev libfreetype6-dev libpcre2-dev
+# Clone the repository
+git clone https://github.com/Jeremy-Qian/JereIDER.git
+cd JereIDER
 
-# Build
-cargo build --release
+# or cargo run --release
+cargo run
 
-# Run
-./target/release/jereide [path]
 ```
 
-Rust 1.85+ required. See [BUILDING.md](BUILDING.md) for full instructions
-including macOS, Windows, and packaging.
+> **Note:** This application is optimized for macOS only. Future Windows support is planned.
 
-## Fonts
+## FAQ
 
-- [Lilex](https://github.com/mishamyrt/Lilex) -- editor font
-- [Seti](https://github.com/jesseweed/seti-ui) -- file type icons
+### How is this different from other editors?
+Not really.
+
+### Why is it called JereIDER?
+JereIDE, and a R for Rust.
+
+### When will it replace the current JereIDE?
+Uh, when it matches the same functionality the current JereIDE offers.
 
 ## License
-
-MIT -- see [LICENSE](LICENSE).
+This project is licensed under the MIT License.

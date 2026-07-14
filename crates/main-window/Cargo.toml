@@ -1,0 +1,19 @@
+[package]
+name = "jereide-main-window"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = "0.34"
+jereide-core = { path = "../core" }
+jereide-settings = { path = "../settings" }
+jereide-fs = { path = "../fs" }
+jereide-menu = { path = "../menu" }
+jereide-ui = { path = "../ui" }
+jereide-code = { path = "../code" }
+jereide-command = { path = "../command" }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.5"
+objc2-foundation = "0.2"
+raw-window-handle = "0.6"

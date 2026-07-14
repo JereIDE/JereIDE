@@ -1,22 +1,29 @@
 [workspace]
-members = ["jereide-core", "jereide"]
+members = [
+    "crates/app",
+    "crates/core",
+    "crates/settings",
+    "crates/text",
+    "crates/syntax",
+    "crates/menu",
+    "crates/main-window",
+    "crates/ui",
+    "crates/code",
+    "crates/command",
+    "crates/fs",
+]
 resolver = "2"
 
-[workspace.package]
-version = "0.12.2"
-edition = "2024"
-rust-version = "1.85"
-license = "MIT"
-authors = ["Jeremy-Qian"]
-repository = "https://github.com/JereIDE/jereide"
-homepage = "https://github.com/JereIDE/jereide"
-documentation = "https://github.com/JereIDE/jereide#readme"
-keywords = ["editor", "ide", "sdl3", "rust", "lsp"]
-categories = ["development-tools", "gui"]
+[profile.dev]
+# Saves space
+debug = 0
 
-[profile.release]
-opt-level = 2
-lto = "thin"
-strip = true
-codegen-units = 1
-panic = "abort"
+# Fast compile
+opt-level = 0
+
+# Reduces cache
+incremental = true
+
+[profile.dev.build-override]
+# Speed
+opt-level = 0

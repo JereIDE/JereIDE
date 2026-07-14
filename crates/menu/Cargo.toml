@@ -1,0 +1,8 @@
+[package]
+name = "jereide-menu"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+crossbeam-channel = "0.5"
+muda = "0.19.2"
