@@ -135,7 +135,7 @@ impl AppMenu {
 
         #[cfg(target_os = "windows")]
         if let Some(RawWindowHandle::Win32(win32)) = _raw {
-            unsafe { self.menu.init_for_hwnd(win32.hwnd.as_ptr() as isize) };
+            unsafe { self.menu.init_for_hwnd(win32.hwnd.get()) };
         }
     }
 
