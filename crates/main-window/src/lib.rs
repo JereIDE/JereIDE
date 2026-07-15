@@ -111,6 +111,9 @@ pub struct JereIDEApp {
     state: AppState,
     app_menu: AppMenu,
     file_manager: FileManager,
+    visuals_initialized: bool,
+    traffic_lights_positioned: bool,
+    prev_fullscreen: bool,
 }
 
 impl JereIDEApp {
@@ -119,6 +122,9 @@ impl JereIDEApp {
             state: AppState::new(),
             app_menu: AppMenu::new(),
             file_manager: FileManager::new(),
+            visuals_initialized: false,
+            traffic_lights_positioned: false,
+            prev_fullscreen: false,
         }
     }
 
@@ -223,11 +229,16 @@ impl eframe::App for JereIDEApp {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
 
-        // Apply accent theme every frame so per-widget overrides don't reset it
-        let mut visuals = ctx.global_style().visuals.clone();
-        visuals.selection.bg_fill = ACCENT;
-        visuals.selection.stroke = egui::Stroke::new(1.0, jereide_settings::TEXT_DEFAULT);
-        ctx.set_visuals(visuals);
+        // Apply the accent theme once. Re-setting visuals every frame makes egui
+        // treat the style as changed and re-layout the whole UI each frame, which
+        // makes the entire app (and even while dialogs are open) feel sluggish.
+        if !self.visuals_initialized {
+            let mut visuals = ctx.global_style().visuals.clone();
+            visuals.selection.bg_fill = ACCENT;
+            visuals.selection.stroke = egui::Stroke::new(1.0, jereide_settings::TEXT_DEFAULT);
+            ctx.set_visuals(visuals);
+            self.visuals_initialized = true;
+        }
 
         #[cfg(target_os = "macos")]
         {
@@ -238,7 +249,13 @@ impl eframe::App for JereIDEApp {
             }
 
             let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
-            position_traffic_lights(frame, TRAFFIC_LIGHT_OFFSET_X, TRAFFIC_LIGHT_OFFSET_Y);
+            // The traffic lights only need repositioning on first show and when the
+            // fullscreen state changes — not every frame.
+            if !self.traffic_lights_positioned || is_fullscreen != self.prev_fullscreen {
+                position_traffic_lights(frame, TRAFFIC_LIGHT_OFFSET_X, TRAFFIC_LIGHT_OFFSET_Y);
+                self.traffic_lights_positioned = true;
+                self.prev_fullscreen = is_fullscreen;
+            }
             self.state.was_fullscreen = is_fullscreen;
         }
 

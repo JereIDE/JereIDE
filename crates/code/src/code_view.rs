@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use eframe::egui;
@@ -13,8 +14,7 @@ use jereide_syntax::SyntaxHighlighter;
 use jereide_text::char_index_to_line_col;
 
 thread_local! {
-    static HIGHLIGHTER: RefCell<Option<SyntaxHighlighter>> = const { RefCell::new(None) };
-    static PREV_EXTENSION: RefCell<Option<String>> = const { RefCell::new(None) };
+    static HIGHLIGHTERS: RefCell<HashMap<usize, SyntaxHighlighter>> = RefCell::new(HashMap::new());
 }
 
 fn visual_line_count(text: &str) -> usize {
@@ -49,33 +49,20 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
     };
 
     let active_idx = state.active_tab_index;
-
+    let tab_id = state.tabs[active_idx].id;
     let extension = state.tabs[active_idx]
         .file_path
         .as_ref()
         .and_then(|p| std::path::Path::new(p).extension())
         .and_then(|ext| ext.to_str());
 
-    let ext_changed = PREV_EXTENSION.with(|prev| {
-        let mut prev = prev.borrow_mut();
-        if prev.as_deref() != extension {
-            *prev = extension.map(String::from);
-            true
-        } else {
-            false
-        }
-    });
-
-    if ext_changed {
-        HIGHLIGHTER.with(|hl| {
-            *hl.borrow_mut() = Some(SyntaxHighlighter::new(EDITOR_FONT_SIZE, extension));
-        });
-    }
-
-    HIGHLIGHTER.with(|hl| {
-        if hl.borrow().is_none() {
-            *hl.borrow_mut() = Some(SyntaxHighlighter::new(EDITOR_FONT_SIZE, extension));
-        }
+    let valid_ids: std::collections::HashSet<usize> = state.tabs.iter().map(|t| t.id).collect();
+    HIGHLIGHTERS.with(|cache| {
+        let mut cache = cache.borrow_mut();
+        cache.retain(|id, _| valid_ids.contains(id));
+        cache
+            .entry(tab_id)
+            .or_insert_with(|| SyntaxHighlighter::new(EDITOR_FONT_SIZE, extension));
     });
 
     let font_id = egui::FontId::monospace(EDITOR_FONT_SIZE);
@@ -89,9 +76,10 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         |layouter_ui: &egui::Ui, text: &dyn egui::widgets::TextBuffer, wrap_width: f32| {
             let text_str = text.as_str();
 
-            let mut layout_job = HIGHLIGHTER.with(|hl| {
-                hl.borrow_mut()
-                    .as_mut()
+            let mut layout_job = HIGHLIGHTERS.with(|cache| {
+                cache
+                    .borrow_mut()
+                    .get_mut(&tab_id)
                     .expect("highlighter initialized")
                     .highlight(text_str)
             });

@@ -1,4 +1,11 @@
 use eframe::egui;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+static NEXT_TAB_ID: AtomicUsize = AtomicUsize::new(0);
+
+fn next_tab_id() -> usize {
+    NEXT_TAB_ID.fetch_add(1, Ordering::Relaxed)
+}
 
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum CurrentView {
@@ -9,6 +16,8 @@ pub enum CurrentView {
 /// A single open document (tab) in the IDE.
 #[derive(Clone)]
 pub struct Tab {
+    pub id: usize,
+
     pub text: String,
 
     pub saved_text: String,
@@ -20,6 +29,7 @@ pub struct Tab {
 impl Tab {
     pub fn new() -> Self {
         Self {
+            id: next_tab_id(),
             text: String::new(),
             saved_text: String::new(),
             file_path: None,
@@ -30,6 +40,7 @@ impl Tab {
 
     pub fn with_path_and_content(path: String, content: String) -> Self {
         Self {
+            id: next_tab_id(),
             saved_text: content.clone(),
             text: content,
             file_path: Some(path),
