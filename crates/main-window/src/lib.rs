@@ -248,6 +248,35 @@ impl eframe::App for JereIDEApp {
             self.app_menu.set_initialized();
         }
 
+        #[cfg(not(target_os = "macos"))]
+        {
+            let (want_new, want_open, want_save, want_save_as, want_quit) = ctx.input(|i| {
+                let cmd = i.modifiers.command;
+                (
+                    cmd && i.key_pressed(egui::Key::N),
+                    cmd && i.key_pressed(egui::Key::O),
+                    cmd && i.key_pressed(egui::Key::S) && !i.modifiers.shift,
+                    cmd && i.modifiers.shift && i.key_pressed(egui::Key::S),
+                    cmd && i.key_pressed(egui::Key::Q),
+                )
+            });
+            if want_new {
+                self.handle_new();
+            }
+            if want_open {
+                self.handle_open();
+            }
+            if want_save {
+                self.handle_save();
+            }
+            if want_save_as {
+                self.handle_save_as();
+            }
+            if want_quit {
+                std::process::exit(0);
+            }
+        }
+
         for event_id in self.app_menu.poll_events() {
             match event_id.as_ref() {
                 "new" => self.handle_new(),
