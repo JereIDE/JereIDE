@@ -26,7 +26,7 @@ fn language_from_path(path: Option<&str>) -> &'static str {
         "go" => "Go",
         "rb" => "Ruby",
         "sql" => "SQL",
-        _ => "Unknown",
+        _ => "",
     }
 }
 
@@ -44,9 +44,13 @@ pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) {
                 ui.label(format!("JereIDE v{}", env!("CARGO_PKG_VERSION")));
                 if !state.tabs.is_empty() {
                     let tab = state.current_tab();
-                    let lang = language_from_path(tab.file_path.as_deref());
-                    if !lang.is_empty() {
-                        ui.colored_label(TEXT_SECONDARY, lang);
+                    if tab.file_path.is_some() {
+                        let lang = language_from_path(tab.file_path.as_deref());
+                        let sep = if lang.is_empty() { "" } else { " • " };
+                        ui.colored_label(
+                            TEXT_SECONDARY,
+                            format!("{}{}{}", lang, sep, tab.file_name()),
+                        );
                     }
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
