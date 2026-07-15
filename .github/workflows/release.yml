@@ -73,71 +73,71 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-linux:
-    needs: [parse-commit]
-    if: needs.parse-commit.outputs.should_release == 'true'
-    name: Linux x86_64
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Read app version
-        shell: bash
-        run: |
-          APP_VERSION="$(awk -F'"' '
-            /^\[workspace\.package\]$/ { in_section = 1; next }
-            /^\[/ { in_section = 0 }
-            in_section && $1 ~ /^version = / { print $2; exit }
-          ' crates/app/Cargo.toml)"
-          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build \
-            libx11-dev libxext-dev libxcursor-dev libxinerama-dev \
-            libxi-dev libxrandr-dev libxss-dev libxtst-dev \
-            libxxf86vm-dev libxfixes-dev libxrender-dev \
-            libdbus-1-dev libudev-dev \
-            libpulse-dev libasound2-dev \
-            libdrm-dev libgbm-dev \
-            libegl1-mesa-dev libgles2-mesa-dev \
-            libwayland-dev libxkbcommon-dev wayland-protocols \
-            libatk1.0-dev libgdk-pixbuf-2.0-dev libpango1.0-dev \
-            libcairo2-dev libgdk-pixbuf2.0-dev libglib2.0-dev \
-            libgtk-3-dev
-          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> "$GITHUB_ENV"
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ github.job }}-
-
-      - name: Build
-        run: cargo build --release -p JereIDE
-
-      - name: Package tarball
-        run: |
-          ARCHIVE_BASE="JereIDE-${APP_VERSION}-linux-x86_64"
-          mkdir "$ARCHIVE_BASE"
-          cp target/release/JereIDE "$ARCHIVE_BASE/"
-          cp LICENSE "$ARCHIVE_BASE/"
-          cp README.md "$ARCHIVE_BASE/"
-          tar -czf "${ARCHIVE_BASE}.tar.gz" "$ARCHIVE_BASE"
-
-      - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v6
-        with:
-          name: JereIDE-linux-x86_64
-          path: |
-            JereIDE-*-linux-x86_64.tar.gz
+  # build-linux:
+  #   needs: [parse-commit]
+  #   if: needs.parse-commit.outputs.should_release == 'true'
+  #   name: Linux x86_64
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - uses: actions/checkout@v5
+  #
+  #     - name: Read app version
+  #       shell: bash
+  #       run: |
+  #         APP_VERSION="$(awk -F'"' '
+  #           /^\[workspace\.package\]$/ { in_section = 1; next }
+  #           /^\[/ { in_section = 0 }
+  #           in_section && $1 ~ /^version = / { print $2; exit }
+  #         ' crates/app/Cargo.toml)"
+  #         echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+  #
+  #     - name: Install system dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y cmake ninja-build \
+  #           libx11-dev libxext-dev libxcursor-dev libxinerama-dev \
+  #           libxi-dev libxrandr-dev libxss-dev libxtst-dev \
+  #           libxxf86vm-dev libxfixes-dev libxrender-dev \
+  #           libdbus-1-dev libudev-dev \
+  #           libpulse-dev libasound2-dev \
+  #           libdrm-dev libgbm-dev \
+  #           libegl1-mesa-dev libgles2-mesa-dev \
+  #           libwayland-dev libxkbcommon-dev wayland-protocols \
+  #           libatk1.0-dev libgdk-pixbuf-2.0-dev libpango1.0-dev \
+  #           libcairo2-dev libgdk-pixbuf2.0-dev libglib2.0-dev \
+  #           libgtk-3-dev
+  #         echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> "$GITHUB_ENV"
+  #
+  #     - uses: dtolnay/rust-toolchain@stable
+  #
+  #     - uses: actions/cache@v5
+  #       with:
+  #         path: |
+  #           ~/.cargo/registry
+  #           ~/.cargo/git
+  #           target
+  #         key: ${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/Cargo.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-${{ github.job }}-
+  #
+  #     - name: Build
+  #       run: cargo build --release -p JereIDE
+  #
+  #     - name: Package tarball
+  #       run: |
+  #         ARCHIVE_BASE="JereIDE-${APP_VERSION}-linux-x86_64"
+  #         mkdir "$ARCHIVE_BASE"
+  #         cp target/release/JereIDE "$ARCHIVE_BASE/"
+  #         cp LICENSE "$ARCHIVE_BASE/"
+  #         cp README.md "$ARCHIVE_BASE/"
+  #         tar -czf "${ARCHIVE_BASE}.tar.gz" "$ARCHIVE_BASE"
+  #
+  #     - name: Upload Linux artifacts
+  #       uses: actions/upload-artifact@v6
+  #       with:
+  #         name: JereIDE-linux-x86_64
+  #         path: |
+  #           JereIDE-*-linux-x86_64.tar.gz
 
   build-windows:
     needs: [parse-commit]
@@ -260,7 +260,7 @@ jobs:
 
   release:
     name: Upload to Draft Release
-    needs: [parse-commit, build-linux, build-windows, build-macos]
+    needs: [parse-commit, build-windows, build-macos]
     if: needs.parse-commit.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     permissions:
