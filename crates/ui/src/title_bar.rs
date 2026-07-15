@@ -19,11 +19,17 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
         );
 
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-            if is_fullscreen {
-                ui.add_space(TITLE_BAR_FULLSCREEN_SPACE);
-            } else {
-                ui.add_space(TITLE_BAR_TRAFFIC_SPACE);
+            #[cfg(target_os = "macos")]
+            {
+                if is_fullscreen {
+                    ui.add_space(TITLE_BAR_FULLSCREEN_SPACE);
+                } else {
+                    ui.add_space(TITLE_BAR_TRAFFIC_SPACE);
+                }
             }
+            #[cfg(not(target_os = "macos"))]
+            ui.add_space(TITLE_BAR_FULLSCREEN_SPACE);
+
             let choose_project_resp = ui.button("Choose Project");
             egui::Popup::menu(&choose_project_resp)
                 .gap(TITLE_BAR_POPUP_GAP)
