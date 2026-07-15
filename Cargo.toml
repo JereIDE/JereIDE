@@ -24,6 +24,9 @@ opt-level = 0
 # Reduces cache
 incremental = true
 
+[workspace.package]
+version = "0.20.0"
+
 [profile.dev.build-override]
 # Speed
 opt-level = 0

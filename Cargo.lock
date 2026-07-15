@@ -1958,7 +1958,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "jereide-code"
-version = "0.1.0"
+version = "0.20.0"
 dependencies = [
  "eframe",
  "jereide-core",
@@ -1969,7 +1969,7 @@ dependencies = [
 
 [[package]]
 name = "jereide-command"
-version = "0.1.0"
+version = "0.20.0"
 dependencies = [
  "eframe",
  "jereide-settings",
@@ -1977,21 +1977,21 @@ dependencies = [
 
 [[package]]
 name = "jereide-core"
-version = "0.1.0"
+version = "0.20.0"
 dependencies = [
  "eframe",
 ]
 
 [[package]]
 name = "jereide-fs"
-version = "0.1.0"
+version = "0.20.0"
 dependencies = [
  "rfd",
 ]
 
 [[package]]
 name = "jereide-main-window"
-version = "0.1.0"
+version = "0.20.0"
 dependencies = [
  "eframe",
  "jereide-code",
@@ -2008,7 +2008,7 @@ dependencies = [
 
 [[package]]
 name = "jereide-menu"
-version = "0.1.0"
+version = "0.20.0"
 dependencies = [
  "crossbeam-channel",
  "muda",
@@ -2017,14 +2017,14 @@ dependencies = [
 
 [[package]]
 name = "jereide-settings"
-version = "0.1.0"
+version = "0.20.0"
 dependencies = [
  "eframe",
 ]
 
 [[package]]
 name = "jereide-syntax"
-version = "0.1.0"
+version = "0.20.0"
 dependencies = [
  "eframe",
  "jereide-settings",
@@ -2033,11 +2033,11 @@ dependencies = [
 
 [[package]]
 name = "jereide-text"
-version = "0.1.0"
+version = "0.20.0"
 
 [[package]]
 name = "jereide-ui"
-version = "0.1.0"
+version = "0.20.0"
 dependencies = [
  "eframe",
  "jereide-core",

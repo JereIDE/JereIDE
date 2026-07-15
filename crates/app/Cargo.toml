@@ -1,6 +1,6 @@
 [package]
 name = "JereIDE"
-version = "0.20.0"
+version.workspace = true
 edition = "2021"
 
 [[bin]]
