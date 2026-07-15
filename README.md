@@ -2,13 +2,13 @@
 
 # JereIDER
   
-**the fast simple code editor, rust edition**
+**A fast and simple editor. Open Source. Free Forever.**
 
 ![](https://img.shields.io/badge/Built_with-Rust-turquoise)
-![](https://img.shields.io/badge/Egui-3.5+-green?logo=rust&logoColor=white)
+![](https://img.shields.io/badge/Egui-0.35+-green?logo=rust&logoColor=white)
 ![](https://img.shields.io/badge/macOS-12+-skyblue)
 
-*JereIDE's temporary Rust edition, will replace it soon.*  
+*JereIDE as an open-source, cross-platform editor built in Rust with syntax highlighting and frequent updates.*  
 
 
 
@@ -16,7 +16,7 @@
 
 ---
 
-A Rust+egui+ObjC2 implementation/replacement of [JereIDE](https://github.com/Jeremy-Qian/JereIDE). 
+A simple code editor with syntax highlighting
 
 > [!NOTE]
 > JereIDE is still in beta and is not for production use. Check out [Zed](https://zed.dev) if you want a production-ready code editor. I am not responsible for any data loss or damage caused by using JereIDE.
@@ -27,26 +27,26 @@ A Rust+egui+ObjC2 implementation/replacement of [JereIDE](https://github.com/Jer
 
 ```bash
 # Clone the repository
-git clone https://github.com/Jeremy-Qian/JereIDER.git
-cd JereIDER
+git clone https://github.com/JereIDE/JereIDE.git
+cd JereIDE
 
 # or cargo run --release
 cargo run
 
 ```
 
-> **Note:** This application is optimized for macOS only. Future Windows support is planned.
+> **Note:** This application is optimized for macOS and Windows only. Linux is not planned in the near future.
 
 ## FAQ
 
 ### How is this different from other editors?
 Not really.
 
-### Why is it called JereIDER?
-JereIDE, and a R for Rust.
+### Why is it called JereIDE?
+Most of my projects start with “Jere”.
 
 ### When will it replace the current JereIDE?
-Uh, when it matches the same functionality the current JereIDE offers.
+It has already…
 
 ## License
 This project is licensed under the MIT License.
