@@ -103,6 +103,8 @@ jobs:
             libdrm-dev libgbm-dev \
             libegl1-mesa-dev libgles2-mesa-dev \
             libwayland-dev libxkbcommon-dev wayland-protocols
+            libatk1.0-dev libgdk-pixbuf-2.0-dev libpango1.0-dev
+            libcairo2-dev libgdk-pixbuf2.0-dev libglib2.0-dev
 
       - uses: dtolnay/rust-toolchain@stable
 
