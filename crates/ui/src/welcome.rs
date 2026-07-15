@@ -16,7 +16,7 @@ pub fn render_welcome_view(ui: &mut egui::Ui) {
     ui.painter().text(
         egui::Pos2::new(rect.center().x - 70.0, rect.center().y),
         egui::Align2::LEFT_CENTER,
-        "Welcome back to to JereIDE",
+        "Welcome back to JereIDE",
         egui::FontId::proportional(COMMAND_VIEW_FONT_SIZE),
         TEXT_PRIMARY,
     );
