@@ -132,10 +132,10 @@ fn app_state_close_tab_removes() {
 }
 
 #[test]
-fn app_state_close_last_tab_is_noop() {
+fn app_state_close_last_tab_closes() {
     let mut state = AppState::new();
     state.close_tab(0);
-    assert_eq!(state.tabs.len(), 1);
+    assert_eq!(state.tabs.len(), 0);
 }
 
 #[test]
