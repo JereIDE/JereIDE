@@ -6,6 +6,7 @@ use jereide_core::{
 use jereide_fs::FileManager;
 use jereide_menu::AppMenu;
 use jereide_settings::{ACCENT, SURFACE_BG};
+use raw_window_handle::HasWindowHandle;
 
 // ---------------------------------------------------------------------------
 // macOS native window helpers
@@ -242,7 +243,8 @@ impl eframe::App for JereIDEApp {
         }
 
         if !self.app_menu.is_initialized() {
-            self.app_menu.init();
+            let raw = frame.window_handle().ok().map(|h| h.as_raw());
+            self.app_menu.init(raw);
             self.app_menu.set_initialized();
         }
 

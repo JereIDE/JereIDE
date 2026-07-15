@@ -12,8 +12,8 @@ jereide-menu = { path = "../menu" }
 jereide-ui = { path = "../ui" }
 jereide-code = { path = "../code" }
 jereide-command = { path = "../command" }
+raw-window-handle = "0.6"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.5"
 objc2-foundation = "0.2"
-raw-window-handle = "0.6"

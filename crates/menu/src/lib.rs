@@ -1,6 +1,7 @@
 use muda::{
     accelerator::Accelerator, Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem, Submenu,
 };
+use raw_window_handle::RawWindowHandle;
 
 /// A struct about the menu.
 pub struct AppMenu {
@@ -128,9 +129,14 @@ impl AppMenu {
         }
     }
 
-    pub fn init(&self) {
+    pub fn init(&self, _raw: Option<RawWindowHandle>) {
         #[cfg(target_os = "macos")]
         self.menu.init_for_nsapp();
+
+        #[cfg(target_os = "windows")]
+        if let Some(RawWindowHandle::Win32(win32)) = _raw {
+            unsafe { self.menu.init_for_hwnd(win32.hwnd.as_ptr() as isize) };
+        }
     }
 
     pub fn poll_events(&self) -> Vec<MenuId> {

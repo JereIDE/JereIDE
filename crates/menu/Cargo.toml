@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 crossbeam-channel = "0.5"
 muda = "0.19.2"
+raw-window-handle = "0.6"
