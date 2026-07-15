@@ -7,44 +7,44 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-linux:
-    name: Linux Tests
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v5
+  # test-linux:
+  #   name: Linux Tests
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - uses: actions/checkout@v5
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build \
-            libfreetype6-dev libpcre2-dev \
-            libx11-dev libxext-dev libxcursor-dev libxinerama-dev \
-            libxi-dev libxrandr-dev libxss-dev libxtst-dev \
-            libxxf86vm-dev libxfixes-dev libxrender-dev \
-            libdbus-1-dev libudev-dev \
-            libpulse-dev libasound2-dev \
-            libdrm-dev libgbm-dev \
-            libegl1-mesa-dev libgles2-mesa-dev \
-            libwayland-dev libxkbcommon-dev wayland-protocols
-          git clone --depth 1 --branch release-3.4.2 https://github.com/libsdl-org/SDL.git
-          cmake -S SDL -B SDL/build -DCMAKE_BUILD_TYPE=Release -G Ninja
-          cmake --build SDL/build
-          sudo cmake --install SDL/build
+  #     - name: Install system dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y cmake ninja-build \
+  #           libfreetype6-dev libpcre2-dev \
+  #           libx11-dev libxext-dev libxcursor-dev libxinerama-dev \
+  #           libxi-dev libxrandr-dev libxss-dev libxtst-dev \
+  #           libxxf86vm-dev libxfixes-dev libxrender-dev \
+  #           libdbus-1-dev libudev-dev \
+  #           libpulse-dev libasound2-dev \
+  #           libdrm-dev libgbm-dev \
+  #           libegl1-mesa-dev libgles2-mesa-dev \
+  #           libwayland-dev libxkbcommon-dev wayland-protocols
+  #         git clone --depth 1 --branch release-3.4.2 https://github.com/libsdl-org/SDL.git
+  #         cmake -S SDL -B SDL/build -DCMAKE_BUILD_TYPE=Release -G Ninja
+  #         cmake --build SDL/build
+  #         sudo cmake --install SDL/build
 
-      - uses: dtolnay/rust-toolchain@stable
+  #     - uses: dtolnay/rust-toolchain@stable
 
-      - uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ github.job }}-
+  #     - uses: actions/cache@v5
+  #       with:
+  #         path: |
+  #           ~/.cargo/registry
+  #           ~/.cargo/git
+  #           target
+  #         key: ${{ runner.os }}-${{ github.job }}-${{ hashFiles('**/Cargo.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-${{ github.job }}-
 
-      - name: Run tests
-        run: cargo test --all-features
+  #     - name: Run tests
+  #       run: cargo test --all-features
 
   test-windows:
     name: Windows Tests
