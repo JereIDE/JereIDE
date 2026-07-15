@@ -1,16 +1,14 @@
 <div align="center">
 
 # JereIDER
-  
+
 **A fast and simple editor. Open Source. Free Forever.**
 
-![](https://img.shields.io/badge/Built_with-Rust-turquoise)
-![](https://img.shields.io/badge/Egui-0.35+-green?logo=rust&logoColor=white)
-![](https://img.shields.io/badge/macOS-12+-skyblue)
+![](https://img.shields.io/badge/Built_with-Rust-turquoise?logo=rust&logoColor=white)
+![](https://img.shields.io/badge/Windows-10+-green?logo=quarto&logoColor=white)
+![](https://img.shields.io/badge/macOS-12+-skyblue?logo=apple&logoColor=white)
 
-*JereIDE as an open-source, cross-platform editor built in Rust with syntax highlighting and frequent updates.*  
-
-
+_JereIDE as an open-source, cross-platform editor built in Rust with syntax highlighting and frequent updates._
 
 </div>
 
@@ -40,13 +38,17 @@ cargo run
 ## FAQ
 
 ### How is this different from other editors?
+
 Not really.
 
 ### Why is it called JereIDE?
+
 Most of my projects start with “Jere”.
 
 ### When will it replace the current JereIDE?
+
 It has already…
 
 ## License
+
 This project is licensed under the MIT License.
