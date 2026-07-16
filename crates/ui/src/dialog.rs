@@ -1,6 +1,6 @@
 use eframe::egui;
 use jereide_core::AppState;
-use jereide_settings::{ACCENT, TEXT_DEFAULT, TEXT_MUTED, DIALOG_WIDTH};
+use jereide_settings::{ACCENT, DESTRUCTIVE, DIALOG_WIDTH, TEXT_DEFAULT, TEXT_MUTED};
 
 pub enum CloseConfirmAction {
     Save(usize),
@@ -22,11 +22,11 @@ pub fn render_close_confirm_modal(
 
     // No clicks outside!
     egui::Area::new(egui::Id::new("modal_dimmer_interact"))
-            .order(egui::Order::Foreground)
-            .fixed_pos(dim_rect.min)
-            .show(ctx, |ui| {
-                ui.allocate_rect(dim_rect, egui::Sense::click());
-            });
+        .order(egui::Order::Foreground)
+        .fixed_pos(dim_rect.min)
+        .show(ctx, |ui| {
+            ui.allocate_rect(dim_rect, egui::Sense::click());
+        });
 
     let response = egui::Window::new("Unsaved Changes")
         .title_bar(false)
@@ -97,11 +97,11 @@ pub fn render_large_file_blocked(ctx: &egui::Context, size: u64) -> bool {
     dim_painter.rect_filled(dim_rect, 0.0, egui::Color32::from_black_alpha(120));
     // No clicks outside!
     egui::Area::new(egui::Id::new("modal_dimmer_interact"))
-            .order(egui::Order::Foreground)
-            .fixed_pos(dim_rect.min)
-            .show(ctx, |ui| {
-                ui.allocate_rect(dim_rect, egui::Sense::click());
-            });
+        .order(egui::Order::Foreground)
+        .fixed_pos(dim_rect.min)
+        .show(ctx, |ui| {
+            ui.allocate_rect(dim_rect, egui::Sense::click());
+        });
 
     let mut dismissed = false;
 
@@ -146,12 +146,11 @@ pub fn render_large_file_warning(
     dim_painter.rect_filled(dim_rect, 0.0, egui::Color32::from_black_alpha(120));
     // No clicks outside!
     egui::Area::new(egui::Id::new("modal_dimmer_interact"))
-            .order(egui::Order::Foreground)
-            .fixed_pos(dim_rect.min)
-            .show(ctx, |ui| {
-                ui.allocate_rect(dim_rect, egui::Sense::click());
-            });
-
+        .order(egui::Order::Foreground)
+        .fixed_pos(dim_rect.min)
+        .show(ctx, |ui| {
+            ui.allocate_rect(dim_rect, egui::Sense::click());
+        });
 
     let response = egui::Window::new("Large File")
         .title_bar(false)
@@ -180,18 +179,21 @@ pub fn render_large_file_warning(
             if ui
                 .add_sized(
                     egui::vec2(btn_w, 0.0),
-                    egui::Button::new("Open Anyway").fill(ACCENT),
+                    egui::Button::new("Cancel").fill(ACCENT),
+                )
+                .clicked()
+            {
+                result = Some(LargeFileAction::Cancel);
+            }
+
+            if ui
+                .add_sized(
+                    egui::vec2(btn_w, 0.0),
+                    egui::Button::new(egui::RichText::new("Open Anyway").color(DESTRUCTIVE)),
                 )
                 .clicked()
             {
                 result = Some(LargeFileAction::OpenAnyway(path.to_string()));
-            }
-
-            if ui
-                .add_sized(egui::vec2(btn_w, 0.0), egui::Button::new("Cancel"))
-                .clicked()
-            {
-                result = Some(LargeFileAction::Cancel);
             }
 
             result
