@@ -54,9 +54,7 @@ pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) {
                     }
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if state.tabs.is_empty() {
-                        ui.label("--:--");
-                    } else {
+                    if !state.tabs.is_empty() {
                         let tab = state.current_tab();
                         ui.label(format!("{}:{}", tab.cursor_line, tab.cursor_col));
                     }
