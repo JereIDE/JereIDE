@@ -34,14 +34,14 @@ impl AppMenu {
         // The file menu
         file_menu
             .append_items(&[
-                &MenuItem::with_id("new", "New", true, "Cmd+N".parse::<Accelerator>().ok()),
-                &MenuItem::with_id("open", "Open...", true, "Cmd+O".parse::<Accelerator>().ok()),
-                &MenuItem::with_id("save", "Save", true, "Cmd+S".parse::<Accelerator>().ok()),
+                &MenuItem::with_id("new", "New", true, "CmdOrCtrl+N".parse::<Accelerator>().ok()),
+                &MenuItem::with_id("open", "Open...", true, "CmdOrCtrl+O".parse::<Accelerator>().ok()),
+                &MenuItem::with_id("save", "Save", true, "CmdOrCtrl+S".parse::<Accelerator>().ok()),
                 &MenuItem::with_id(
                     "save_as",
                     "Save As…",
                     true,
-                    "Cmd+Shift+S".parse::<Accelerator>().ok(),
+                    "CmdOrCtrl+Shift+S".parse::<Accelerator>().ok(),
                 ),
             ])
             .ok();
@@ -50,23 +50,23 @@ impl AppMenu {
         let edit_menu = Submenu::with_id("edit", "Edit", true);
         edit_menu
             .append_items(&[
-                &MenuItem::with_id("undo", "Undo", true, "Cmd+Z".parse::<Accelerator>().ok()),
+                &MenuItem::with_id("undo", "Undo", true, "CmdOrCtrl+Z".parse::<Accelerator>().ok()),
                 &MenuItem::with_id(
                     "redo",
                     "Redo",
                     true,
-                    "Cmd+Shift+Z".parse::<Accelerator>().ok(),
+                    "CmdOrCtrl+Shift+Z".parse::<Accelerator>().ok(),
                 ),
                 &PredefinedMenuItem::separator(),
-                &MenuItem::with_id("cut", "Cut", true, "Cmd+X".parse::<Accelerator>().ok()),
-                &MenuItem::with_id("copy", "Copy", true, "Cmd+C".parse::<Accelerator>().ok()),
-                &MenuItem::with_id("paste", "Paste", true, "Cmd+V".parse::<Accelerator>().ok()),
+                &MenuItem::with_id("cut", "Cut", true, "CmdOrCtrl+X".parse::<Accelerator>().ok()),
+                &MenuItem::with_id("copy", "Copy", true, "CmdOrCtrl+C".parse::<Accelerator>().ok()),
+                &MenuItem::with_id("paste", "Paste", true, "CmdOrCtrl+V".parse::<Accelerator>().ok()),
                 &PredefinedMenuItem::separator(),
                 &MenuItem::with_id(
                     "select_all",
                     "Select All",
                     true,
-                    "Cmd+A".parse::<Accelerator>().ok(),
+                    "CmdOrCtrl+A".parse::<Accelerator>().ok(),
                 ),
             ])
             .ok();

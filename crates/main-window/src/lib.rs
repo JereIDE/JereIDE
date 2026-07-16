@@ -257,7 +257,7 @@ impl eframe::App for JereIDEApp {
 
         #[cfg(not(target_os = "macos"))]
         {
-            let (want_new, want_open, want_save, want_save_as, want_quit) = ctx.input(|i| {
+            let input = ctx.input(|i| {
                 let cmd = i.modifiers.command;
                 (
                     cmd && i.key_pressed(egui::Key::N),
@@ -265,8 +265,27 @@ impl eframe::App for JereIDEApp {
                     cmd && i.key_pressed(egui::Key::S) && !i.modifiers.shift,
                     cmd && i.modifiers.shift && i.key_pressed(egui::Key::S),
                     cmd && i.key_pressed(egui::Key::Q),
+                    cmd && i.key_pressed(egui::Key::Z) && !i.modifiers.shift,
+                    cmd && i.modifiers.shift && i.key_pressed(egui::Key::Z),
+                    cmd && i.key_pressed(egui::Key::X),
+                    cmd && i.key_pressed(egui::Key::C),
+                    cmd && i.key_pressed(egui::Key::V),
+                    cmd && i.key_pressed(egui::Key::A),
                 )
             });
+            let (
+                want_new,
+                want_open,
+                want_save,
+                want_save_as,
+                want_quit,
+                want_undo,
+                want_redo,
+                want_cut,
+                want_copy,
+                want_paste,
+                want_select_all,
+            ) = input;
             if want_new {
                 self.handle_new();
             }
@@ -281,6 +300,48 @@ impl eframe::App for JereIDEApp {
             }
             if want_quit {
                 std::process::exit(0);
+            }
+            if want_undo {
+                jereide_code::edit::handle_edit_action(
+                    &mut self.state,
+                    &ctx,
+                    jereide_code::EditAction::Undo,
+                );
+            }
+            if want_redo {
+                jereide_code::edit::handle_edit_action(
+                    &mut self.state,
+                    &ctx,
+                    jereide_code::EditAction::Redo,
+                );
+            }
+            if want_cut {
+                jereide_code::edit::handle_edit_action(
+                    &mut self.state,
+                    &ctx,
+                    jereide_code::EditAction::Cut,
+                );
+            }
+            if want_copy {
+                jereide_code::edit::handle_edit_action(
+                    &mut self.state,
+                    &ctx,
+                    jereide_code::EditAction::Copy,
+                );
+            }
+            if want_paste {
+                jereide_code::edit::handle_edit_action(
+                    &mut self.state,
+                    &ctx,
+                    jereide_code::EditAction::Paste,
+                );
+            }
+            if want_select_all {
+                jereide_code::edit::handle_edit_action(
+                    &mut self.state,
+                    &ctx,
+                    jereide_code::EditAction::SelectAll,
+                );
             }
         }
 
