@@ -112,8 +112,6 @@ pub struct JereIDEApp {
     app_menu: AppMenu,
     file_manager: FileManager,
     visuals_initialized: bool,
-    traffic_lights_positioned: bool,
-    prev_fullscreen: bool,
 }
 
 impl JereIDEApp {
@@ -123,8 +121,6 @@ impl JereIDEApp {
             app_menu: AppMenu::new(),
             file_manager: FileManager::new(),
             visuals_initialized: false,
-            traffic_lights_positioned: false,
-            prev_fullscreen: false,
         }
     }
 
@@ -249,13 +245,7 @@ impl eframe::App for JereIDEApp {
             }
 
             let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
-            // The traffic lights only need repositioning on first show and when the
-            // fullscreen state changes — not every frame.
-            if !self.traffic_lights_positioned || is_fullscreen != self.prev_fullscreen {
-                position_traffic_lights(frame, TRAFFIC_LIGHT_OFFSET_X, TRAFFIC_LIGHT_OFFSET_Y);
-                self.traffic_lights_positioned = true;
-                self.prev_fullscreen = is_fullscreen;
-            }
+            position_traffic_lights(frame, TRAFFIC_LIGHT_OFFSET_X, TRAFFIC_LIGHT_OFFSET_Y);
             self.state.was_fullscreen = is_fullscreen;
         }
 
