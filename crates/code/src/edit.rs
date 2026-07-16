@@ -30,6 +30,9 @@ impl EditAction {
 
 /// Dispatch an edit action.
 pub fn handle_edit_action(state: &mut AppState, ctx: &egui::Context, action: EditAction) {
+    if state.tabs.is_empty() {
+        return;
+    }
     match action {
         EditAction::SelectAll => action_select_all(state, ctx),
         EditAction::Copy => action_copy(state, ctx),
