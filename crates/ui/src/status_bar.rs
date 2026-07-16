@@ -41,7 +41,7 @@ pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) {
                 return;
             }
             ui.horizontal(|ui| {
-                ui.label(format!("JereIDE v{}", env!("CARGO_PKG_VERSION")));
+                ui.label(format!("v{}", env!("CARGO_PKG_VERSION")));
                 if !state.tabs.is_empty() {
                     let tab = state.current_tab();
                     if tab.file_path.is_some() {

@@ -13,13 +13,29 @@ pub fn render_welcome_view(ui: &mut egui::Ui) {
         egui::FontId::proportional(COMMAND_VIEW_FONT_SIZE),
         TEXT_PRIMARY,
     );
-    ui.painter().text(
-        egui::Pos2::new(rect.center().x - 70.0, rect.center().y),
-        egui::Align2::LEFT_CENTER,
-        "Welcome back to JereIDE",
-        egui::FontId::proportional(COMMAND_VIEW_FONT_SIZE),
-        TEXT_PRIMARY,
+    let font = egui::FontId::proportional(COMMAND_VIEW_FONT_SIZE);
+    let version = format!("v{}", env!("CARGO_PKG_VERSION"));
+    let main = "Welcome back to JereIDE ";
+    let full_text = format!("{}{}", main, version);
+    let mut job = egui::text::LayoutJob::default();
+    job.text = full_text;
+    let main_end = main.len();
+    job.sections.push(egui::text::LayoutSection {
+        leading_space: 0.0,
+        byte_range: 0..main_end,
+        format: egui::TextFormat::simple(font.clone(), TEXT_PRIMARY),
+    });
+    job.sections.push(egui::text::LayoutSection {
+        leading_space: 0.0,
+        byte_range: main_end..job.text.len(),
+        format: egui::TextFormat::simple(font, TEXT_SECONDARY),
+    });
+    let galley = ui.fonts_mut(|f| f.layout_job(job));
+    let text_pos = egui::pos2(
+        rect.center().x - 70.0,
+        rect.center().y - galley.size().y / 2.0,
     );
+    ui.painter().galley(text_pos, galley, TEXT_PRIMARY);
 
     ui.painter().text(
         egui::Pos2::new(rect.center().x - 70.0, rect.center().y + 26.0),
