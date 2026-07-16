@@ -53,7 +53,13 @@ impl SyntaxHighlighter {
         let theme = ts
             .themes
             .get("InspiredGitHub")
-            .unwrap_or_else(|| &ts.themes["base16-ocean.light"]);
+            .or_else(|| ts.themes.get("base16-ocean.light"))
+            .unwrap_or_else(|| {
+                ts.themes
+                    .values()
+                    .next()
+                    .expect("at least one default theme")
+            });
 
         // Monospace font, of course.
         Self {

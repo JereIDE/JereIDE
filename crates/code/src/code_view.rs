@@ -50,11 +50,12 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
 
     let active_idx = state.active_tab_index;
     let tab_id = state.tabs[active_idx].id;
-    let extension = state.tabs[active_idx]
+    let extension: Option<String> = state.tabs[active_idx]
         .file_path
         .as_ref()
         .and_then(|p| std::path::Path::new(p).extension())
-        .and_then(|ext| ext.to_str());
+        .and_then(|ext| ext.to_str())
+        .map(|s| s.to_string());
 
     let valid_ids: std::collections::HashSet<usize> = state.tabs.iter().map(|t| t.id).collect();
     HIGHLIGHTERS.with(|cache| {
@@ -62,7 +63,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         cache.retain(|id, _| valid_ids.contains(id));
         cache
             .entry(tab_id)
-            .or_insert_with(|| SyntaxHighlighter::new(EDITOR_FONT_SIZE, extension));
+            .or_insert_with(|| SyntaxHighlighter::new(EDITOR_FONT_SIZE, extension.as_deref()));
     });
 
     let font_id = egui::FontId::monospace(EDITOR_FONT_SIZE);
@@ -72,23 +73,24 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
 
     let last_galley: RefCell<Option<Arc<egui::Galley>>> = RefCell::new(None);
 
-    let mut layouter =
-        |layouter_ui: &egui::Ui, text: &dyn egui::widgets::TextBuffer, wrap_width: f32| {
-            let text_str = text.as_str();
+    let mut layouter = |layouter_ui: &egui::Ui,
+                        text: &dyn egui::widgets::TextBuffer,
+                        wrap_width: f32| {
+        let text_str = text.as_str();
 
-            let mut layout_job = HIGHLIGHTERS.with(|cache| {
-                cache
-                    .borrow_mut()
-                    .get_mut(&tab_id)
-                    .expect("highlighter initialized")
-                    .highlight(text_str)
-            });
+        let mut layout_job = HIGHLIGHTERS.with(|cache| {
+            cache
+                .borrow_mut()
+                .entry(tab_id)
+                .or_insert_with(|| SyntaxHighlighter::new(EDITOR_FONT_SIZE, extension.as_deref()))
+                .highlight(text_str)
+        });
 
-            layout_job.wrap.max_width = wrap_width;
-            let galley = layouter_ui.fonts_mut(|f| f.layout_job(layout_job));
-            *last_galley.borrow_mut() = Some(galley.clone());
-            galley
-        };
+        layout_job.wrap.max_width = wrap_width;
+        let galley = layouter_ui.fonts_mut(|f| f.layout_job(layout_job));
+        *last_galley.borrow_mut() = Some(galley.clone());
+        galley
+    };
 
     let response = egui::ScrollArea::both()
         .auto_shrink(false)
