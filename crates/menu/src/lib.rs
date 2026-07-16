@@ -34,29 +34,14 @@ impl AppMenu {
         // The file menu
         file_menu
             .append_items(&[
-                &MenuItem::with_id(
-                    "new",
-                    "New",
-                    true,
-                    Some("Cmd+N".parse::<Accelerator>().unwrap()),
-                ),
-                &MenuItem::with_id(
-                    "open",
-                    "Open...",
-                    true,
-                    Some("Cmd+O".parse::<Accelerator>().unwrap()),
-                ),
-                &MenuItem::with_id(
-                    "save",
-                    "Save",
-                    true,
-                    Some("Cmd+S".parse::<Accelerator>().unwrap()),
-                ),
+                &MenuItem::with_id("new", "New", true, "Cmd+N".parse::<Accelerator>().ok()),
+                &MenuItem::with_id("open", "Open...", true, "Cmd+O".parse::<Accelerator>().ok()),
+                &MenuItem::with_id("save", "Save", true, "Cmd+S".parse::<Accelerator>().ok()),
                 &MenuItem::with_id(
                     "save_as",
                     "Save As…",
                     true,
-                    Some("Cmd+Shift+S".parse::<Accelerator>().unwrap()),
+                    "Cmd+Shift+S".parse::<Accelerator>().ok(),
                 ),
             ])
             .ok();
@@ -65,43 +50,23 @@ impl AppMenu {
         let edit_menu = Submenu::with_id("edit", "Edit", true);
         edit_menu
             .append_items(&[
-                &MenuItem::with_id(
-                    "undo",
-                    "Undo",
-                    true,
-                    Some("Cmd+Z".parse::<Accelerator>().unwrap()),
-                ),
+                &MenuItem::with_id("undo", "Undo", true, "Cmd+Z".parse::<Accelerator>().ok()),
                 &MenuItem::with_id(
                     "redo",
                     "Redo",
                     true,
-                    Some("Cmd+Shift+Z".parse::<Accelerator>().unwrap()),
+                    "Cmd+Shift+Z".parse::<Accelerator>().ok(),
                 ),
                 &PredefinedMenuItem::separator(),
-                &MenuItem::with_id(
-                    "cut",
-                    "Cut",
-                    true,
-                    Some("Cmd+X".parse::<Accelerator>().unwrap()),
-                ),
-                &MenuItem::with_id(
-                    "copy",
-                    "Copy",
-                    true,
-                    Some("Cmd+C".parse::<Accelerator>().unwrap()),
-                ),
-                &MenuItem::with_id(
-                    "paste",
-                    "Paste",
-                    true,
-                    Some("Cmd+V".parse::<Accelerator>().unwrap()),
-                ),
+                &MenuItem::with_id("cut", "Cut", true, "Cmd+X".parse::<Accelerator>().ok()),
+                &MenuItem::with_id("copy", "Copy", true, "Cmd+C".parse::<Accelerator>().ok()),
+                &MenuItem::with_id("paste", "Paste", true, "Cmd+V".parse::<Accelerator>().ok()),
                 &PredefinedMenuItem::separator(),
                 &MenuItem::with_id(
                     "select_all",
                     "Select All",
                     true,
-                    Some("Cmd+A".parse::<Accelerator>().unwrap()),
+                    "Cmd+A".parse::<Accelerator>().ok(),
                 ),
             ])
             .ok();
