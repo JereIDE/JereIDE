@@ -35,7 +35,7 @@ jereide/
 │   ├── main-window/  # Application orchestrator (eframe::App)
 │   ├── ui/           # Title bar, tab strip, status bar, dialogs, welcome view
 │   ├── code/         # Code editor view & edit actions (undo/redo, clipboard)
-│   ├── command/      # Command palette view (placeholder)
+│   ├── compose/      # Compose palette view (placeholder)
 │   └── fs/           # File system operations & dialogs (rfd)
 ├── Cargo.toml        # Workspace root
 ├── AGENTS.md         # Agent-specific instructions
@@ -54,13 +54,13 @@ app
 
 main-window
  ├── core, settings, fs
- ├── menu, ui, code, command
+ ├── menu, ui, code, compose
  └── (macOS-only) objc2, objc2-foundation
 
 code
  ├── core, settings, text, syntax
 
-command
+compose
  └── settings
 
 ui
@@ -112,7 +112,7 @@ Central application state owned by `JereIDEApp`. Fields:
 - `active_tab_index: usize`
 - `editor_focused: bool` — used to request initial focus
 - `editor_id: egui::Id` — stored for edit action dispatch
-- `current_view: CurrentView` — either `Code` or `Command`
+- `current_view: CurrentView` — either `Code` or `Compose`
 - `was_fullscreen: bool` — macOS traffic light adjustment
 - `document_edited: bool` — macOS dirty-dot in window title
 - `pending_close_index: Option<usize>` — unsaved-changes modal state
@@ -123,7 +123,7 @@ Key methods:
 - `open_file(path, content)` — reuses existing tab if same path, else creates new
 - `new_tab()` — adds empty untitled tab
 - `close_tab(index)` — removes tab, adjusts `active_tab_index`
-- `switch_to_view(target)` — toggles code/command view
+- `switch_to_view(target)` — toggles code/compose view
 
 #### `Tab`
 A single open document:
@@ -136,7 +136,7 @@ A single open document:
 
 #### `CurrentView`
 ```rust
-pub enum CurrentView { Code, Command }
+pub enum CurrentView { Code, Compose }
 ```
 
 #### Layout Constants (`constants.rs`)
@@ -157,11 +157,11 @@ All pixel-dimension constants:
 **Files:** `src/lib.rs`
 
 Theme constants (hardcoded — TODO: make configurable at runtime):
-- Backgrounds: `SURFACE_BG` (white), `ELEVATED_BG` (#f5f5f5), `HOVER_BG` (#e6e6e6), `COMMAND_BG` (gray 20)
-- Text colors: `TEXT_DEFAULT` (black), `TEXT_PRIMARY`, `TEXT_SECONDARY`, `TEXT_MUTED`, `TEXT_CURRENT_LINE`, `COMMAND_TEXT`
+- Backgrounds: `SURFACE_BG` (white), `ELEVATED_BG` (#f5f5f5), `HOVER_BG` (#e6e6e6), `COMPOSE_BG` (gray 20)
+- Text colors: `TEXT_DEFAULT` (black), `TEXT_PRIMARY`, `TEXT_SECONDARY`, `TEXT_MUTED`, `TEXT_CURRENT_LINE`, `COMPOSE_TEXT`
 - `ACCENT` — teal (#1ce1d2)
 - `BORDER` (#c8c8c8)
-- Font sizes: `TITLE_BAR_FONT_SIZE` (12), `TAB_FONT_SIZE` (12), `EDITOR_FONT_SIZE` (14), `COMMAND_VIEW_FONT_SIZE` (18)
+- Font sizes: `TITLE_BAR_FONT_SIZE` (12), `TAB_FONT_SIZE` (12), `EDITOR_FONT_SIZE` (14), `COMPOSE_VIEW_FONT_SIZE` (18)
 - Window: `WINDOW_WIDTH` (800), `WINDOW_HEIGHT` (600)
 - `DIALOG_WIDTH` (240)
 
@@ -271,7 +271,7 @@ prev_fullscreen: bool,
 5. **Non-macOS keyboard shortcuts:** Cmd+N/O/S/Shift+S/Q
 6. **Menu event polling:** Dispatches `new`, `open`, `save`, `save_as`, `quit`, `fullscreen`, `githubstar`, and edit actions (`EditAction::from_menu_id`)
 7. **UI rendering:** Status bar → CentralPanel → title bar → tab strip → code view or welcome view
-8. **Command overlay:** If `current_view == Command`, renders command palette overlay
+8. **Compose overlay:** If `current_view == Compose`, renders compose palette overlay
 9. **Modal dialogs:** Unsaved changes confirm, large file blocked/warning
 
 #### File action handlers
@@ -291,7 +291,7 @@ prev_fullscreen: bool,
 Custom title bar with:
 - macOS traffic light spacing (75px normal, 7px fullscreen)
 - "Choose Project" button with a placeholder popup
-- "Code" / "Command" view toggle buttons (`selectable_label`)
+- "Code" / "Compose" view toggle buttons (`selectable_label`)
 - Layout: left-to-right (macOS spacing → buttons → right-aligned reserved space)
 
 #### Tab Strip (`tab_strip.rs`)
@@ -308,7 +308,7 @@ Bottom bar showing:
 - Left: app version, language, file name
 - Right: cursor position (Line:Col) or "--:--"
 - Language detection via file extension (Rust, Python, JS, TS, etc.)
-- In Command view mode, status bar shows as command background and returns early
+- In Compose view mode, status bar shows as compose background and returns early
 
 #### Welcome View (`welcome.rs`)
 Shown when no tabs are open. Displays:
@@ -358,11 +358,11 @@ pub enum EditAction { SelectAll, Copy, Cut, Paste, Undo, Redo }
 
 ---
 
-### `crates/command` — Command Palette
+### `crates/compose` — Compose Palette
 
-**Files:** `src/lib.rs`, `src/command_view.rs`
+**Files:** `src/lib.rs`, `src/compose_view.rs`
 
-Currently a placeholder. Renders a full-viewport overlay with `COMMAND_BG` and "Needs implementation" text.
+Currently a placeholder. Renders a full-viewport overlay with `COMPOSE_BG` and "Needs implementation" text.
 
 ---
 
@@ -462,7 +462,7 @@ Run with: `cargo test`
 
 ## TODO / Stubbed Areas
 
-- **Command palette** (`crates/command/command_view.rs`) — "Needs implementation"
+- **Compose palette** (`crates/compose/compose_view.rs`) — "Needs implementation"
 - **"Choose Project"** title bar button — "Needs Implementation"
 - **Settings persistence** — colors/dimensions are hardcoded in `settings/src/lib.rs` with TODO to load from a JSON file
 - **Error handling** — `FileManager::save_to_path` has a TODO for proper error handling

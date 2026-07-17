@@ -10,7 +10,7 @@ fn next_tab_id() -> usize {
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum CurrentView {
     Code,
-    Command,
+    Compose,
 }
 
 /// A single open document (tab) in the IDE.

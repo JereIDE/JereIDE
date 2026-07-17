@@ -1968,7 +1968,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "jereide-command"
+name = "jereide-compose"
 version = "0.21.0"
 dependencies = [
  "eframe",
@@ -1995,7 +1995,7 @@ version = "0.21.0"
 dependencies = [
  "eframe",
  "jereide-code",
- "jereide-command",
+ "jereide-compose",
  "jereide-core",
  "jereide-fs",
  "jereide-menu",

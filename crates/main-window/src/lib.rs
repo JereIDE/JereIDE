@@ -403,7 +403,7 @@ impl eframe::App for JereIDEApp {
                     }
                 });
 
-            if state.current_view == CurrentView::Command {
+            if state.current_view == CurrentView::Compose {
                 let title_bar_height = TITLE_BAR_HEIGHT;
                 let full_area = ui.ctx().content_rect();
                 let overlay_rect = egui::Rect::from_min_size(
@@ -416,7 +416,7 @@ impl eframe::App for JereIDEApp {
                         .max_rect(overlay_rect)
                         .layout(egui::Layout::top_down(egui::Align::LEFT)),
                 );
-                jereide_command::command_view::render_command_view(&mut overlay_ui);
+                jereide_compose::compose_view::render_compose_view(&mut overlay_ui);
             }
         }
 

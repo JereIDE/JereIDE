@@ -163,8 +163,8 @@ fn app_state_close_tab_clamps_active_index() {
 fn app_state_switch_to_view_changes_view() {
     let mut state = AppState::new();
     assert_eq!(state.current_view, CurrentView::Code);
-    state.switch_to_view(CurrentView::Command);
-    assert_eq!(state.current_view, CurrentView::Command);
+    state.switch_to_view(CurrentView::Compose);
+    assert_eq!(state.current_view, CurrentView::Compose);
 }
 
 #[test]

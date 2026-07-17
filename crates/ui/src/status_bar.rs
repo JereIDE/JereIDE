@@ -1,7 +1,7 @@
 use eframe::egui;
 use jereide_core::constants::STATUS_BAR_MARGIN;
 use jereide_core::{AppState, CurrentView};
-use jereide_settings::{COMMAND_BG, SURFACE_BG, TEXT_SECONDARY};
+use jereide_settings::{COMPOSE_BG, SURFACE_BG, TEXT_SECONDARY};
 
 fn language_from_path(path: Option<&str>) -> &'static str {
     let ext = path
@@ -31,13 +31,13 @@ fn language_from_path(path: Option<&str>) -> &'static str {
 }
 
 pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) {
-    let in_command = state.current_view == CurrentView::Command;
-    let bg = if in_command { COMMAND_BG } else { SURFACE_BG };
+    let in_compose = state.current_view == CurrentView::Compose;
+    let bg = if in_compose { COMPOSE_BG } else { SURFACE_BG };
 
     egui::Panel::bottom("status_bar")
         .frame(egui::Frame::NONE.fill(bg).inner_margin(STATUS_BAR_MARGIN))
         .show_inside(ui, |ui| {
-            if in_command {
+            if in_compose {
                 return;
             }
             ui.horizontal(|ui| {

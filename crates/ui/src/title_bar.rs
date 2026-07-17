@@ -47,10 +47,10 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
                 state.switch_to_view(CurrentView::Code);
             }
             if ui
-                .selectable_label(state.current_view == CurrentView::Command, "Command")
+                .selectable_label(state.current_view == CurrentView::Compose, "Compose")
                 .clicked()
             {
-                state.switch_to_view(CurrentView::Command);
+                state.switch_to_view(CurrentView::Compose);
             }
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |_ui| {

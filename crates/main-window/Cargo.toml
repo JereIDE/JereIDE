@@ -11,7 +11,7 @@ jereide-fs = { path = "../fs" }
 jereide-menu = { path = "../menu" }
 jereide-ui = { path = "../ui" }
 jereide-code = { path = "../code" }
-jereide-command = { path = "../command" }
+jereide-compose = { path = "../compose" }
 raw-window-handle = "0.6"
 
 [target.'cfg(target_os = "macos")'.dependencies]

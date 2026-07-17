@@ -1,6 +1,6 @@
 use eframe::egui;
 use jereide_settings::{
-    COMMAND_VIEW_FONT_SIZE, EDITOR_FONT_SIZE, SURFACE_BG, TEXT_MUTED, TEXT_PRIMARY,
+    COMPOSE_VIEW_FONT_SIZE, EDITOR_FONT_SIZE, SURFACE_BG, TEXT_MUTED, TEXT_PRIMARY,
     TEXT_SECONDARY,
 };
 
@@ -11,10 +11,10 @@ pub fn render_welcome_view(ui: &mut egui::Ui) {
         egui::Pos2::new(rect.center().x - 110.0, rect.center().y + 13.0),
         egui::Align2::CENTER_CENTER,
         "[LOGO]",
-        egui::FontId::proportional(COMMAND_VIEW_FONT_SIZE),
+        egui::FontId::proportional(COMPOSE_VIEW_FONT_SIZE),
         TEXT_PRIMARY,
     );
-    let font = egui::FontId::proportional(COMMAND_VIEW_FONT_SIZE);
+    let font = egui::FontId::proportional(COMPOSE_VIEW_FONT_SIZE);
     let version = format!("v{}", env!("CARGO_PKG_VERSION"));
     let main = "Welcome back to JereIDE ";
     let full_text = format!("{}{}", main, version);

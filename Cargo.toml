@@ -9,7 +9,7 @@ members = [
     "crates/main-window",
     "crates/ui",
     "crates/code",
-    "crates/command",
+    "crates/compose",
     "crates/fs",
 ]
 resolver = "2"
