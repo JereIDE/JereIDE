@@ -54,6 +54,8 @@ Run `cargo build` (or the project's equivalent build command) to confirm it comp
 
 If the build fails, fix the issue and rebuild. If you cannot fix it, revert the change and move to the next suggestion.
 
+Then, stage and commit the changes with a simple, non-ai-sh and non-technical commit message. Do not push.
+
 ### Step 5: Repeat
 
 Once the change is verified, mark it as done. Pick the next best suggestion from the remaining list and repeat Steps 3-5.
