@@ -42,12 +42,14 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
 
             if ui
                 .selectable_label(state.current_view == CurrentView::Code, "Code")
+                .on_hover_cursor(egui::CursorIcon::PointingHand)
                 .clicked()
             {
                 state.switch_to_view(CurrentView::Code);
             }
             if ui
                 .selectable_label(state.current_view == CurrentView::Compose, "Compose")
+                .on_hover_cursor(egui::CursorIcon::PointingHand)
                 .clicked()
             {
                 state.switch_to_view(CurrentView::Compose);
