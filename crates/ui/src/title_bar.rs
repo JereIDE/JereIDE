@@ -30,7 +30,7 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
             #[cfg(not(target_os = "macos"))]
             ui.add_space(TITLE_BAR_FULLSCREEN_SPACE);
 
-            let choose_project_resp = ui.button("Choose Project");
+            let choose_project_resp = ui.button("Choose Project").on_hover_cursor(egui::CursorIcon::PointingHand);
             egui::Popup::menu(&choose_project_resp)
                 .gap(TITLE_BAR_POPUP_GAP)
                 .close_behavior(egui::PopupCloseBehavior::CloseOnClick)
