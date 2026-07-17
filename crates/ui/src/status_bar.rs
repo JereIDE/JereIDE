@@ -46,7 +46,7 @@ pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) {
                     let tab = state.current_tab();
                     if tab.file_path.is_some() {
                         let lang = language_from_path(tab.file_path.as_deref());
-                        let sep = if lang.is_empty() { "" } else { " • " };
+                        let sep = if lang.is_empty() { "" } else { " · " };
                         ui.colored_label(
                             TEXT_SECONDARY,
                             format!("{}{}{}", lang, sep, tab.file_name()),
