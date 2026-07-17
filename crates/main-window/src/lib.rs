@@ -299,7 +299,7 @@ impl eframe::App for JereIDEApp {
                 self.handle_save_as();
             }
             if want_quit {
-                std::process::exit(0);
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             }
             if want_undo {
                 jereide_code::edit::handle_edit_action(
@@ -351,7 +351,7 @@ impl eframe::App for JereIDEApp {
                 "open" => self.handle_open(),
                 "save" => self.handle_save(),
                 "save_as" => self.handle_save_as(),
-                "quit" => std::process::exit(0),
+                "quit" => ctx.send_viewport_cmd(egui::ViewportCommand::Close),
                 "fullscreen" => {
                     let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
                     ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(!is_fullscreen));

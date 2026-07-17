@@ -26,7 +26,12 @@ impl AppMenu {
                 &PredefinedMenuItem::hide_others(None),
                 &PredefinedMenuItem::show_all(None),
                 &PredefinedMenuItem::separator(),
-                &PredefinedMenuItem::quit(None),
+                &MenuItem::with_id(
+                    "quit",
+                    "Quit",
+                    true,
+                    "CmdOrCtrl+Q".parse::<Accelerator>().ok(),
+                ),
             ])
             .ok();
 
@@ -34,9 +39,24 @@ impl AppMenu {
         // The file menu
         file_menu
             .append_items(&[
-                &MenuItem::with_id("new", "New", true, "CmdOrCtrl+N".parse::<Accelerator>().ok()),
-                &MenuItem::with_id("open", "Open...", true, "CmdOrCtrl+O".parse::<Accelerator>().ok()),
-                &MenuItem::with_id("save", "Save", true, "CmdOrCtrl+S".parse::<Accelerator>().ok()),
+                &MenuItem::with_id(
+                    "new",
+                    "New",
+                    true,
+                    "CmdOrCtrl+N".parse::<Accelerator>().ok(),
+                ),
+                &MenuItem::with_id(
+                    "open",
+                    "Open...",
+                    true,
+                    "CmdOrCtrl+O".parse::<Accelerator>().ok(),
+                ),
+                &MenuItem::with_id(
+                    "save",
+                    "Save",
+                    true,
+                    "CmdOrCtrl+S".parse::<Accelerator>().ok(),
+                ),
                 &MenuItem::with_id(
                     "save_as",
                     "Save As…",
@@ -50,7 +70,12 @@ impl AppMenu {
         let edit_menu = Submenu::with_id("edit", "Edit", true);
         edit_menu
             .append_items(&[
-                &MenuItem::with_id("undo", "Undo", true, "CmdOrCtrl+Z".parse::<Accelerator>().ok()),
+                &MenuItem::with_id(
+                    "undo",
+                    "Undo",
+                    true,
+                    "CmdOrCtrl+Z".parse::<Accelerator>().ok(),
+                ),
                 &MenuItem::with_id(
                     "redo",
                     "Redo",
@@ -58,9 +83,24 @@ impl AppMenu {
                     "CmdOrCtrl+Shift+Z".parse::<Accelerator>().ok(),
                 ),
                 &PredefinedMenuItem::separator(),
-                &MenuItem::with_id("cut", "Cut", true, "CmdOrCtrl+X".parse::<Accelerator>().ok()),
-                &MenuItem::with_id("copy", "Copy", true, "CmdOrCtrl+C".parse::<Accelerator>().ok()),
-                &MenuItem::with_id("paste", "Paste", true, "CmdOrCtrl+V".parse::<Accelerator>().ok()),
+                &MenuItem::with_id(
+                    "cut",
+                    "Cut",
+                    true,
+                    "CmdOrCtrl+X".parse::<Accelerator>().ok(),
+                ),
+                &MenuItem::with_id(
+                    "copy",
+                    "Copy",
+                    true,
+                    "CmdOrCtrl+C".parse::<Accelerator>().ok(),
+                ),
+                &MenuItem::with_id(
+                    "paste",
+                    "Paste",
+                    true,
+                    "CmdOrCtrl+V".parse::<Accelerator>().ok(),
+                ),
                 &PredefinedMenuItem::separator(),
                 &MenuItem::with_id(
                     "select_all",
