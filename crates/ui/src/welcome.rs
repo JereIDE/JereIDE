@@ -1,6 +1,7 @@
 use eframe::egui;
 use jereide_settings::{
-    COMMAND_VIEW_FONT_SIZE, EDITOR_FONT_SIZE, SURFACE_BG, TEXT_PRIMARY, TEXT_SECONDARY,
+    COMMAND_VIEW_FONT_SIZE, EDITOR_FONT_SIZE, SURFACE_BG, TEXT_MUTED, TEXT_PRIMARY,
+    TEXT_SECONDARY,
 };
 
 pub fn render_welcome_view(ui: &mut egui::Ui) {
@@ -42,6 +43,6 @@ pub fn render_welcome_view(ui: &mut egui::Ui) {
         egui::Align2::LEFT_CENTER,
         "The editor for what's next",
         egui::FontId::proportional(EDITOR_FONT_SIZE),
-        TEXT_SECONDARY,
+        TEXT_MUTED,
     );
 }
