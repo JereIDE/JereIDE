@@ -12,7 +12,7 @@ fn main() -> Result<(), eframe::Error> {
     };
 
     eframe::run_native(
-        "jereide",
+        "JereIDE",
         options,
         Box::new(|_cc| Ok(Box::new(JereIDEApp::new()))),
     )

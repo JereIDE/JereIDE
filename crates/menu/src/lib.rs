@@ -13,18 +13,24 @@ pub struct AppMenu {
 impl AppMenu {
     /// Creates all these stuff
     pub fn new() -> Self {
-        let app_menu = Submenu::with_id("jereide", "jereide", true);
+        let app_menu = Submenu::with_id("JereIDE", "JereIDE", true);
         // Add lots of predefined items and a Star on GitHub
         app_menu
             .append_items(&[
-                &PredefinedMenuItem::about(None, None),
+                &MenuItem::with_id("about", "About JereIDE", false, None),
                 &MenuItem::with_id("githubstar", "Star on GitHub", true, None),
                 &PredefinedMenuItem::separator(),
+                #[cfg(target_os = "macos")]
                 &PredefinedMenuItem::services(None),
+                #[cfg(target_os = "macos")]
                 &PredefinedMenuItem::separator(),
+                #[cfg(target_os = "macos")]
                 &PredefinedMenuItem::hide(None),
+                #[cfg(target_os = "macos")]
                 &PredefinedMenuItem::hide_others(None),
+                #[cfg(target_os = "macos")]
                 &PredefinedMenuItem::show_all(None),
+                #[cfg(target_os = "macos")]
                 &PredefinedMenuItem::separator(),
                 &MenuItem::with_id(
                     "quit",

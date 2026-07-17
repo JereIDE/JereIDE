@@ -92,6 +92,7 @@ settings    # no external deps (except eframe for Color32)
 **Files:** `src/main.rs`
 
 The binary crate that starts the application. Sets up an `eframe::NativeOptions` with:
+
 - No native title bar (`with_titlebar_shown(false)`)
 - Fullsize content view
 - Dimensions from settings (`WINDOW_WIDTH` × `WINDOW_HEIGHT`)
@@ -107,7 +108,9 @@ Calls `eframe::run_native` with `JereIDEApp` (from `main-window` crate).
 Re-exports all state types and layout constants.
 
 #### `AppState`
+
 Central application state owned by `JereIDEApp`. Fields:
+
 - `tabs: Vec<Tab>` — open documents
 - `active_tab_index: usize`
 - `editor_focused: bool` — used to request initial focus
@@ -120,13 +123,16 @@ Central application state owned by `JereIDEApp`. Fields:
 - `pending_large_file_warn: Option<(String, u64)>` — file > 100 MB warning
 
 Key methods:
+
 - `open_file(path, content)` — reuses existing tab if same path, else creates new
 - `new_tab()` — adds empty untitled tab
 - `close_tab(index)` — removes tab, adjusts `active_tab_index`
 - `switch_to_view(target)` — toggles code/compose view
 
 #### `Tab`
+
 A single open document:
+
 - `id: usize` — globally unique (atomic counter)
 - `text: String` — current buffer content
 - `saved_text: String` — last saved state (for modified detection)
@@ -135,12 +141,15 @@ A single open document:
 - `is_modified()`, `mark_saved()`, `file_name()`
 
 #### `CurrentView`
+
 ```rust
 pub enum CurrentView { Code, Compose }
 ```
 
 #### Layout Constants (`constants.rs`)
+
 All pixel-dimension constants:
+
 - `TITLE_BAR_HEIGHT`, `TAB_STRIP_HEIGHT`
 - `TITLE_BAR_TRAFFIC_SPACE` (75px for macOS traffic lights), `TITLE_BAR_FULLSCREEN_SPACE`
 - `EDITOR_INNER_MARGIN_*` — margins inside code view
@@ -157,6 +166,7 @@ All pixel-dimension constants:
 **Files:** `src/lib.rs`
 
 Theme constants (hardcoded — TODO: make configurable at runtime):
+
 - Backgrounds: `SURFACE_BG` (white), `ELEVATED_BG` (#f5f5f5), `HOVER_BG` (#e6e6e6), `COMPOSE_BG` (gray 20)
 - Text colors: `TEXT_DEFAULT` (black), `TEXT_PRIMARY`, `TEXT_SECONDARY`, `TEXT_MUTED`, `TEXT_CURRENT_LINE`, `COMPOSE_TEXT`
 - `ACCENT` — teal (#1ce1d2)
@@ -172,6 +182,7 @@ Theme constants (hardcoded — TODO: make configurable at runtime):
 **Files:** `src/lib.rs`
 
 Pure functions for character-index-based text manipulation:
+
 - `char_index_to_line_col(text, char_index)` — converts byte offset to (line, col)
 - `char_range_substring(text, start, end)` — extracts by char index
 - `delete_char_range(text, start, end)` — removes range by char index
@@ -186,10 +197,12 @@ Used by the edit actions (copy/cut) and status bar cursor display.
 **Files:** `src/lib.rs`
 
 Wraps [syntect](https://github.com/trishume/syntect) v5 with:
+
 - `SyntaxSet::load_defaults_newlines()` — bundled syntax definitions
 - `ThemeSet::load_defaults()` — defaults, uses "InspiredGitHub" (falls back to "base16-ocean.light")
 
 #### `SyntaxHighlighter`
+
 Struct that holds font, syntax reference, theme, and a line cache for incremental highlighting.
 
 - `new(font_size, extension)` — selects syntax by file extension, falls back to plain text
@@ -201,6 +214,7 @@ Struct that holds font, syntax reference, theme, and a line cache for incrementa
 - `build_job(text)` — converts cached `Vec<CachedLine>` into an egui `LayoutJob` with per-token color sections
 
 #### `CachedLine`
+
 Per-line cache: content string, `Vec<(start, end, Color32)>` sections, `HighlightState`, `ParseState`.
 
 ---
@@ -212,13 +226,16 @@ Per-line cache: content string, `Vec<(start, end, Color32)>` sections, `Highligh
 Uses [muda](https://crates.io/crates/muda) v0.19 for platform-native menus.
 
 #### `AppMenu`
+
 Menu structure:
-- **jereide** (app menu): About, Star on GitHub, Services, Hide/Show, Quit
+
+- **JereIDE** (app menu): About, Star on GitHub, Services, Hide/Show, Quit
 - **File**: New (Cmd+N), Open... (Cmd+O), Save (Cmd+S), Save As… (Cmd+Shift+S)
 - **Edit**: Undo (Cmd+Z), Redo (Cmd+Shift+Z), Cut (Cmd+X), Copy (Cmd+C), Paste (Cmd+V), Select All (Cmd+A)
 - **View**: Fullscreen
 
 Key methods:
+
 - `init(raw_handle)` — platform-specific: `init_for_nsapp()` on macOS, `init_for_hwnd()` on Windows
 - `poll_events() -> Vec<MenuId>` — drains the crossbeam channel of `MenuEvent`s
 - `is_initialized() / set_initialized()`
@@ -234,6 +251,7 @@ Menu events are processed in `JereIDEApp::ui()` by matching on event ID strings.
 Uses [rfd](https://crates.io/crates/rfd) v0.15 (Rust File Dialogs).
 
 #### `FileManager`
+
 - `pick_file()` — opens native "Open File" dialog
 - `read_file_at(path)` — `fs::read_to_string`
 - `file_size(path)` — `fs::metadata().len()`
@@ -250,10 +268,12 @@ Uses [rfd](https://crates.io/crates/rfd) v0.15 (Rust File Dialogs).
 The core application struct `JereIDEApp` implementing `eframe::App`.
 
 #### macOS Native Helpers
+
 - `set_document_edited(frame, edited)` — sets the macOS window document-edited dot via Objective-C `msg_send!`
 - `position_traffic_lights(frame, offset_x, offset_y)` — repositions close/minimize/zoom buttons using `objc2-foundation` NSRect manipulation. Caches default positions in `OnceLock`.
 
 #### `JereIDEApp` fields
+
 ```rust
 state: AppState,
 app_menu: AppMenu,
@@ -264,6 +284,7 @@ prev_fullscreen: bool,
 ```
 
 #### Event Handling in `ui()`
+
 1. **Visuals init (once):** Sets accent selection color on first frame
 2. **macOS document-edited dot:** Syncs with `state.document_edited`
 3. **macOS traffic lights:** Repositioned on first show and fullscreen toggle
@@ -275,6 +296,7 @@ prev_fullscreen: bool,
 9. **Modal dialogs:** Unsaved changes confirm, large file blocked/warning
 
 #### File action handlers
+
 - `handle_new()` — adds empty tab
 - `handle_open()` — picks file, checks size limits, opens in tab
 - `handle_save()` — saves to existing path or delegates to `handle_save_as()`
@@ -288,14 +310,18 @@ prev_fullscreen: bool,
 **Files:** `src/lib.rs`, `src/title_bar.rs`, `src/tab_strip.rs`, `src/status_bar.rs`, `src/welcome.rs`, `src/dialog.rs`
 
 #### Title Bar (`title_bar.rs`)
+
 Custom title bar with:
+
 - macOS traffic light spacing (75px normal, 7px fullscreen)
 - "Choose Project" button with a placeholder popup
 - "Code" / "Compose" view toggle buttons (`selectable_label`)
 - Layout: left-to-right (macOS spacing → buttons → right-aligned reserved space)
 
 #### Tab Strip (`tab_strip.rs`)
+
 Custom-drawn tab strip (no egui tabs widget):
+
 - Tab layout: modified dot (accent circle) → centered file name → close button (×)
 - Close button appears on hover as a circular X
 - Active tab connected to content area (bottom border removed for active tab)
@@ -304,19 +330,24 @@ Custom-drawn tab strip (no egui tabs widget):
 - Click to activate, close button triggers unsaved-changes modal if modified
 
 #### Status Bar (`status_bar.rs`)
+
 Bottom bar showing:
+
 - Left: app version, language, file name
 - Right: cursor position (Line:Col) or "--:--"
 - Language detection via file extension (Rust, Python, JS, TS, etc.)
 - In Compose view mode, status bar shows as compose background and returns early
 
 #### Welcome View (`welcome.rs`)
+
 Shown when no tabs are open. Displays:
+
 - `[LOGO]` placeholder
 - "Welcome back to JereIDE"
 - "The editor for what's next"
 
 #### Dialogs (`dialog.rs`)
+
 Three modal dialogs using egui `Window` with a dimmer overlay:
 
 1. **Close Confirm** — "Unsaved Changes" with Save / Don't Save / Cancel
@@ -332,7 +363,9 @@ Each dialog creates a full-viewport dimmer layer (`Color32::from_black_alpha(120
 **Files:** `src/lib.rs`, `src/code_view.rs`, `src/edit.rs`
 
 #### Code View (`code_view.rs`)
+
 Renders the main code editor area:
+
 - Thread-local `HIGHLIGHTERS` cache: `HashMap<tab_id, SyntaxHighlighter>`
   - Cleans defunct tab IDs on each render
 - `visual_line_count(text)` — counts `\n` + 1
@@ -344,10 +377,13 @@ Renders the main code editor area:
 - Reads cursor position from `TextEdit::load_state` for status bar
 
 #### Edit Actions (`edit.rs`)
+
 `EditAction` enum dispatched from the menu system:
+
 ```rust
 pub enum EditAction { SelectAll, Copy, Cut, Paste, Undo, Redo }
 ```
+
 - `from_menu_id(id)` — maps menu event IDs to actions
 - `handle_edit_action(state, ctx, action)`
 - **SelectAll:** Sets `CCursorRange` from 0 to text length
@@ -369,6 +405,7 @@ Currently a placeholder. Renders a full-viewport overlay with `COMPOSE_BG` and "
 ## Data Flow
 
 ### Opening a file
+
 ```
 Menu "Open" → handle_open()
   → FileManager::pick_file() → native dialog
@@ -380,6 +417,7 @@ Menu "Open" → handle_open()
 ```
 
 ### Saving a file
+
 ```
 Menu "Save" → handle_save()
   → if path exists: FileManager::save_to_path() + mark_saved()
@@ -390,6 +428,7 @@ Menu "Save" → handle_save()
 ```
 
 ### Typing in the editor
+
 ```
 User types → egui TextEdit handles input
   → custom layouter calls SyntaxHighlighter::highlight()
@@ -401,6 +440,7 @@ User types → egui TextEdit handles input
 ```
 
 ### Closing a modified tab
+
 ```
 Close button clicked → pending_close_index = Some(idx)
   → render_close_confirm_modal()
@@ -412,17 +452,22 @@ Close button clicked → pending_close_index = Some(idx)
 ## CI/CD
 
 ### Test Workflow (`.github/workflows/test.yml`)
+
 Runs on push to main and PRs:
+
 - **macOS:** installs sdl3, freetype, pcre2 via brew, `cargo test --all-features`
 - **Windows:** installs vcpkg packages, `cargo test --all-features`
 - Linux tests are currently commented out
 
 ### Release Workflow (`.github/workflows/release.yml`)
+
 Triggered by:
+
 - Push to main with commit message matching `[RELEASE v{version}#{title}]`
 - Manual `workflow_dispatch` with version and title inputs
 
 Stages:
+
 1. **parse-commit:** Extracts version, creates git tag, creates draft GitHub Release
 2. **build-windows:** `cargo build --release -p JereIDE`, zips binary + LICENSE + README
 3. **build-macos:** Matrix of aarch64 + x86_64, links with `libclang_rt.osx.a`, zips
@@ -453,6 +498,7 @@ Linux builds are commented out.
 ## Tests
 
 Tests are located in `crates/code/src/code_view.rs` and cover:
+
 - `visual_line_count` — empty, single, multi-line, trailing newline
 - `gutter_width` — single, double, triple digit, power-of-ten boundaries
 
