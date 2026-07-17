@@ -18,7 +18,7 @@ pub fn render_close_confirm_modal(
 
     let dim_layer = egui::LayerId::new(egui::Order::Foreground, egui::Id::new("modal_dimmer"));
     let dim_painter = ctx.layer_painter(dim_layer);
-    dim_painter.rect_filled(dim_rect, 0.0, egui::Color32::from_black_alpha(120));
+    dim_painter.rect_filled(dim_rect, 0.0, egui::Color32::from_black_alpha(90));
 
     // No clicks outside!
     egui::Area::new(egui::Id::new("modal_dimmer_interact"))
@@ -94,7 +94,7 @@ pub fn render_large_file_blocked(ctx: &egui::Context, size: u64) -> bool {
     let dim_rect = ctx.viewport_rect();
     let dim_layer = egui::LayerId::new(egui::Order::Foreground, egui::Id::new("modal_dimmer"));
     let dim_painter = ctx.layer_painter(dim_layer);
-    dim_painter.rect_filled(dim_rect, 0.0, egui::Color32::from_black_alpha(120));
+    dim_painter.rect_filled(dim_rect, 0.0, egui::Color32::from_black_alpha(90));
     // No clicks outside!
     egui::Area::new(egui::Id::new("modal_dimmer_interact"))
         .order(egui::Order::Foreground)
@@ -143,7 +143,7 @@ pub fn render_large_file_warning(
     let dim_rect = ctx.viewport_rect();
     let dim_layer = egui::LayerId::new(egui::Order::Foreground, egui::Id::new("modal_dimmer"));
     let dim_painter = ctx.layer_painter(dim_layer);
-    dim_painter.rect_filled(dim_rect, 0.0, egui::Color32::from_black_alpha(120));
+    dim_painter.rect_filled(dim_rect, 0.0, egui::Color32::from_black_alpha(90));
     // No clicks outside!
     egui::Area::new(egui::Id::new("modal_dimmer_interact"))
         .order(egui::Order::Foreground)
