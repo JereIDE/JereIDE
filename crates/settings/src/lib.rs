@@ -12,8 +12,8 @@ pub const COMMAND_BG: Color32 = Color32::from_gray(20);
 
 pub const TEXT_DEFAULT: Color32 = Color32::BLACK;
 pub const TEXT_PRIMARY: Color32 = Color32::from_rgb(30, 30, 30);
-pub const TEXT_SECONDARY: Color32 = Color32::from_rgb(130, 130, 130);
-pub const TEXT_MUTED: Color32 = Color32::from_rgb(145, 145, 145);
+pub const TEXT_SECONDARY: Color32 = Color32::from_rgb(90, 90, 90);
+pub const TEXT_MUTED: Color32 = Color32::from_rgb(175, 175, 175);
 pub const TEXT_CURRENT_LINE: Color32 = Color32::from_rgb(48, 48, 48);
 pub const COMMAND_TEXT: Color32 = Color32::from_gray(250);
 
