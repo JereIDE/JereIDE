@@ -1,7 +1,6 @@
 use eframe::egui;
 use jereide_settings::{
-    COMPOSE_VIEW_FONT_SIZE, EDITOR_FONT_SIZE, SURFACE_BG, TEXT_MUTED, TEXT_PRIMARY,
-    TEXT_SECONDARY,
+    COMPOSE_VIEW_FONT_SIZE, EDITOR_FONT_SIZE, SURFACE_BG, TEXT_MUTED, TEXT_PRIMARY, TEXT_SECONDARY,
 };
 
 pub fn render_welcome_view(ui: &mut egui::Ui) {
