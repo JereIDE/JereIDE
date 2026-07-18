@@ -556,11 +556,12 @@ impl eframe::App for JereIDEApp {
             }
         }
 
-        if self.state.command_palette_open {
-            if let Some(ref mut palette) = self.command_palette {
-                if let Some(command) = palette.render(&ctx, &mut self.state.command_palette_open) {
-                    self.handle_command(command, &ctx);
-                }
+        if let Some(ref mut palette) = self.command_palette {
+            if let Some(command) = palette.render(&ctx, &mut self.state.command_palette_open) {
+                self.handle_command(command, &ctx);
+            }
+            if !self.state.command_palette_open {
+                self.command_palette = None;
             }
         }
     }

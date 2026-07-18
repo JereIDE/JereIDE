@@ -13,6 +13,9 @@ pub struct Palette<T> {
     filter: String,
     selected_index: usize,
     search_focused: bool,
+    hover_selected: Option<usize>,
+    previous_focus: Option<egui::Id>,
+    was_open: bool,
 }
 
 impl<T> Palette<T> {
@@ -22,6 +25,9 @@ impl<T> Palette<T> {
             filter: String::new(),
             selected_index: 0,
             search_focused: false,
+            hover_selected: None,
+            previous_focus: None,
+            was_open: false,
         }
     }
 
@@ -47,11 +53,25 @@ impl<T> Palette<T> {
         T: Clone,
     {
         if !*open {
+            if self.was_open {
+                self.was_open = false;
+                if let Some(id) = self.previous_focus {
+                    ctx.memory_mut(|m| m.request_focus(id));
+                }
+            }
             return None;
+        }
+
+        self.was_open = true;
+        if !self.search_focused {
+            self.previous_focus = ctx.memory(|m| m.focused());
         }
 
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             *open = false;
+            if let Some(id) = self.previous_focus {
+                ctx.memory_mut(|m| m.request_focus(id));
+            }
             return None;
         }
 
@@ -67,6 +87,9 @@ impl<T> Palette<T> {
 
         if clicked_outside {
             *open = false;
+            if let Some(id) = self.previous_focus {
+                ctx.memory_mut(|m| m.request_focus(id));
+            }
             return None;
         }
 
@@ -110,6 +133,7 @@ impl<T> Palette<T> {
                         (self.selected_index + 1).min(indices.len().saturating_sub(1));
                 }
 
+                let nav_key = nav_up || nav_down;
                 egui::ScrollArea::vertical()
                     .max_height(240.0)
                     .show(ui, |ui| {
@@ -134,6 +158,11 @@ impl<T> Palette<T> {
                                 selected_rect = Some(resp.rect);
                             }
 
+                            if resp.hovered() && Some(item_idx) != self.hover_selected {
+                                self.hover_selected = Some(item_idx);
+                                self.selected_index = i;
+                            }
+
                             if !item.shortcut.is_empty() {
                                 ui.painter().text(
                                     egui::pos2(resp.rect.right() - 8.0, resp.rect.center().y),
@@ -148,8 +177,10 @@ impl<T> Palette<T> {
                                 chosen = Some(item.data.clone());
                             }
                         }
-                        if let Some(rect) = selected_rect {
-                            ui.scroll_to_rect(rect, None);
+                        if nav_key {
+                            if let Some(rect) = selected_rect {
+                                ui.scroll_to_rect(rect, None);
+                            }
                         }
                     });
 
@@ -160,6 +191,9 @@ impl<T> Palette<T> {
 
         if chosen.is_some() {
             *open = false;
+            if let Some(id) = self.previous_focus {
+                ctx.memory_mut(|m| m.request_focus(id));
+            }
         }
 
         chosen
