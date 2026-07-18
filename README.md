@@ -2,7 +2,7 @@
 
 # JereIDER
 
-**A fast and simple editor. Open Source. Free Forever.**
+**The ready-to-use, open-source editor that nobody uses.**
 
 ![](https://img.shields.io/badge/Built_with-Rust-turquoise?logo=rust&logoColor=white)
 ![](https://img.shields.io/badge/Windows-10+-green?logo=quarto&logoColor=white)
