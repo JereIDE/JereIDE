@@ -13,7 +13,7 @@ pub struct Palette<T> {
     filter: String,
     selected_index: usize,
     search_focused: bool,
-    hover_selected: Option<usize>,
+    last_mouse_pos: Option<egui::Pos2>,
     previous_focus: Option<egui::Id>,
     was_open: bool,
 }
@@ -25,7 +25,7 @@ impl<T> Palette<T> {
             filter: String::new(),
             selected_index: 0,
             search_focused: false,
-            hover_selected: None,
+            last_mouse_pos: None,
             previous_focus: None,
             was_open: false,
         }
@@ -133,6 +133,12 @@ impl<T> Palette<T> {
                         (self.selected_index + 1).min(indices.len().saturating_sub(1));
                 }
 
+                let mouse_pos = ctx.input(|i| i.pointer.hover_pos());
+                let mouse_moved = mouse_pos != self.last_mouse_pos;
+                if mouse_moved {
+                    self.last_mouse_pos = mouse_pos;
+                }
+
                 let nav_key = nav_up || nav_down;
                 egui::ScrollArea::vertical()
                     .max_height(240.0)
@@ -159,8 +165,7 @@ impl<T> Palette<T> {
                                 selected_rect = Some(rect);
                             }
 
-                            if resp.hovered() && Some(item_idx) != self.hover_selected {
-                                self.hover_selected = Some(item_idx);
+                            if resp.hovered() && mouse_moved && !nav_key {
                                 self.selected_index = i;
                             }
 
