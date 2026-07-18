@@ -240,9 +240,12 @@ pub fn render_about_dialog(ctx: &egui::Context, open: &mut bool) {
                 ui.heading("JereIDE");
                 ui.label("Version 0.22.0");
                 ui.add_space(8.0);
-                ui.colored_label(TEXT_MUTED, "The editor that nobody ever uses.");
+                ui.colored_label(
+                    TEXT_SECONDARY,
+                    egui::RichText::new("The editor that nobody ever uses.").italics(),
+                );
                 ui.add_space(4.0);
-                ui.colored_label(TEXT_SECONDARY, "Built with egui");
+                ui.colored_label(TEXT_MUTED, "Built with egui");
             });
 
             ui.add_space(16.0);
