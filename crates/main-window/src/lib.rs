@@ -452,6 +452,9 @@ impl eframe::App for JereIDEApp {
                     }
                 }
                 "quit" => ctx.send_viewport_cmd(egui::ViewportCommand::Close),
+                "about" => {
+                    self.state.show_about_dialog = true;
+                }
                 "fullscreen" => {
                     let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
                     ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(!is_fullscreen));
@@ -572,5 +575,7 @@ impl eframe::App for JereIDEApp {
                 self.command_palette = None;
             }
         }
+
+        jereide_ui::dialog::render_about_dialog(&ctx, &mut self.state.show_about_dialog);
     }
 }

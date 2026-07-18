@@ -86,6 +86,8 @@ pub struct AppState {
     pub pending_large_file_warn: Option<(String, u64)>,
 
     pub command_palette_open: bool,
+
+    pub show_about_dialog: bool,
 }
 
 /// Another new method.
@@ -103,6 +105,7 @@ impl AppState {
             pending_large_file_blocked: None,
             pending_large_file_warn: None,
             command_palette_open: false,
+            show_about_dialog: false,
         }
     }
 

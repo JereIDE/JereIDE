@@ -1,6 +1,8 @@
 use eframe::egui;
 use jereide_core::AppState;
-use jereide_settings::{ACCENT, DESTRUCTIVE, DIALOG_WIDTH, TEXT_DEFAULT, TEXT_MUTED};
+use jereide_settings::{
+    ACCENT, DESTRUCTIVE, DIALOG_WIDTH, TEXT_DEFAULT, TEXT_MUTED, TEXT_SECONDARY,
+};
 
 pub enum CloseConfirmAction {
     Save(usize),
@@ -203,4 +205,67 @@ pub fn render_large_file_warning(
         Some(ir) => ir.inner.flatten(),
         None => None,
     }
+}
+
+// ---------------------------------------------------------------------------
+// About dialog
+// ---------------------------------------------------------------------------
+
+pub fn render_about_dialog(ctx: &egui::Context, open: &mut bool) {
+    if !*open {
+        return;
+    }
+
+    let dim_rect = ctx.viewport_rect();
+    let dim_layer = egui::LayerId::new(egui::Order::Foreground, egui::Id::new("about_dimmer"));
+    let dim_painter = ctx.layer_painter(dim_layer);
+    dim_painter.rect_filled(dim_rect, 0.0, egui::Color32::from_black_alpha(90));
+
+    egui::Area::new(egui::Id::new("about_dimmer_interact"))
+        .order(egui::Order::Foreground)
+        .fixed_pos(dim_rect.min)
+        .show(ctx, |ui| {
+            ui.allocate_rect(dim_rect, egui::Sense::click());
+        });
+
+    egui::Window::new("About JereIDE")
+        .title_bar(false)
+        .collapsible(false)
+        .resizable(false)
+        .max_width(DIALOG_WIDTH)
+        .order(egui::Order::Tooltip)
+        .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+        .show(ctx, |ui| {
+            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                ui.heading("JereIDE");
+                ui.label("Version 0.22.0");
+                ui.add_space(8.0);
+                ui.colored_label(TEXT_MUTED, "The editor that nobody ever uses.");
+                ui.add_space(4.0);
+                ui.colored_label(TEXT_SECONDARY, "Built with egui");
+            });
+
+            ui.add_space(16.0);
+
+            let btn_w = ui.available_width();
+            if ui
+                .add_sized(
+                    egui::vec2(btn_w, 0.0),
+                    egui::Button::new("Close").fill(ACCENT),
+                )
+                .clicked()
+            {
+                *open = false;
+            }
+
+            if ui
+                .add_sized(egui::vec2(btn_w, 0.0), egui::Button::new("Star on GitHub"))
+                .clicked()
+            {
+                ctx.open_url(egui::OpenUrl {
+                    url: String::from("https://github.com/jeremy-qian/jereide"),
+                    new_tab: true,
+                });
+            }
+        });
 }

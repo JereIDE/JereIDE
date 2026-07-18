@@ -17,8 +17,7 @@ impl AppMenu {
         // Add lots of predefined items and a Star on GitHub
         app_menu
             .append_items(&[
-                &MenuItem::with_id("about", "About JereIDE", false, None),
-                &MenuItem::with_id("githubstar", "Star on GitHub", true, None),
+                &MenuItem::with_id("about", "About JereIDE", true, None),
                 &PredefinedMenuItem::separator(),
                 #[cfg(target_os = "macos")]
                 &PredefinedMenuItem::services(None),
@@ -139,7 +138,15 @@ impl AppMenu {
             ])
             .ok();
 
-        // TODO: A help menu
+        let help_menu = Submenu::with_id("help", "Help", true);
+        help_menu
+            .append_items(&[&MenuItem::with_id(
+                "githubstar",
+                "Star on GitHub",
+                true,
+                None,
+            )])
+            .ok();
 
         // Put everything together
         let menu = Menu::new();
@@ -147,6 +154,7 @@ impl AppMenu {
         menu.append(&file_menu).ok();
         menu.append(&edit_menu).ok();
         menu.append(&view_menu).ok();
+        menu.append(&help_menu).ok();
 
         let receiver = MenuEvent::receiver();
         Self {
