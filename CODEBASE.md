@@ -344,7 +344,7 @@ Shown when no tabs are open. Displays:
 
 - `[LOGO]` placeholder
 - "Welcome back to JereIDE"
-- "The editor for what's next"
+- "The editor that nobody ever uses"
 
 #### Dialogs (`dialog.rs`)
 
