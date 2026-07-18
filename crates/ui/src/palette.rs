@@ -108,6 +108,7 @@ impl<T> Palette<T> {
                 egui::ScrollArea::vertical()
                     .max_height(240.0)
                     .show(ui, |ui| {
+                        let mut selected_rect: Option<egui::Rect> = None;
                         for (i, &item_idx) in indices.iter().enumerate() {
                             let item = &self.items[item_idx];
                             let selected = i == self.selected_index;
@@ -124,6 +125,10 @@ impl<T> Palette<T> {
                                 .frame(selected),
                             );
 
+                            if selected {
+                                selected_rect = Some(resp.rect);
+                            }
+
                             if !item.shortcut.is_empty() {
                                 ui.painter().text(
                                     egui::pos2(resp.rect.right() - 8.0, resp.rect.center().y),
@@ -137,6 +142,9 @@ impl<T> Palette<T> {
                             if resp.clicked() {
                                 chosen = Some(item.data.clone());
                             }
+                        }
+                        if let Some(rect) = selected_rect {
+                            ui.scroll_to_rect(rect, Some(egui::Align::Center));
                         }
                     });
 
