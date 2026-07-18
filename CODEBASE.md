@@ -279,8 +279,7 @@ state: AppState,
 app_menu: AppMenu,
 file_manager: FileManager,
 visuals_initialized: bool,
-traffic_lights_positioned: bool,
-prev_fullscreen: bool,
+command_palette: Option<CommandPalette>,
 ```
 
 #### Event Handling in `ui()`
@@ -289,11 +288,12 @@ prev_fullscreen: bool,
 2. **macOS document-edited dot:** Syncs with `state.document_edited`
 3. **macOS traffic lights:** Repositioned on first show and fullscreen toggle
 4. **Menu initialization:** One-time `init_for_nsapp`/`init_for_hwnd`
-5. **Non-macOS keyboard shortcuts:** Cmd+N/O/S/Shift+S/Q
-6. **Menu event polling:** Dispatches `new`, `open`, `save`, `save_as`, `quit`, `fullscreen`, `githubstar`, and edit actions (`EditAction::from_menu_id`)
+5. **Non-macOS keyboard shortcuts:** Cmd+N/O/S/Shift+S/Q/Shift+P
+6. **Menu event polling:** Dispatches `new`, `open`, `save`, `save_as`, `command_palette`, `quit`, `fullscreen`, `githubstar`, and edit actions (`EditAction::from_menu_id`)
 7. **UI rendering:** Status bar → CentralPanel → title bar → tab strip → code view or welcome view
 8. **Compose overlay:** If `current_view == Compose`, renders compose palette overlay
-9. **Modal dialogs:** Unsaved changes confirm, large file blocked/warning
+9. **Command palette:** If `command_palette_open`, renders command palette overlay
+10. **Modal dialogs:** Unsaved changes confirm, large file blocked/warning
 
 #### File action handlers
 
@@ -302,12 +302,13 @@ prev_fullscreen: bool,
 - `handle_save()` — saves to existing path or delegates to `handle_save_as()`
 - `handle_save_as()` — opens save dialog, updates tab file path
 - `save_tab(idx)` — saves a specific tab (used by close-confirm dialog)
+- `handle_command(command, ctx)` — dispatches a `Command` from the command palette
 
 ---
 
 ### `crates/ui` — UI Components
 
-**Files:** `src/lib.rs`, `src/title_bar.rs`, `src/tab_strip.rs`, `src/status_bar.rs`, `src/welcome.rs`, `src/dialog.rs`
+**Files:** `src/lib.rs`, `src/title_bar.rs`, `src/tab_strip.rs`, `src/status_bar.rs`, `src/welcome.rs`, `src/dialog.rs`, `src/palette.rs`, `src/command_palette.rs`
 
 #### Title Bar (`title_bar.rs`)
 
@@ -355,6 +356,19 @@ Three modal dialogs using egui `Window` with a dimmer overlay:
 3. **Large File Warning** — files > 100 MB show "Open Anyway" / Cancel
 
 Each dialog creates a full-viewport dimmer layer (`Color32::from_black_alpha(120)`) with a click-catcher.
+
+#### Palette (`palette.rs`)
+
+Generic filterable palette widget (`Palette<T>`) that renders a centered overlay window with:
+
+- Text input for filtering items by label/description
+- Arrow key navigation + Enter to confirm, Escape to dismiss
+- Click-outside-to-dismiss (transparent capture area, no dimming)
+- Reusable across command palette, file palette, etc.
+
+#### Command Palette (`command_palette.rs`)
+
+Uses `Palette<Command>` to provide a command palette overlay. `Command` enum covers all editor actions (New, Open, Save, Save As, Close Tab, Quit, Fullscreen, Undo, Redo, Cut, Copy, Paste, Select All, Open GitHub). Toggled via `Cmd+Shift+P` or the View → Command Palette menu item.
 
 ---
 

@@ -120,7 +120,16 @@ impl AppMenu {
         // The view menu
         let view_menu = Submenu::with_id("view", "View", true);
         view_menu
-            .append_items(&[&PredefinedMenuItem::fullscreen(None)])
+            .append_items(&[
+                &MenuItem::with_id(
+                    "command_palette",
+                    "Command Palette",
+                    true,
+                    "CmdOrCtrl+Shift+P".parse::<Accelerator>().ok(),
+                ),
+                &PredefinedMenuItem::separator(),
+                &PredefinedMenuItem::fullscreen(None),
+            ])
             .ok();
 
         // TODO: A help menu
