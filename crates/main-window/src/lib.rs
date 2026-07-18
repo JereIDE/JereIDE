@@ -231,7 +231,7 @@ impl JereIDEApp {
             Command::Save => self.handle_save(),
             Command::SaveAs => self.handle_save_as(),
             Command::CloseTab => {
-                if self.state.tabs.len() > 1 {
+                if !self.state.tabs.is_empty() {
                     let idx = self.state.active_tab_index;
                     if self.state.tabs[idx].is_modified() {
                         self.state.pending_close_index = Some(idx);
@@ -349,6 +349,7 @@ impl eframe::App for JereIDEApp {
                     cmd && i.key_pressed(egui::Key::C),
                     cmd && i.key_pressed(egui::Key::V),
                     cmd && i.key_pressed(egui::Key::A),
+                    cmd && i.key_pressed(egui::Key::W),
                     cmd && i.modifiers.shift && i.key_pressed(egui::Key::P),
                 )
             });
@@ -364,6 +365,7 @@ impl eframe::App for JereIDEApp {
                 want_copy,
                 want_paste,
                 want_select_all,
+                want_close_tab,
                 want_command_palette,
             ) = input;
             if want_new {
@@ -423,6 +425,9 @@ impl eframe::App for JereIDEApp {
                     jereide_code::EditAction::SelectAll,
                 );
             }
+            if want_close_tab {
+                self.handle_command(Command::CloseTab, &ctx);
+            }
             if want_command_palette {
                 self.state.command_palette_open = !self.state.command_palette_open;
                 if self.state.command_palette_open {
@@ -437,6 +442,9 @@ impl eframe::App for JereIDEApp {
                 "open" => self.handle_open(),
                 "save" => self.handle_save(),
                 "save_as" => self.handle_save_as(),
+                "close_tab" => {
+                    self.handle_command(Command::CloseTab, &ctx);
+                }
                 "command_palette" => {
                     self.state.command_palette_open = !self.state.command_palette_open;
                     if self.state.command_palette_open {

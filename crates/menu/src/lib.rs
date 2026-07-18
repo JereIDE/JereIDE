@@ -69,6 +69,13 @@ impl AppMenu {
                     true,
                     "CmdOrCtrl+Shift+S".parse::<Accelerator>().ok(),
                 ),
+                &PredefinedMenuItem::separator(),
+                &MenuItem::with_id(
+                    "close_tab",
+                    "Close Tab",
+                    true,
+                    "CmdOrCtrl+W".parse::<Accelerator>().ok(),
+                ),
             ])
             .ok();
 
