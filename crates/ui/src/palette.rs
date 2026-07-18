@@ -1,5 +1,5 @@
 use eframe::egui;
-use jereide_settings::{ACCENT, DIALOG_WIDTH, SURFACE_BG, TEXT_DEFAULT, TEXT_MUTED};
+use jereide_settings::{ACCENT, DIALOG_WIDTH, HOVER_BG, SURFACE_BG, TEXT_DEFAULT, TEXT_MUTED};
 
 pub struct PaletteItem<T> {
     pub label: &'static str,
@@ -141,21 +141,22 @@ impl<T> Palette<T> {
                         for (i, &item_idx) in indices.iter().enumerate() {
                             let item = &self.items[item_idx];
                             let selected = i == self.selected_index;
-                            let bg = if selected { ACCENT } else { SURFACE_BG };
                             let text_color = if selected { SURFACE_BG } else { TEXT_DEFAULT };
                             let desc_color = if selected { SURFACE_BG } else { TEXT_MUTED };
 
-                            let resp = ui.add_sized(
+                            let (rect, resp) = ui.allocate_exact_size(
                                 egui::vec2(ui.available_width(), 28.0),
-                                egui::Button::new(
-                                    egui::RichText::new(item.label).color(text_color),
-                                )
-                                .fill(bg)
-                                .frame(selected),
+                                egui::Sense::click(),
                             );
 
                             if selected {
-                                selected_rect = Some(resp.rect);
+                                ui.painter().rect_filled(rect, 4.0, ACCENT);
+                            } else if resp.hovered() {
+                                ui.painter().rect_filled(rect, 4.0, HOVER_BG);
+                            }
+
+                            if selected {
+                                selected_rect = Some(rect);
                             }
 
                             if resp.hovered() && Some(item_idx) != self.hover_selected {
@@ -163,9 +164,17 @@ impl<T> Palette<T> {
                                 self.selected_index = i;
                             }
 
+                            ui.painter().text(
+                                egui::pos2(rect.min.x + 8.0, rect.center().y),
+                                egui::Align2::LEFT_CENTER,
+                                item.label,
+                                egui::FontId::proportional(14.0),
+                                text_color,
+                            );
+
                             if !item.shortcut.is_empty() {
                                 ui.painter().text(
-                                    egui::pos2(resp.rect.right() - 8.0, resp.rect.center().y),
+                                    egui::pos2(rect.right() - 8.0, rect.center().y),
                                     egui::Align2::RIGHT_CENTER,
                                     item.shortcut,
                                     egui::FontId::proportional(11.0),
