@@ -12,6 +12,7 @@ pub struct Palette<T> {
     items: Vec<PaletteItem<T>>,
     filter: String,
     selected_index: usize,
+    search_focused: bool,
 }
 
 impl<T> Palette<T> {
@@ -20,6 +21,7 @@ impl<T> Palette<T> {
             items,
             filter: String::new(),
             selected_index: 0,
+            search_focused: false,
         }
     }
 
@@ -84,7 +86,10 @@ impl<T> Palette<T> {
                         .hint_text("Search...")
                         .desired_width(f32::INFINITY),
                 );
-                resp.request_focus();
+                if !self.search_focused {
+                    resp.request_focus();
+                    self.search_focused = true;
+                }
 
                 ui.add_space(6.0);
 
@@ -144,7 +149,7 @@ impl<T> Palette<T> {
                             }
                         }
                         if let Some(rect) = selected_rect {
-                            ui.scroll_to_rect(rect, Some(egui::Align::Center));
+                            ui.scroll_to_rect(rect, None);
                         }
                     });
 
