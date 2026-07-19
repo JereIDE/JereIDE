@@ -88,7 +88,7 @@ jobs:
   #           /^\[workspace\.package\]$/ { in_section = 1; next }
   #           /^\[/ { in_section = 0 }
   #           in_section && $1 ~ /^version = / { print $2; exit }
-  #         ' crates/app/Cargo.toml)"
+  #         ' Cargo.toml)"
   #         echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
   #
   #     - name: Install system dependencies
@@ -125,7 +125,7 @@ jobs:
   #
   #     - name: Package tarball
   #       run: |
-  #         ARCHIVE_BASE="JereIDE-${APP_VERSION}-linux-x86_64"
+  #         ARCHIVE_BASE="JereIDE-v${APP_VERSION}-Linux-Intel"
   #         mkdir "$ARCHIVE_BASE"
   #         cp target/release/JereIDE "$ARCHIVE_BASE/"
   #         cp LICENSE "$ARCHIVE_BASE/"
@@ -135,9 +135,9 @@ jobs:
   #     - name: Upload Linux artifacts
   #       uses: actions/upload-artifact@v6
   #       with:
-  #         name: JereIDE-linux-x86_64
+  #         name: JereIDE-Linux-Intel
   #         path: |
-  #           JereIDE-*-linux-x86_64.tar.gz
+  #           JereIDE-*-Linux-Intel.tar.gz
 
   build-windows:
     needs: [parse-commit]
@@ -154,7 +154,7 @@ jobs:
             /^\[workspace\.package\]$/ { in_section = 1; next }
             /^\[/ { in_section = 0 }
             in_section && $1 ~ /^version = / { print $2; exit }
-          ' crates/app/Cargo.toml)"
+          ' Cargo.toml)"
           echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
 
       - uses: dtolnay/rust-toolchain@stable
@@ -175,7 +175,7 @@ jobs:
       - name: Package zip
         shell: pwsh
         run: |
-          $stage = "JereIDE-${env:APP_VERSION}-windows-x86_64"
+          $stage = "JereIDE-v${env:APP_VERSION}-Windows-Intel"
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item target\release\JereIDE.exe "$stage\"
           Copy-Item LICENSE "$stage\"
@@ -185,9 +185,9 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
-          name: JereIDE-windows-x86_64
+          name: JereIDE-Windows-Intel
           path: |
-            JereIDE-*-windows-x86_64.zip
+            JereIDE-*-Windows-Intel.zip
 
   build-macos:
     needs: [parse-commit]
@@ -198,9 +198,11 @@ jobs:
           - label: macOS Apple Silicon (aarch64)
             rust-target: aarch64-apple-darwin
             arch: aarch64
+            chip: AppleSilicon
           - label: macOS Intel (x86_64)
             rust-target: x86_64-apple-darwin
             arch: x86_64
+            chip: Intel
     name: ${{ matrix.target.label }}
     runs-on: macos-latest
     steps:
@@ -213,7 +215,7 @@ jobs:
             /^\[workspace\.package\]$/ { in_section = 1; next }
             /^\[/ { in_section = 0 }
             in_section && $1 ~ /^version = / { print $2; exit }
-          ' crates/app/Cargo.toml)"
+          ' Cargo.toml)"
           echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
 
       - name: Install system dependencies
@@ -245,7 +247,7 @@ jobs:
 
       - name: Package zip
         run: |
-          ARCHIVE_BASE="JereIDE-${APP_VERSION}-macos-${{ matrix.target.arch }}"
+          ARCHIVE_BASE="JereIDE-v${APP_VERSION}-macOS-${{ matrix.target.chip }}"
           mkdir "$ARCHIVE_BASE"
           cp "target/${{ matrix.target.rust-target }}/release/JereIDE" "$ARCHIVE_BASE/"
           cp LICENSE "$ARCHIVE_BASE/"
@@ -255,8 +257,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
-          name: JereIDE-macos-${{ matrix.target.arch }}
-          path: JereIDE-*-macos-${{ matrix.target.arch }}.zip
+          name: JereIDE-macOS-${{ matrix.target.chip }}
+          path: JereIDE-*-macOS-${{ matrix.target.chip }}.zip
 
   release:
     name: Upload to Draft Release
