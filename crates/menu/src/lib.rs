@@ -17,7 +17,7 @@ impl AppMenu {
         // Add lots of predefined items and a Star on GitHub
         app_menu
             .append_items(&[
-                &MenuItem::with_id("about", "About JereIDE", true, None),
+                &MenuItem::with_id("jereide: about", "About JereIDE", true, None),
                 &PredefinedMenuItem::separator(),
                 #[cfg(target_os = "macos")]
                 &PredefinedMenuItem::services(None),
@@ -32,7 +32,7 @@ impl AppMenu {
                 #[cfg(target_os = "macos")]
                 &PredefinedMenuItem::separator(),
                 &MenuItem::with_id(
-                    "quit",
+                    "jereide: quit",
                     "Quit",
                     true,
                     "CmdOrCtrl+Q".parse::<Accelerator>().ok(),
@@ -45,32 +45,32 @@ impl AppMenu {
         file_menu
             .append_items(&[
                 &MenuItem::with_id(
-                    "new",
+                    "file: new",
                     "New",
                     true,
                     "CmdOrCtrl+N".parse::<Accelerator>().ok(),
                 ),
                 &MenuItem::with_id(
-                    "open",
+                    "file: open",
                     "Open...",
                     true,
                     "CmdOrCtrl+O".parse::<Accelerator>().ok(),
                 ),
                 &MenuItem::with_id(
-                    "save",
+                    "file: save",
                     "Save",
                     true,
                     "CmdOrCtrl+S".parse::<Accelerator>().ok(),
                 ),
                 &MenuItem::with_id(
-                    "save_as",
+                    "file: save as",
                     "Save As…",
                     true,
                     "CmdOrCtrl+Shift+S".parse::<Accelerator>().ok(),
                 ),
                 &PredefinedMenuItem::separator(),
                 &MenuItem::with_id(
-                    "close_tab",
+                    "file: close tab",
                     "Close Tab",
                     true,
                     "CmdOrCtrl+W".parse::<Accelerator>().ok(),
@@ -83,39 +83,39 @@ impl AppMenu {
         edit_menu
             .append_items(&[
                 &MenuItem::with_id(
-                    "undo",
+                    "editor: undo",
                     "Undo",
                     true,
                     "CmdOrCtrl+Z".parse::<Accelerator>().ok(),
                 ),
                 &MenuItem::with_id(
-                    "redo",
+                    "editor: redo",
                     "Redo",
                     true,
                     "CmdOrCtrl+Shift+Z".parse::<Accelerator>().ok(),
                 ),
                 &PredefinedMenuItem::separator(),
                 &MenuItem::with_id(
-                    "cut",
+                    "editor: cut",
                     "Cut",
                     true,
                     "CmdOrCtrl+X".parse::<Accelerator>().ok(),
                 ),
                 &MenuItem::with_id(
-                    "copy",
+                    "editor: copy",
                     "Copy",
                     true,
                     "CmdOrCtrl+C".parse::<Accelerator>().ok(),
                 ),
                 &MenuItem::with_id(
-                    "paste",
+                    "editor: paste",
                     "Paste",
                     true,
                     "CmdOrCtrl+V".parse::<Accelerator>().ok(),
                 ),
                 &PredefinedMenuItem::separator(),
                 &MenuItem::with_id(
-                    "select_all",
+                    "editor: select all",
                     "Select All",
                     true,
                     "CmdOrCtrl+A".parse::<Accelerator>().ok(),
@@ -128,7 +128,7 @@ impl AppMenu {
         view_menu
             .append_items(&[
                 &MenuItem::with_id(
-                    "command_palette",
+                    "command palette: toggle",
                     "Command Palette",
                     true,
                     "CmdOrCtrl+Shift+P".parse::<Accelerator>().ok(),
@@ -141,7 +141,7 @@ impl AppMenu {
         let help_menu = Submenu::with_id("help", "Help", true);
         help_menu
             .append_items(&[&MenuItem::with_id(
-                "githubstar",
+                "jereide: star on github",
                 "Star on GitHub",
                 true,
                 None,
