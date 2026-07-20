@@ -107,7 +107,8 @@ impl<T> Palette<T> {
                     egui::vec2(ui.available_width(), 0.0),
                     egui::TextEdit::singleline(&mut self.filter)
                         .hint_text("Search...")
-                        .desired_width(f32::INFINITY),
+                        .desired_width(f32::INFINITY)
+                        .return_key(None),
                 );
                 if !self.search_focused {
                     resp.request_focus();
