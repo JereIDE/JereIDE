@@ -1,15 +1,12 @@
 use eframe::egui;
-use jereide_settings::{ACCENT, DIALOG_WIDTH, HOVER_BG, SURFACE_BG, TEXT_DEFAULT, TEXT_MUTED};
+use jereide_settings::{ACCENT, DIALOG_WIDTH, HOVER_BG, SURFACE_BG, TEXT_DEFAULT};
 
-pub struct PaletteItem<T> {
-    pub label: &'static str,
-    pub description: &'static str,
-    pub shortcut: &'static str,
-    pub data: T,
+pub struct PaletteItem {
+    pub code: &'static str,
 }
 
-pub struct Palette<T> {
-    items: Vec<PaletteItem<T>>,
+pub struct Palette {
+    items: Vec<PaletteItem>,
     filter: String,
     selected_index: usize,
     search_focused: bool,
@@ -18,8 +15,8 @@ pub struct Palette<T> {
     was_open: bool,
 }
 
-impl<T> Palette<T> {
-    pub fn new(items: Vec<PaletteItem<T>>) -> Self {
+impl Palette {
+    pub fn new(items: Vec<PaletteItem>) -> Self {
         Self {
             items,
             filter: String::new(),
@@ -39,19 +36,13 @@ impl<T> Palette<T> {
             self.items
                 .iter()
                 .enumerate()
-                .filter(|(_, item)| {
-                    item.label.to_lowercase().contains(&lower)
-                        || item.description.to_lowercase().contains(&lower)
-                })
+                .filter(|(_, item)| item.code.to_lowercase().contains(&lower))
                 .map(|(i, _)| i)
                 .collect()
         }
     }
 
-    pub fn render(&mut self, ctx: &egui::Context, title: &str, open: &mut bool) -> Option<T>
-    where
-        T: Clone,
-    {
+    pub fn render(&mut self, ctx: &egui::Context, title: &str, open: &mut bool) -> Option<&'static str> {
         if !*open {
             if self.was_open {
                 self.was_open = false;
@@ -75,7 +66,7 @@ impl<T> Palette<T> {
             return None;
         }
 
-        let mut chosen: Option<T> = None;
+        let mut chosen: Option<&'static str> = None;
 
         let dim_rect = ctx.viewport_rect();
         let clicked_outside = egui::Area::new(egui::Id::new("palette_dismiss"))
@@ -149,7 +140,6 @@ impl<T> Palette<T> {
                             let item = &self.items[item_idx];
                             let selected = i == self.selected_index;
                             let text_color = if selected { SURFACE_BG } else { TEXT_DEFAULT };
-                            let desc_color = if selected { SURFACE_BG } else { TEXT_MUTED };
 
                             let (rect, resp) = ui.allocate_exact_size(
                                 egui::vec2(ui.available_width(), 28.0),
@@ -173,23 +163,13 @@ impl<T> Palette<T> {
                             ui.painter().text(
                                 egui::pos2(rect.min.x + 8.0, rect.center().y),
                                 egui::Align2::LEFT_CENTER,
-                                item.label,
+                                item.code,
                                 egui::FontId::proportional(14.0),
                                 text_color,
                             );
 
-                            if !item.shortcut.is_empty() {
-                                ui.painter().text(
-                                    egui::pos2(rect.right() - 8.0, rect.center().y),
-                                    egui::Align2::RIGHT_CENTER,
-                                    item.shortcut,
-                                    egui::FontId::proportional(11.0),
-                                    desc_color,
-                                );
-                            }
-
                             if resp.clicked() {
-                                chosen = Some(item.data.clone());
+                                chosen = Some(item.code);
                             }
                         }
                         if nav_key {
@@ -200,7 +180,7 @@ impl<T> Palette<T> {
                     });
 
                 if confirm && !indices.is_empty() {
-                    chosen = Some(self.items[indices[self.selected_index]].data.clone());
+                    chosen = Some(self.items[indices[self.selected_index]].code);
                 }
             });
 

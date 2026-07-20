@@ -107,14 +107,14 @@ pub fn position_traffic_lights(frame: &eframe::Frame, offset_x: f64, offset_y: f
 // Main application struct — ties together state, menu, file manager, and UI
 // ---------------------------------------------------------------------------
 
-use jereide_ui::command_palette::{Command, CommandPalette};
+use jereide_ui::palette::Palette;
 
 pub struct JereIDEApp {
     state: AppState,
     app_menu: AppMenu,
     file_manager: FileManager,
     visuals_initialized: bool,
-    command_palette: Option<CommandPalette>,
+    palette: Option<Palette>,
 }
 
 impl JereIDEApp {
@@ -124,7 +124,7 @@ impl JereIDEApp {
             app_menu: AppMenu::new(),
             file_manager: FileManager::new(),
             visuals_initialized: false,
-            command_palette: None,
+            palette: None,
         }
     }
 
@@ -224,13 +224,13 @@ impl JereIDEApp {
         }
     }
 
-    fn handle_command(&mut self, command: Command, ctx: &egui::Context) {
-        match command {
-            Command::NewFile => self.handle_new(),
-            Command::OpenFile => self.handle_open(),
-            Command::Save => self.handle_save(),
-            Command::SaveAs => self.handle_save_as(),
-            Command::CloseTab => {
+    fn handle_action(&mut self, action: &str, ctx: &egui::Context) {
+        match action {
+            "file: new" => self.handle_new(),
+            "file: open" => self.handle_open(),
+            "file: save" => self.handle_save(),
+            "file: save as" => self.handle_save_as(),
+            "file: close tab" => {
                 if !self.state.tabs.is_empty() {
                     let idx = self.state.active_tab_index;
                     if self.state.tabs[idx].is_modified() {
@@ -240,60 +240,24 @@ impl JereIDEApp {
                     }
                 }
             }
-            Command::Quit => {
+            "jereide: quit" => {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             }
-            Command::ToggleFullscreen => {
+            "jereide: toggle fullscreen" => {
                 let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
                 ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(!is_fullscreen));
             }
-            Command::Undo => {
-                jereide_code::edit::handle_edit_action(
-                    &mut self.state,
-                    ctx,
-                    jereide_code::EditAction::Undo,
-                );
-            }
-            Command::Redo => {
-                jereide_code::edit::handle_edit_action(
-                    &mut self.state,
-                    ctx,
-                    jereide_code::EditAction::Redo,
-                );
-            }
-            Command::Cut => {
-                jereide_code::edit::handle_edit_action(
-                    &mut self.state,
-                    ctx,
-                    jereide_code::EditAction::Cut,
-                );
-            }
-            Command::Copy => {
-                jereide_code::edit::handle_edit_action(
-                    &mut self.state,
-                    ctx,
-                    jereide_code::EditAction::Copy,
-                );
-            }
-            Command::Paste => {
-                jereide_code::edit::handle_edit_action(
-                    &mut self.state,
-                    ctx,
-                    jereide_code::EditAction::Paste,
-                );
-            }
-            Command::SelectAll => {
-                jereide_code::edit::handle_edit_action(
-                    &mut self.state,
-                    ctx,
-                    jereide_code::EditAction::SelectAll,
-                );
-            }
-            Command::OpenGithub => {
+            "jereide: star on github" => {
                 ctx.open_url(egui::OpenUrl {
                     url: String::from("https://github.com/jeremy-qian/jereide"),
                     new_tab: true,
                 });
+            }
+            "jereide: about" => {
+                self.state.show_about_dialog = true;
+            }
+            _ => {
+                jereide_code::edit::handle_edit_action(&mut self.state, ctx, action);
             }
         }
     }
@@ -369,108 +333,58 @@ impl eframe::App for JereIDEApp {
                 want_command_palette,
             ) = input;
             if want_new {
-                self.handle_new();
+                self.handle_action("file: new", &ctx);
             }
             if want_open {
-                self.handle_open();
+                self.handle_action("file: open", &ctx);
             }
             if want_save {
-                self.handle_save();
+                self.handle_action("file: save", &ctx);
             }
             if want_save_as {
-                self.handle_save_as();
+                self.handle_action("file: save as", &ctx);
             }
             if want_quit {
-                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                self.handle_action("jereide: quit", &ctx);
             }
             if want_undo {
-                jereide_code::edit::handle_edit_action(
-                    &mut self.state,
-                    &ctx,
-                    jereide_code::EditAction::Undo,
-                );
+                self.handle_action("editor: undo", &ctx);
             }
             if want_redo {
-                jereide_code::edit::handle_edit_action(
-                    &mut self.state,
-                    &ctx,
-                    jereide_code::EditAction::Redo,
-                );
+                self.handle_action("editor: redo", &ctx);
             }
             if want_cut {
-                jereide_code::edit::handle_edit_action(
-                    &mut self.state,
-                    &ctx,
-                    jereide_code::EditAction::Cut,
-                );
+                self.handle_action("editor: cut", &ctx);
             }
             if want_copy {
-                jereide_code::edit::handle_edit_action(
-                    &mut self.state,
-                    &ctx,
-                    jereide_code::EditAction::Copy,
-                );
+                self.handle_action("editor: copy", &ctx);
             }
             if want_paste {
-                jereide_code::edit::handle_edit_action(
-                    &mut self.state,
-                    &ctx,
-                    jereide_code::EditAction::Paste,
-                );
+                self.handle_action("editor: paste", &ctx);
             }
             if want_select_all {
-                jereide_code::edit::handle_edit_action(
-                    &mut self.state,
-                    &ctx,
-                    jereide_code::EditAction::SelectAll,
-                );
+                self.handle_action("editor: select all", &ctx);
             }
             if want_close_tab {
-                self.handle_command(Command::CloseTab, &ctx);
+                self.handle_action("file: close tab", &ctx);
             }
             if want_command_palette {
                 self.state.command_palette_open = !self.state.command_palette_open;
                 if self.state.command_palette_open {
-                    self.command_palette = Some(CommandPalette::new());
+                    self.palette = Some(Palette::new(jereide_ui::command_palette::items()));
                 }
             }
         }
 
         for event_id in self.app_menu.poll_events() {
             match event_id.as_ref() {
-                "new" => self.handle_new(),
-                "open" => self.handle_open(),
-                "save" => self.handle_save(),
-                "save_as" => self.handle_save_as(),
-                "close_tab" => {
-                    self.handle_command(Command::CloseTab, &ctx);
-                }
-                "command_palette" => {
+                "command palette: toggle" => {
                     self.state.command_palette_open = !self.state.command_palette_open;
                     if self.state.command_palette_open {
-                        self.command_palette = Some(CommandPalette::new());
+                        self.palette = Some(Palette::new(jereide_ui::command_palette::items()));
                     }
                 }
-                "quit" => ctx.send_viewport_cmd(egui::ViewportCommand::Close),
-                "about" => {
-                    self.state.show_about_dialog = true;
-                }
-                "fullscreen" => {
-                    let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
-                    ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(!is_fullscreen));
-                }
-                "githubstar" => {
-                    ctx.open_url(egui::OpenUrl {
-                        url: String::from("https://github.com/jeremy-qian/jereide"),
-                        new_tab: true,
-                    });
-                }
-                _ => {
-                    if let Some(action) = jereide_code::EditAction::from_menu_id(event_id.as_ref())
-                    {
-                        jereide_code::edit::handle_edit_action(&mut self.state, &ctx, action);
-                    }
-                }
+                other => self.handle_action(other, &ctx),
             }
         }
 
@@ -567,12 +481,12 @@ impl eframe::App for JereIDEApp {
             }
         }
 
-        if let Some(ref mut palette) = self.command_palette {
-            if let Some(command) = palette.render(&ctx, &mut self.state.command_palette_open) {
-                self.handle_command(command, &ctx);
+        if let Some(ref mut palette) = self.palette {
+            if let Some(action) = palette.render(&ctx, "Command Palette", &mut self.state.command_palette_open) {
+                self.handle_action(action, &ctx);
             }
             if !self.state.command_palette_open {
-                self.command_palette = None;
+                self.palette = None;
             }
         }
 

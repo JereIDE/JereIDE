@@ -2,48 +2,21 @@ use eframe::egui;
 use jereide_core::AppState;
 use jereide_text::{char_range_substring, delete_char_range};
 
-/// Type-safe edit actions that the menu system can dispatch to the editor.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum EditAction {
-    SelectAll,
-    Copy,
-    Cut,
-    Paste,
-    Undo,
-    Redo,
-}
-
-impl EditAction {
-    /// Convert a menu event string to an edit action, if it matches.
-    pub fn from_menu_id(id: &str) -> Option<Self> {
-        match id {
-            "select_all" => Some(Self::SelectAll),
-            "copy" => Some(Self::Copy),
-            "cut" => Some(Self::Cut),
-            "paste" => Some(Self::Paste),
-            "undo" => Some(Self::Undo),
-            "redo" => Some(Self::Redo),
-            _ => None,
-        }
-    }
-}
-
-/// Dispatch an edit action.
-pub fn handle_edit_action(state: &mut AppState, ctx: &egui::Context, action: EditAction) {
+pub fn handle_edit_action(state: &mut AppState, ctx: &egui::Context, action: &str) {
     if state.tabs.is_empty() {
         return;
     }
     match action {
-        EditAction::SelectAll => action_select_all(state, ctx),
-        EditAction::Copy => action_copy(state, ctx),
-        EditAction::Cut => action_cut(state, ctx),
-        EditAction::Paste => action_paste(state, ctx),
-        EditAction::Undo => action_undo(state, ctx),
-        EditAction::Redo => action_redo(state, ctx),
+        "editor: select all" => action_select_all(state, ctx),
+        "editor: copy" => action_copy(state, ctx),
+        "editor: cut" => action_cut(state, ctx),
+        "editor: paste" => action_paste(state, ctx),
+        "editor: undo" => action_undo(state, ctx),
+        "editor: redo" => action_redo(state, ctx),
+        _ => {}
     }
 }
 
-/// Selects everything.
 fn action_select_all(state: &AppState, ctx: &egui::Context) {
     if let Some(mut edit_state) = egui::TextEdit::load_state(ctx, state.editor_id) {
         let len = state.current_tab().text.chars().count();
@@ -55,7 +28,6 @@ fn action_select_all(state: &AppState, ctx: &egui::Context) {
     }
 }
 
-/// Copies selected.
 fn action_copy(state: &AppState, ctx: &egui::Context) {
     if let Some(edit_state) = egui::TextEdit::load_state(ctx, state.editor_id) {
         if let Some(range) = edit_state.cursor.char_range() {
@@ -69,7 +41,6 @@ fn action_copy(state: &AppState, ctx: &egui::Context) {
     }
 }
 
-/// Cuts selected.
 fn action_cut(state: &mut AppState, ctx: &egui::Context) {
     if let Some(mut edit_state) = egui::TextEdit::load_state(ctx, state.editor_id) {
         if let Some(range) = edit_state.cursor.char_range() {
@@ -92,13 +63,10 @@ fn action_cut(state: &mut AppState, ctx: &egui::Context) {
     }
 }
 
-/// Pastes from the clipboard by forwarding to egui's built-in TextEdit handler.
-/// This ensures the menu "Paste" action behaves identically to Cmd+V.
 fn action_paste(_state: &mut AppState, ctx: &egui::Context) {
     ctx.send_viewport_cmd(egui::ViewportCommand::RequestPaste);
 }
 
-/// Undoes last action(this is pretty complicated)
 fn action_undo(state: &mut AppState, ctx: &egui::Context) {
     if let Some(mut edit_state) = egui::TextEdit::load_state(ctx, state.editor_id) {
         let idx = state.active_tab_index;
@@ -118,7 +86,7 @@ fn action_undo(state: &mut AppState, ctx: &egui::Context) {
         }
     }
 }
-/// Redo
+
 fn action_redo(state: &mut AppState, ctx: &egui::Context) {
     if let Some(mut edit_state) = egui::TextEdit::load_state(ctx, state.editor_id) {
         let idx = state.active_tab_index;
