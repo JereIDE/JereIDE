@@ -106,3 +106,56 @@ fn action_redo(state: &mut AppState, ctx: &egui::Context) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use jereide_core::AppState;
+
+    #[test]
+    fn handle_edit_action_empty_tabs_is_noop() {
+        let mut state = AppState::new();
+        state.tabs.clear();
+        let ctx = eframe::egui::Context::default();
+        // Should not panic
+        handle_edit_action(&mut state, &ctx, "editor: copy");
+        handle_edit_action(&mut state, &ctx, "editor: cut");
+        handle_edit_action(&mut state, &ctx, "editor: paste");
+        handle_edit_action(&mut state, &ctx, "editor: undo");
+        handle_edit_action(&mut state, &ctx, "editor: redo");
+        handle_edit_action(&mut state, &ctx, "editor: select all");
+    }
+
+    #[test]
+    fn handle_edit_action_unknown_action_is_noop() {
+        let mut state = AppState::new();
+        let ctx = eframe::egui::Context::default();
+        // Should not panic
+        handle_edit_action(&mut state, &ctx, "nonexistent: action");
+    }
+
+    #[test]
+    fn handle_edit_action_empty_string_is_noop() {
+        let mut state = AppState::new();
+        let ctx = eframe::egui::Context::default();
+        handle_edit_action(&mut state, &ctx, "");
+    }
+
+    #[test]
+    fn all_editor_actions_accepted_without_panic() {
+        let mut state = AppState::new();
+        let ctx = eframe::egui::Context::default();
+        let actions = [
+            "editor: undo",
+            "editor: redo",
+            "editor: cut",
+            "editor: copy",
+            "editor: paste",
+            "editor: select all",
+        ];
+        for action in &actions {
+            // Should not panic even though no TextEdit state exists
+            handle_edit_action(&mut state, &ctx, action);
+        }
+    }
+}

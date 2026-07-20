@@ -42,7 +42,12 @@ impl Palette {
         }
     }
 
-    pub fn render(&mut self, ctx: &egui::Context, title: &str, open: &mut bool) -> Option<&'static str> {
+    pub fn render(
+        &mut self,
+        ctx: &egui::Context,
+        title: &str,
+        open: &mut bool,
+    ) -> Option<&'static str> {
         if !*open {
             if self.was_open {
                 self.was_open = false;
@@ -192,5 +197,135 @@ impl Palette {
         }
 
         chosen
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn filtered_indices_all_when_empty_filter() {
+        let palette = Palette::new(vec![
+            PaletteItem { code: "file: new" },
+            PaletteItem { code: "file: save" },
+            PaletteItem { code: "editor: copy" },
+        ]);
+        assert_eq!(palette.filtered_indices(), vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn filtered_indices_matches_substring() {
+        let mut palette = Palette::new(vec![
+            PaletteItem { code: "file: new" },
+            PaletteItem { code: "file: open" },
+            PaletteItem { code: "editor: copy" },
+            PaletteItem { code: "editor: paste" },
+        ]);
+        palette.filter = "editor".to_string();
+        assert_eq!(palette.filtered_indices(), vec![2, 3]);
+    }
+
+    #[test]
+    fn filtered_indices_case_insensitive() {
+        let mut palette = Palette::new(vec![
+            PaletteItem { code: "File: New" },
+            PaletteItem { code: "file: open" },
+        ]);
+        palette.filter = "file".to_string();
+        assert_eq!(palette.filtered_indices().len(), 2);
+    }
+
+    #[test]
+    fn filtered_indices_no_match_returns_empty() {
+        let mut palette = Palette::new(vec![
+            PaletteItem { code: "file: new" },
+            PaletteItem { code: "file: save" },
+        ]);
+        palette.filter = "zzzzz".to_string();
+        assert!(palette.filtered_indices().is_empty());
+    }
+
+    #[test]
+    fn palette_new_initial_state() {
+        let palette = Palette::new(vec![
+            PaletteItem { code: "a" },
+            PaletteItem { code: "b" },
+        ]);
+        assert_eq!(palette.filter, "");
+        assert_eq!(palette.selected_index, 0);
+        assert!(!palette.search_focused);
+        assert!(palette.previous_focus.is_none());
+        assert!(!palette.was_open);
+    }
+
+    #[test]
+    fn palette_empty_items() {
+        let palette = Palette::new(vec![]);
+        assert!(palette.filtered_indices().is_empty());
+    }
+
+    #[test]
+    fn filtered_indices_partial_code_match() {
+        let mut palette = Palette::new(vec![
+            PaletteItem { code: "file: new" },
+            PaletteItem { code: "file: save" },
+            PaletteItem { code: "file: save as" },
+            PaletteItem { code: "editor: paste" },
+        ]);
+        palette.filter = "save".to_string();
+        assert_eq!(palette.filtered_indices(), vec![1, 2]);
+    }
+
+    #[test]
+    fn filtered_indices_colon_query() {
+        let mut palette = Palette::new(vec![
+            PaletteItem { code: "file: new" },
+            PaletteItem { code: "editor: copy" },
+        ]);
+        palette.filter = "edit".to_string();
+        assert_eq!(palette.filtered_indices(), vec![1]);
+    }
+
+    #[test]
+    fn filtered_indices_duplicate_codes() {
+        let mut palette = Palette::new(vec![
+            PaletteItem { code: "file: save" },
+            PaletteItem { code: "file: save" },
+        ]);
+        palette.filter = "save".to_string();
+        assert_eq!(palette.filtered_indices(), vec![0, 1]);
+    }
+
+    #[test]
+    fn selected_index_clamped_when_out_of_bounds() {
+        let mut palette = Palette::new(vec![
+            PaletteItem { code: "a" },
+            PaletteItem { code: "b" },
+        ]);
+        palette.filter = "zzzzz".to_string();
+        palette.selected_index = 5;
+        let indices = palette.filtered_indices();
+        assert!(indices.is_empty());
+    }
+
+    #[test]
+    fn filtered_indices_exact_match() {
+        let mut palette = Palette::new(vec![
+            PaletteItem { code: "file: new" },
+            PaletteItem { code: "file: save" },
+        ]);
+        palette.filter = "file: new".to_string();
+        assert_eq!(palette.filtered_indices(), vec![0]);
+    }
+
+    #[test]
+    fn palette_multiple_instances_independent_state() {
+        let mut a = Palette::new(vec![PaletteItem { code: "x" }]);
+        let mut b = Palette::new(vec![PaletteItem { code: "y" }]);
+        a.filter = "x".to_string();
+        assert_eq!(a.filtered_indices(), vec![0]);
+        b.filter = "z".to_string();
+        assert!(b.filtered_indices().is_empty());
     }
 }

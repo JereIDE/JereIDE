@@ -119,3 +119,78 @@ fn insert_at_char_index_empty_insert() {
 fn insert_at_char_index_unicode() {
     assert_eq!(insert_at_char_index("hllo", 1, "é"), "héllo");
 }
+
+#[test]
+fn char_index_to_line_col_only_newlines() {
+    assert_eq!(char_index_to_line_col("\n\n\n", 0), (1, 1));
+    assert_eq!(char_index_to_line_col("\n\n\n", 1), (2, 1));
+    assert_eq!(char_index_to_line_col("\n\n\n", 2), (3, 1));
+}
+
+#[test]
+fn char_index_to_line_col_index_at_newline() {
+    assert_eq!(char_index_to_line_col("abc\ndef", 3), (1, 4));
+    assert_eq!(char_index_to_line_col("abc\ndef", 4), (2, 1));
+}
+
+#[test]
+fn char_index_to_line_col_empty_after_newlines() {
+    assert_eq!(char_index_to_line_col("\n", 0), (1, 1));
+    assert_eq!(char_index_to_line_col("\n", 1), (2, 1));
+}
+
+#[test]
+fn char_range_substring_zero_length() {
+    assert_eq!(char_range_substring("hello", 3, 3), "");
+}
+
+#[test]
+fn char_range_substring_beyond_end() {
+    assert_eq!(char_range_substring("hi", 0, 10), "hi");
+}
+
+#[test]
+fn char_range_substring_from_start() {
+    assert_eq!(char_range_substring("hello", 0, 0), "");
+    assert_eq!(char_range_substring("hello", 0, 3), "hel");
+}
+
+#[test]
+fn char_range_substring_multi_byte_chars() {
+    let s = "a😀b";
+    assert_eq!(char_range_substring(s, 0, 1), "a");
+    assert_eq!(char_range_substring(s, 1, 2), "😀");
+    assert_eq!(char_range_substring(s, 2, 3), "b");
+}
+
+#[test]
+fn delete_char_range_beyond_end() {
+    assert_eq!(delete_char_range("hello", 3, 10), "hel");
+}
+
+#[test]
+fn delete_char_range_with_emoji() {
+    assert_eq!(delete_char_range("a😀bc", 1, 2), "abc");
+}
+
+#[test]
+fn insert_at_char_index_at_zero() {
+    assert_eq!(insert_at_char_index("abc", 0, "x"), "xabc");
+}
+
+#[test]
+fn insert_at_char_index_beyond_end() {
+    assert_eq!(insert_at_char_index("abc", 10, "x"), "abcx");
+}
+
+#[test]
+fn insert_at_char_index_with_unicode() {
+    let s = "😀world";
+    assert_eq!(insert_at_char_index(s, 0, "hello "), "hello 😀world");
+    assert_eq!(insert_at_char_index(s, 1, " cruel "), "😀 cruel world");
+}
+
+#[test]
+fn char_index_to_line_col_trailing_newline() {
+    assert_eq!(char_index_to_line_col("line1\n", 6), (2, 1));
+}

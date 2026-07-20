@@ -66,6 +66,12 @@ fn tab_file_name_deep_path() {
 }
 
 #[test]
+fn tab_file_name_various_paths() {
+    let tab = Tab::with_path_and_content("/a/b/c/main.rs".into(), String::new());
+    assert_eq!(tab.file_name(), "main.rs");
+}
+
+#[test]
 fn app_state_new_has_one_tab() {
     let state = AppState::new();
     assert_eq!(state.tabs.len(), 1);
@@ -80,6 +86,15 @@ fn app_state_new_tab_creates_and_activates() {
     assert_eq!(idx, 1);
     assert_eq!(state.tabs.len(), 2);
     assert_eq!(state.active_tab_index, 1);
+}
+
+#[test]
+fn app_state_new_tab_creates_with_defaults() {
+    let mut state = AppState::new();
+    state.new_tab();
+    assert_eq!(state.tabs.len(), 2);
+    assert!(state.current_tab().text.is_empty());
+    assert!(state.current_tab().file_path.is_none());
 }
 
 #[test]
@@ -122,6 +137,26 @@ fn app_state_open_file_already_open_switches_tab() {
 }
 
 #[test]
+fn app_state_open_file_returns_correct_index() {
+    let mut state = AppState::new();
+    let idx1 = state.open_file("/a.rs".into(), "// a".into());
+    let idx2 = state.open_file("/b.rs".into(), "// b".into());
+    assert_eq!(idx1, 1);
+    assert_eq!(idx2, 2);
+    assert_eq!(state.active_tab_index, 2);
+}
+
+#[test]
+fn app_state_open_file_switches_to_existing() {
+    let mut state = AppState::new();
+    state.open_file("/common.rs".into(), "code".into());
+    state.open_file("/other.rs".into(), "other".into());
+    let idx = state.open_file("/common.rs".into(), "code".into());
+    assert_eq!(idx, 1);
+    assert_eq!(state.active_tab_index, 1);
+}
+
+#[test]
 fn app_state_close_tab_removes() {
     let mut state = AppState::new();
     state.new_tab();
@@ -136,6 +171,14 @@ fn app_state_close_last_tab_closes() {
     let mut state = AppState::new();
     state.close_tab(0);
     assert_eq!(state.tabs.len(), 0);
+}
+
+#[test]
+fn app_state_close_all_tabs_empties() {
+    let mut state = AppState::new();
+    state.close_tab(0);
+    assert!(state.tabs.is_empty());
+    assert_eq!(state.active_tab_index, 0);
 }
 
 #[test]
@@ -157,6 +200,26 @@ fn app_state_close_tab_clamps_active_index() {
     state.active_tab_index = 2;
     state.close_tab(2);
     assert_eq!(state.active_tab_index, 1);
+}
+
+#[test]
+fn app_state_close_tab_decrements_active_index() {
+    let mut state = AppState::new();
+    state.new_tab();
+    state.new_tab();
+    assert_eq!(state.active_tab_index, 2);
+    state.close_tab(1);
+    assert_eq!(state.active_tab_index, 1);
+}
+
+#[test]
+fn app_state_close_tab_above_active_no_change() {
+    let mut state = AppState::new();
+    state.new_tab();
+    state.new_tab();
+    state.active_tab_index = 0;
+    state.close_tab(2);
+    assert_eq!(state.active_tab_index, 0);
 }
 
 #[test]
@@ -189,4 +252,10 @@ fn app_state_mark_saved_delegates_to_tab() {
     assert!(state.is_modified());
     state.mark_saved();
     assert!(!state.is_modified());
+}
+
+#[test]
+fn tab_file_name_no_extension_duplicate() {
+    let tab = Tab::with_path_and_content("/path/to/Makefile".into(), String::new());
+    assert_eq!(tab.file_name(), "Makefile");
 }
