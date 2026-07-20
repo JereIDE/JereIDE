@@ -267,9 +267,6 @@ impl eframe::App for JereIDEApp {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
 
-        // Apply the accent theme once. Re-setting visuals every frame makes egui
-        // treat the style as changed and re-layout the whole UI each frame, which
-        // makes the entire app (and even while dialogs are open) feel sluggish.
         if !self.visuals_initialized {
             let mut visuals = ctx.global_style().visuals.clone();
             visuals.selection.bg_fill = ACCENT;
@@ -482,7 +479,11 @@ impl eframe::App for JereIDEApp {
         }
 
         if let Some(ref mut palette) = self.palette {
-            if let Some(action) = palette.render(&ctx, "Command Palette", &mut self.state.command_palette_open) {
+            if let Some(action) = palette.render(
+                &ctx,
+                "Command Palette",
+                &mut self.state.command_palette_open,
+            ) {
                 self.handle_action(action, &ctx);
             }
             if !self.state.command_palette_open {

@@ -13,7 +13,6 @@ pub enum CurrentView {
     Compose,
 }
 
-/// A single open document (tab) in the IDE.
 #[derive(Clone)]
 pub struct Tab {
     pub id: usize,
@@ -109,12 +108,10 @@ impl AppState {
         }
     }
 
-    /// Returns a shared reference to the active tab.
     pub fn current_tab(&self) -> &Tab {
         &self.tabs[self.active_tab_index]
     }
 
-    /// Returns a mutable reference to the active tab.
     pub fn current_tab_mut(&mut self) -> &mut Tab {
         &mut self.tabs[self.active_tab_index]
     }
@@ -123,7 +120,6 @@ impl AppState {
         self.current_tab().is_modified()
     }
 
-    /// Marks the active tab's text as "saved".
     pub fn mark_saved(&mut self) {
         self.current_tab_mut().mark_saved();
     }
@@ -144,7 +140,6 @@ impl AppState {
         idx
     }
 
-    /// Adds a new empty tab and returns its index.
     pub fn new_tab(&mut self) -> usize {
         self.tabs.push(Tab::new());
         let idx = self.tabs.len() - 1;

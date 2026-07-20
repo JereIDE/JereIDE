@@ -117,7 +117,6 @@ mod tests {
         let mut state = AppState::new();
         state.tabs.clear();
         let ctx = eframe::egui::Context::default();
-        // Should not panic
         handle_edit_action(&mut state, &ctx, "editor: copy");
         handle_edit_action(&mut state, &ctx, "editor: cut");
         handle_edit_action(&mut state, &ctx, "editor: paste");
@@ -130,7 +129,6 @@ mod tests {
     fn handle_edit_action_unknown_action_is_noop() {
         let mut state = AppState::new();
         let ctx = eframe::egui::Context::default();
-        // Should not panic
         handle_edit_action(&mut state, &ctx, "nonexistent: action");
     }
 
@@ -154,7 +152,6 @@ mod tests {
             "editor: select all",
         ];
         for action in &actions {
-            // Should not panic even though no TextEdit state exists
             handle_edit_action(&mut state, &ctx, action);
         }
     }

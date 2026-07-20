@@ -83,10 +83,6 @@ pub fn render_close_confirm_modal(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Large file dialogs
-// ---------------------------------------------------------------------------
-
 pub enum LargeFileAction {
     OpenAnyway(String),
     Cancel,
@@ -206,10 +202,6 @@ pub fn render_large_file_warning(
         None => None,
     }
 }
-
-// ---------------------------------------------------------------------------
-// About dialog
-// ---------------------------------------------------------------------------
 
 pub fn render_about_dialog(ctx: &egui::Context, open: &mut bool) {
     if !*open {
