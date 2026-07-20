@@ -21,13 +21,21 @@ fn visual_line_count(text: &str) -> usize {
     if text.is_empty() {
         1
     } else {
-        text.chars().filter(|&c| c == '\n').count() + 1
+        text.as_bytes().iter().filter(|&&b| b == b'\n').count() + 1
     }
 }
 
+fn digit_count(mut n: usize) -> usize {
+    let mut count = 1;
+    while n >= 10 {
+        n /= 10;
+        count += 1;
+    }
+    count
+}
+
 fn gutter_width(line_count: usize) -> f32 {
-    let digit_count = (line_count as f64).log10().floor() as usize + 1;
-    GUTTER_PADDING_LEFT + digit_count as f32 * GUTTER_DIGIT_WIDTH + GUTTER_PADDING_RIGHT
+    GUTTER_PADDING_LEFT + digit_count(line_count) as f32 * GUTTER_DIGIT_WIDTH + GUTTER_PADDING_RIGHT
 }
 
 pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
@@ -79,11 +87,8 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         let text_str = text.as_str();
 
         let mut layout_job = HIGHLIGHTERS.with(|cache| {
-            cache
-                .borrow_mut()
-                .entry(tab_id)
-                .or_insert_with(|| SyntaxHighlighter::new(EDITOR_FONT_SIZE, extension.as_deref()))
-                .highlight(text_str)
+            let mut c = cache.borrow_mut();
+            c.get_mut(&tab_id).unwrap().highlight(text_str)
         });
 
         layout_job.wrap.max_width = wrap_width;

@@ -2,8 +2,9 @@
 pub fn char_index_to_line_col(text: &str, char_index: usize) -> (usize, usize) {
     let mut line = 0;
     let mut col = 0;
-    for (ci, ch) in text.chars().enumerate() {
-        if ci >= char_index {
+    let mut i = 0;
+    for ch in text.chars() {
+        if i >= char_index {
             break;
         }
         if ch == '\n' {
@@ -12,6 +13,7 @@ pub fn char_index_to_line_col(text: &str, char_index: usize) -> (usize, usize) {
         } else {
             col += 1;
         }
+        i += 1;
     }
     (line + 1, col + 1)
 }

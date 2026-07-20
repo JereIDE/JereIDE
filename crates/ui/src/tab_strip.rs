@@ -92,8 +92,7 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
 
     let mut click_tab: Option<usize> = None;
     let mut close_tab: Option<usize> = None;
-    let mut close_hovered = vec![false; state.tabs.len()];
-    let mut tab_hovered = vec![false; state.tabs.len()];
+    let mut hovered: Vec<(bool, bool)> = Vec::with_capacity(state.tabs.len());
 
     for idx in 0..state.tabs.len() {
         let tab_id = egui::Id::new(("tab", idx));
@@ -106,8 +105,9 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
             .interact(layouts[idx].close_rect, close_id, Sense::click())
             .on_hover_cursor(egui::CursorIcon::PointingHand);
 
-        close_hovered[idx] = close_resp.hovered();
-        tab_hovered[idx] = tab_resp.hovered() || close_resp.hovered();
+        let close_h = close_resp.hovered();
+        let tab_h = tab_resp.hovered() || close_h;
+        hovered.push((tab_h, close_h));
 
         if close_resp.clicked() {
             close_tab = Some(idx);
@@ -124,6 +124,7 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
         let layout = &layouts[idx];
         let is_active = idx == state.active_tab_index;
         let bg = if is_active { SURFACE_BG } else { ELEVATED_BG };
+        let (tab_hovered, close_hovered) = hovered[idx];
 
         painter.rect_filled(layout.rect, 0.0, bg);
 
@@ -138,11 +139,11 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
             painter.circle_filled(layout.dot_pos, TAB_MODIFIED_DOT_RADIUS, ACCENT);
         }
 
-        if tab_hovered[idx] {
-            if close_hovered[idx] {
+        if tab_hovered {
+            if close_hovered {
                 painter.rect_filled(layout.close_rect, TAB_CLOSE_BTN_RADIUS, HOVER_BG);
             }
-            let icon_color = if close_hovered[idx] {
+            let icon_color = if close_hovered {
                 TEXT_DEFAULT
             } else {
                 TEXT_PRIMARY

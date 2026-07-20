@@ -13,6 +13,8 @@ pub struct Palette {
     last_mouse_pos: Option<egui::Pos2>,
     previous_focus: Option<egui::Id>,
     was_open: bool,
+    cached_filter: Option<String>,
+    cached_indices: Vec<usize>,
 }
 
 impl Palette {
@@ -25,21 +27,32 @@ impl Palette {
             last_mouse_pos: None,
             previous_focus: None,
             was_open: false,
+            cached_filter: None,
+            cached_indices: Vec::new(),
         }
     }
 
-    fn filtered_indices(&self) -> Vec<usize> {
+    fn filtered_indices(&mut self) -> &[usize] {
+        let filter_changed = self.cached_filter.as_ref().map_or(true, |c| c != &self.filter);
+        if !filter_changed {
+            return &self.cached_indices;
+        }
+        self.cached_filter = Some(self.filter.clone());
         if self.filter.is_empty() {
-            (0..self.items.len()).collect()
+            self.cached_indices.clear();
+            self.cached_indices.extend(0..self.items.len());
         } else {
             let lower = self.filter.to_lowercase();
-            self.items
-                .iter()
-                .enumerate()
-                .filter(|(_, item)| item.code.to_lowercase().contains(&lower))
-                .map(|(i, _)| i)
-                .collect()
+            self.cached_indices.clear();
+            self.cached_indices.extend(
+                self.items
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, item)| item.code.to_lowercase().contains(&lower))
+                    .map(|(i, _)| i),
+            );
         }
+        &self.cached_indices
     }
 
     pub fn render(
@@ -113,7 +126,7 @@ impl Palette {
 
                 ui.add_space(6.0);
 
-                let indices = self.filtered_indices();
+                let indices = self.filtered_indices().to_vec();
                 if self.selected_index >= indices.len() && !indices.is_empty() {
                     self.selected_index = indices.len() - 1;
                 }
@@ -206,7 +219,7 @@ mod tests {
 
     #[test]
     fn filtered_indices_all_when_empty_filter() {
-        let palette = Palette::new(vec![
+        let mut palette = Palette::new(vec![
             PaletteItem { code: "file: new" },
             PaletteItem { code: "file: save" },
             PaletteItem {
@@ -264,7 +277,7 @@ mod tests {
 
     #[test]
     fn palette_empty_items() {
-        let palette = Palette::new(vec![]);
+        let mut palette = Palette::new(vec![]);
         assert!(palette.filtered_indices().is_empty());
     }
 

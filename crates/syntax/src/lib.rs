@@ -79,10 +79,8 @@ impl SyntaxHighlighter {
             return egui::text::LayoutJob::default();
         }
 
-        // If text didn't change, no need to
-        // waste compute.
         if text == self.cached_text {
-            return self.build_job(text);
+            return self.build_job();
         }
 
         self.cached_text = text.to_string();
@@ -90,21 +88,20 @@ impl SyntaxHighlighter {
         let ss = syntax_set();
         let new_lines: Vec<&str> = LinesWithEndings::from(text).collect();
 
-        // Incremental stuff
         let first_diff = self
             .lines
             .iter()
             .zip(new_lines.iter())
             .position(|(cached, &new)| cached.content != new)
-            .unwrap_or(usize::MAX) // every overlapping line matched
+            .unwrap_or(usize::MAX)
             .min(self.lines.len())
             .min(new_lines.len());
 
         if first_diff == self.lines.len() && self.lines.len() == new_lines.len() {
-            return self.build_job(text);
+            return self.build_job();
         }
 
-        let old_remainder: Vec<CachedLine> = self.lines.drain(first_diff..).collect();
+        let mut old_remainder: Vec<CachedLine> = self.lines.drain(first_diff..).collect();
 
         let mut hl = if first_diff == 0 {
             HighlightLines::new(self.syntax, self.theme)
@@ -113,7 +110,7 @@ impl SyntaxHighlighter {
             HighlightLines::from_state(self.theme, prev.hl_state.clone(), prev.parse_state.clone())
         };
 
-        let mut new_cache: Vec<CachedLine> = Vec::new();
+        let mut new_cache: Vec<CachedLine> = Vec::with_capacity(new_lines.len() - first_diff);
 
         for (rel_idx, &line) in new_lines[first_diff..].iter().enumerate() {
             let result = hl.highlight_line(line, ss);
@@ -137,13 +134,6 @@ impl SyntaxHighlighter {
                 Vec::new()
             };
 
-            let cached_line = CachedLine {
-                content: line.to_string(),
-                sections,
-                hl_state: hls.clone(),
-                parse_state: ps.clone(),
-            };
-
             let should_stop = if rel_idx < old_remainder.len()
                 && hls == old_remainder[rel_idx].hl_state
                 && ps == old_remainder[rel_idx].parse_state
@@ -159,10 +149,15 @@ impl SyntaxHighlighter {
                 false
             };
 
-            new_cache.push(cached_line);
+            new_cache.push(CachedLine {
+                content: line.to_string(),
+                sections,
+                hl_state: hls.clone(),
+                parse_state: ps.clone(),
+            });
 
             if should_stop {
-                new_cache.extend(old_remainder[rel_idx + 1..].iter().cloned());
+                new_cache.extend(old_remainder.split_off(rel_idx + 1));
                 break;
             }
 
@@ -171,39 +166,50 @@ impl SyntaxHighlighter {
 
         self.lines.extend(new_cache);
 
-        self.build_job(text)
+        self.build_job()
     }
 
-    fn build_job(&self, text: &str) -> egui::text::LayoutJob {
-        let mut job = egui::text::LayoutJob::default();
-        job.text = text.to_owned();
+    fn build_job(&self) -> egui::text::LayoutJob {
+        let text = &self.cached_text;
+        let mut job = egui::text::LayoutJob {
+            text: text.clone(),
+            ..Default::default()
+        };
 
-        let mut sections: Vec<(usize, usize, Color32)> = Vec::new();
-        let mut line_start = 0usize;
-
-        for line in &self.lines {
-            for &(start, end, color) in &line.sections {
-                sections.push((line_start + start, line_start + end, color));
+        if self.lines.is_empty() {
+            if !text.is_empty() {
+                job.sections.push(egui::text::LayoutSection {
+                    leading_space: 0.0,
+                    byte_range: 0..text.len(),
+                    format: TextFormat::simple(self.font_id.clone(), TEXT_DEFAULT),
+                });
             }
-            line_start += line.content.len();
+            return job;
         }
 
         let default_fmt = TextFormat::simple(self.font_id.clone(), TEXT_DEFAULT);
         let mut cursor = 0;
-        for &(start, end, color) in &sections {
-            if start > cursor {
+        let mut line_start = 0;
+
+        for line in &self.lines {
+            for &(start, end, color) in &line.sections {
+                let abs_start = line_start + start;
+                let abs_end = line_start + end;
+                if abs_start > cursor {
+                    job.sections.push(egui::text::LayoutSection {
+                        leading_space: 0.0,
+                        byte_range: cursor..abs_start,
+                        format: default_fmt.clone(),
+                    });
+                }
                 job.sections.push(egui::text::LayoutSection {
                     leading_space: 0.0,
-                    byte_range: cursor..start,
-                    format: default_fmt.clone(),
+                    byte_range: abs_start..abs_end,
+                    format: TextFormat::simple(self.font_id.clone(), color),
                 });
+                cursor = abs_end;
             }
-            job.sections.push(egui::text::LayoutSection {
-                leading_space: 0.0,
-                byte_range: start..end,
-                format: TextFormat::simple(self.font_id.clone(), color),
-            });
-            cursor = end;
+            line_start += line.content.len();
         }
         if cursor < text.len() {
             job.sections.push(egui::text::LayoutSection {

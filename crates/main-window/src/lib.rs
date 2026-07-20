@@ -166,8 +166,8 @@ impl JereIDEApp {
         let path = self.state.current_tab().file_path.clone();
         match path {
             Some(p) => {
-                let text = self.state.current_tab().text.clone();
-                if let Err(e) = FileManager::save_to_path(&text, &std::path::PathBuf::from(&p)) {
+                if let Err(e) = FileManager::save_to_path(
+                    &self.state.current_tab().text, &std::path::PathBuf::from(&p)) {
                     eprintln!("Failed to save file: {}", e);
                 } else {
                     self.state.mark_saved();
@@ -182,8 +182,8 @@ impl JereIDEApp {
             return;
         }
         if let Some(path) = FileManager::save_as_dialog() {
-            let text = self.state.current_tab().text.clone();
-            if let Err(e) = FileManager::save_to_path(&text, &path) {
+            if let Err(e) = FileManager::save_to_path(
+                &self.state.current_tab().text, &path) {
                 eprintln!("Failed to save file: {}", e);
             } else {
                 let path_str = path.display().to_string();
@@ -198,8 +198,8 @@ impl JereIDEApp {
         let path = self.state.tabs[idx].file_path.clone();
         match path {
             Some(p) => {
-                let text = self.state.tabs[idx].text.clone();
-                if let Err(e) = FileManager::save_to_path(&text, &std::path::PathBuf::from(&p)) {
+                if let Err(e) = FileManager::save_to_path(
+                    &self.state.tabs[idx].text, &std::path::PathBuf::from(&p)) {
                     eprintln!("Failed to save file: {}", e);
                     false
                 } else {
@@ -208,8 +208,8 @@ impl JereIDEApp {
             }
             None => {
                 if let Some(path) = FileManager::save_as_dialog() {
-                    let text = self.state.tabs[idx].text.clone();
-                    if let Err(e) = FileManager::save_to_path(&text, &path) {
+                    if let Err(e) = FileManager::save_to_path(
+                        &self.state.tabs[idx].text, &path) {
                         eprintln!("Failed to save file: {}", e);
                         false
                     } else {
@@ -461,8 +461,8 @@ impl eframe::App for JereIDEApp {
             }
         }
 
-        if let Some((ref path, _size)) = self.state.pending_large_file_warn.clone() {
-            let action = jereide_ui::dialog::render_large_file_warning(&ctx, path, _size);
+        if let Some(ref pending) = self.state.pending_large_file_warn {
+            let action = jereide_ui::dialog::render_large_file_warning(&ctx, &pending.0, pending.1);
             if let Some(lfa) = action {
                 self.state.pending_large_file_warn = None;
                 match lfa {
