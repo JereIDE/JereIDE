@@ -102,7 +102,7 @@ impl Palette {
                 let resp = ui.add_sized(
                     egui::vec2(ui.available_width(), 0.0),
                     egui::TextEdit::singleline(&mut self.filter)
-                        .hint_text("Search...")
+                        .hint_text("Execute a command...")
                         .desired_width(f32::INFINITY)
                         .return_key(None),
                 );
@@ -209,7 +209,9 @@ mod tests {
         let palette = Palette::new(vec![
             PaletteItem { code: "file: new" },
             PaletteItem { code: "file: save" },
-            PaletteItem { code: "editor: copy" },
+            PaletteItem {
+                code: "editor: copy",
+            },
         ]);
         assert_eq!(palette.filtered_indices(), vec![0, 1, 2]);
     }
@@ -219,8 +221,12 @@ mod tests {
         let mut palette = Palette::new(vec![
             PaletteItem { code: "file: new" },
             PaletteItem { code: "file: open" },
-            PaletteItem { code: "editor: copy" },
-            PaletteItem { code: "editor: paste" },
+            PaletteItem {
+                code: "editor: copy",
+            },
+            PaletteItem {
+                code: "editor: paste",
+            },
         ]);
         palette.filter = "editor".to_string();
         assert_eq!(palette.filtered_indices(), vec![2, 3]);
@@ -248,10 +254,7 @@ mod tests {
 
     #[test]
     fn palette_new_initial_state() {
-        let palette = Palette::new(vec![
-            PaletteItem { code: "a" },
-            PaletteItem { code: "b" },
-        ]);
+        let palette = Palette::new(vec![PaletteItem { code: "a" }, PaletteItem { code: "b" }]);
         assert_eq!(palette.filter, "");
         assert_eq!(palette.selected_index, 0);
         assert!(!palette.search_focused);
@@ -270,8 +273,12 @@ mod tests {
         let mut palette = Palette::new(vec![
             PaletteItem { code: "file: new" },
             PaletteItem { code: "file: save" },
-            PaletteItem { code: "file: save as" },
-            PaletteItem { code: "editor: paste" },
+            PaletteItem {
+                code: "file: save as",
+            },
+            PaletteItem {
+                code: "editor: paste",
+            },
         ]);
         palette.filter = "save".to_string();
         assert_eq!(palette.filtered_indices(), vec![1, 2]);
@@ -281,7 +288,9 @@ mod tests {
     fn filtered_indices_colon_query() {
         let mut palette = Palette::new(vec![
             PaletteItem { code: "file: new" },
-            PaletteItem { code: "editor: copy" },
+            PaletteItem {
+                code: "editor: copy",
+            },
         ]);
         palette.filter = "edit".to_string();
         assert_eq!(palette.filtered_indices(), vec![1]);
@@ -299,10 +308,7 @@ mod tests {
 
     #[test]
     fn selected_index_clamped_when_out_of_bounds() {
-        let mut palette = Palette::new(vec![
-            PaletteItem { code: "a" },
-            PaletteItem { code: "b" },
-        ]);
+        let mut palette = Palette::new(vec![PaletteItem { code: "a" }, PaletteItem { code: "b" }]);
         palette.filter = "zzzzz".to_string();
         palette.selected_index = 5;
         let indices = palette.filtered_indices();

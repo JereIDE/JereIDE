@@ -99,8 +99,12 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
         let tab_id = egui::Id::new(("tab", idx));
         let close_id = egui::Id::new(("close", idx));
 
-        let tab_resp = ui.interact(layouts[idx].rect, tab_id, Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand);
-        let close_resp = ui.interact(layouts[idx].close_rect, close_id, Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand);
+        let tab_resp = ui
+            .interact(layouts[idx].rect, tab_id, Sense::click())
+            .on_hover_cursor(egui::CursorIcon::PointingHand);
+        let close_resp = ui
+            .interact(layouts[idx].close_rect, close_id, Sense::click())
+            .on_hover_cursor(egui::CursorIcon::PointingHand);
 
         close_hovered[idx] = close_resp.hovered();
         tab_hovered[idx] = tab_resp.hovered() || close_resp.hovered();
