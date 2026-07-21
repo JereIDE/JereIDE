@@ -3,29 +3,29 @@ use jereide_syntax::SyntaxHighlighter;
 #[test]
 fn syntax_highlighter_empty_text() {
     let mut hl = SyntaxHighlighter::new(14.0, None);
-    let job = hl.highlight("");
+    let job = hl.highlight("").clone();
     assert_eq!(job.text, "");
 }
 
 #[test]
 fn syntax_highlighter_plain_text() {
     let mut hl = SyntaxHighlighter::new(14.0, None);
-    let job = hl.highlight("hello world");
+    let job = hl.highlight("hello world").clone();
     assert_eq!(job.text, "hello world");
 }
 
 #[test]
 fn syntax_highlighter_rust_keyword() {
     let mut hl = SyntaxHighlighter::new(14.0, Some("rs"));
-    let job = hl.highlight("fn main() {}");
+    let job = hl.highlight("fn main() {}").clone();
     assert_eq!(job.text, "fn main() {}");
 }
 
 #[test]
 fn syntax_highlighter_cache_same_input() {
     let mut hl = SyntaxHighlighter::new(14.0, None);
-    let job1 = hl.highlight("hello");
-    let job2 = hl.highlight("hello");
+    let job1 = hl.highlight("hello").clone();
+    let job2 = hl.highlight("hello").clone();
     assert_eq!(job1.text, job2.text);
 }
 
@@ -33,18 +33,18 @@ fn syntax_highlighter_cache_same_input() {
 fn syntax_highlighter_cache_invalidated_on_change() {
     let mut hl = SyntaxHighlighter::new(14.0, None);
     hl.highlight("hello");
-    let job = hl.highlight("world");
+    let job = hl.highlight("world").clone();
     assert_eq!(job.text, "world");
 }
 
 #[test]
 fn syntax_highlighter_switching_extension() {
     let mut hl = SyntaxHighlighter::new(14.0, Some("rs"));
-    let job_rs = hl.highlight("fn main() {}");
+    let job_rs = hl.highlight("fn main() {}").clone();
     assert_eq!(job_rs.text, "fn main() {}");
 
     let mut hl2 = SyntaxHighlighter::new(14.0, Some("py"));
-    let job_py = hl2.highlight("def main():");
+    let job_py = hl2.highlight("def main():").clone();
     assert_eq!(job_py.text, "def main():");
 }
 
@@ -52,7 +52,7 @@ fn syntax_highlighter_switching_extension() {
 fn syntax_highlighter_multi_line() {
     let mut hl = SyntaxHighlighter::new(14.0, None);
     let text = "line1\nline2\nline3";
-    let job = hl.highlight(text);
+    let job = hl.highlight(text).clone();
     assert_eq!(job.text, text);
 }
 
@@ -60,6 +60,6 @@ fn syntax_highlighter_multi_line() {
 fn syntax_highlighter_trailing_newline() {
     let mut hl = SyntaxHighlighter::new(14.0, None);
     let text = "line1\nline2\n";
-    let job = hl.highlight(text);
+    let job = hl.highlight(text).clone();
     assert_eq!(job.text, text);
 }

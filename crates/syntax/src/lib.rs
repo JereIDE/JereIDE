@@ -1,158 +1,431 @@
-use eframe::egui::{self, FontId, TextFormat};
-use jereide_settings::TEXT_DEFAULT;
+use std::collections::HashMap;
 
-// -- Syntax highlighting (syntect) removed for performance --
-// use syntect::easy::HighlightLines;
-// use syntect::highlighting::{HighlightState, Theme, ThemeSet};
-// use syntect::parsing::{ParseState, SyntaxReference, SyntaxSet};
-// use syntect::util::LinesWithEndings;
-//
-// fn syntax_set() -> &'static SyntaxSet {
-//     static SS: OnceLock<SyntaxSet> = OnceLock::new();
-//     SS.get_or_init(SyntaxSet::load_defaults_newlines)
-// }
-//
-// fn theme_set() -> &'static ThemeSet {
-//     static TS: OnceLock<ThemeSet> = OnceLock::new();
-//     TS.get_or_init(ThemeSet::load_defaults)
-// }
-//
-// #[derive(Clone)]
-// struct CachedLine {
-//     content: String,
-//     sections: Vec<(usize, usize, Color32)>,
-//     hl_state: HighlightState,
-//     parse_state: ParseState,
-// }
+use eframe::egui::{self, Color32, FontId, TextFormat};
+use regex::Regex;
+use serde::Deserialize;
 
-pub struct SyntaxHighlighter {
-    font_id: FontId,
-    // syntax: &'static SyntaxReference,
-    // theme: &'static Theme,
-    // lines: Vec<CachedLine>,
-    cached_text: String,
+use jereide_settings::{
+    SYNTAX_COMMENT, SYNTAX_FUNCTION, SYNTAX_KEYWORD, SYNTAX_KEYWORD2, SYNTAX_LITERAL,
+    SYNTAX_NUMBER, SYNTAX_OPERATOR, SYNTAX_STRING, TEXT_DEFAULT,
+};
+
+// ---------------------------------------------------------------------------
+// Flat JSON schema — no $ref, no Lua patterns, just regex
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+struct SyntaxFile {
+    syntax: SyntaxDef,
 }
 
-impl SyntaxHighlighter {
-    pub fn new(font_size: f32, _extension: Option<&str>) -> Self {
-        // let ss = syntax_set();
-        // let syntax = extension
-        //     .and_then(|ext| ss.find_syntax_by_extension(ext))
-        //     .unwrap_or_else(|| ss.find_syntax_plain_text());
-        // let ts = theme_set();
-        // let theme = ts
-        //     .themes
-        //     .get("InspiredGitHub")
-        //     .or_else(|| ts.themes.get("base16-ocean.light"))
-        //     .unwrap_or_else(|| {
-        //         ts.themes
-        //             .values()
-        //             .next()
-        //             .expect("at least one default theme")
-        //     });
+#[derive(Debug, Deserialize)]
+struct SyntaxDef {
+    name: String,
+    files: Vec<String>,
+    symbols: HashMap<String, String>,
+    patterns: Vec<RawPattern>,
+}
 
-        Self {
-            font_id: FontId::monospace(font_size),
-            // syntax,
-            // theme,
-            // lines: Vec::new(),
-            cached_text: String::new(),
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum RawPattern {
+    Line {
+        #[serde(rename = "type")]
+        type_: String,
+        pattern: String,
+    },
+    Block {
+        #[serde(rename = "type")]
+        type_: String,
+        start: String,
+        end: String,
+        #[serde(default)]
+        escape: Option<String>,
+    },
+}
+
+// ---------------------------------------------------------------------------
+// Compiled syntax definition (regexes compiled at load time)
+// ---------------------------------------------------------------------------
+
+struct CompiledPattern {
+    type_: String,
+    kind: CompiledPatternKind,
+}
+
+enum CompiledPatternKind {
+    Line(Regex),
+    Block {
+        start_re: Regex,
+        end_re: Regex,
+        escape: Option<char>,
+    },
+}
+
+struct CompiledSyntax {
+    _name: String,
+    _file_patterns: Vec<Regex>,
+    symbols: HashMap<String, String>,
+    patterns: Vec<CompiledPattern>,
+}
+
+// ---------------------------------------------------------------------------
+// Loading
+// ---------------------------------------------------------------------------
+
+fn load_syntax(data_dir: &std::path::Path, extension: &str) -> Option<CompiledSyntax> {
+    let path = data_dir.join(format!("{extension}.json"));
+    let content = std::fs::read_to_string(&path).ok()?;
+    let file: SyntaxFile = serde_json::from_str(&content).ok()?;
+
+    let def = file.syntax;
+
+    let _file_patterns: Vec<Regex> = def
+        .files
+        .iter()
+        .filter_map(|s| Regex::new(s).ok())
+        .collect();
+
+    let patterns: Vec<CompiledPattern> = def
+        .patterns
+        .iter()
+        .filter_map(|rp| compile_pattern(rp))
+        .collect();
+
+    Some(CompiledSyntax {
+        _name: def.name,
+        _file_patterns,
+        symbols: def.symbols,
+        patterns,
+    })
+}
+
+fn compile_pattern(rp: &RawPattern) -> Option<CompiledPattern> {
+    match rp {
+        RawPattern::Line { type_, pattern } => Regex::new(pattern).ok().map(|re| CompiledPattern {
+            type_: type_.clone(),
+            kind: CompiledPatternKind::Line(re),
+        }),
+        RawPattern::Block {
+            type_,
+            start,
+            end,
+            escape,
+        } => {
+            let start_re = Regex::new(start).ok()?;
+            let end_re = Regex::new(end).ok()?;
+            let esc = escape.as_ref().and_then(|s| s.chars().next());
+            Some(CompiledPattern {
+                type_: type_.clone(),
+                kind: CompiledPatternKind::Block {
+                    start_re,
+                    end_re,
+                    escape: esc,
+                },
+            })
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Tokenizer
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Debug, PartialEq)]
+enum HlState {
+    Normal,
+    InBlock { pattern_idx: usize, escaped: bool },
+}
+
+type Token = (usize, usize, String);
+
+fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token> {
+    let mut tokens: Vec<Token> = Vec::new();
+    let bytes = text.as_bytes();
+    let len = bytes.len();
+    let mut pos = 0;
+
+    while pos < len {
+        match state {
+            HlState::Normal => {
+                let mut matched = false;
+
+                for (idx, pattern) in def.patterns.iter().enumerate() {
+                    match &pattern.kind {
+                        CompiledPatternKind::Line(re) => {
+                            if let Some(m) = re.find(&text[pos..]) {
+                                if m.start() == 0 {
+                                    let end = pos + m.end();
+                                    let type_ =
+                                        resolve_type(&pattern.type_, &text[pos..end], &def.symbols);
+                                    tokens.push((pos, end, type_));
+                                    pos = end;
+                                    matched = true;
+                                    break;
+                                }
+                            }
+                        }
+                        CompiledPatternKind::Block {
+                            start_re,
+                            end_re,
+                            escape: _,
+                        } => {
+                            if let Some(m) = start_re.find(&text[pos..]) {
+                                if m.start() == 0 {
+                                    let rest = &text[pos + m.end()..];
+                                    if let Some(end_m) = end_re.find(rest) {
+                                        let end = pos + m.end() + end_m.end();
+                                        tokens.push((pos, end, pattern.type_.clone()));
+                                        pos = end;
+                                    } else {
+                                        tokens.push((pos, len, pattern.type_.clone()));
+                                        *state = HlState::InBlock {
+                                            pattern_idx: idx,
+                                            escaped: false,
+                                        };
+                                        pos = len;
+                                    }
+                                    matched = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if !matched {
+                    let start = pos;
+                    pos += 1;
+                    while pos < len {
+                        let mut any_match = false;
+                        for pattern in &def.patterns {
+                            match &pattern.kind {
+                                CompiledPatternKind::Line(re) => {
+                                    if let Some(m) = re.find(&text[pos..]) {
+                                        if m.start() == 0 {
+                                            any_match = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                CompiledPatternKind::Block { start_re, .. } => {
+                                    if let Some(m) = start_re.find(&text[pos..]) {
+                                        if m.start() == 0 {
+                                            any_match = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if any_match {
+                            break;
+                        }
+                        pos += 1;
+                    }
+                    tokens.push((start, pos, "plain".to_string()));
+                }
+            }
+            HlState::InBlock {
+                pattern_idx,
+                escaped,
+            } => {
+                let pattern = &def.patterns[*pattern_idx];
+                if let CompiledPatternKind::Block { end_re, escape, .. } = &pattern.kind {
+                    let rest = &text[pos..];
+                    let mut search_pos = 0;
+                    let mut found = false;
+                    let bytes_rest = rest.as_bytes();
+
+                    while search_pos < bytes_rest.len() {
+                        if let Some(esc) = escape {
+                            if !*escaped && bytes_rest[search_pos] == *esc as u8 {
+                                *escaped = true;
+                                search_pos += 1;
+                                continue;
+                            }
+                            if *escaped {
+                                *escaped = false;
+                                search_pos += 1;
+                                continue;
+                            }
+                        }
+
+                        if let Some(end_m) = end_re.find(&rest[search_pos..]) {
+                            if end_m.start() == 0 {
+                                let end = pos + search_pos + end_m.end();
+                                tokens.push((pos, end, pattern.type_.clone()));
+                                pos = end;
+                                *state = HlState::Normal;
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        search_pos += 1;
+                    }
+
+                    if !found {
+                        tokens.push((pos, len, pattern.type_.clone()));
+                        pos = len;
+                    }
+                } else {
+                    *state = HlState::Normal;
+                }
+            }
         }
     }
 
-    pub fn highlight(&mut self, text: &str) -> egui::text::LayoutJob {
-        // Return cached job if text unchanged
-        if text == self.cached_text && !self.cached_text.is_empty() {
-            return self.build_job();
+    tokens
+}
+
+fn resolve_type(
+    pattern_type: &str,
+    matched_text: &str,
+    symbols: &HashMap<String, String>,
+) -> String {
+    if pattern_type == "symbol" || pattern_type == "function" {
+        if let Some(sym_type) = symbols.get(matched_text) {
+            return sym_type.clone();
         }
-
-        self.cached_text = text.to_string();
-        self.build_job()
     }
+    pattern_type.to_string()
+}
 
-    fn build_job(&self) -> egui::text::LayoutJob {
-        let text = &self.cached_text;
-        let mut job = egui::text::LayoutJob {
-            text: text.clone(),
+// ---------------------------------------------------------------------------
+// Token to LayoutJob conversion
+// ---------------------------------------------------------------------------
+
+fn type_to_color(type_: &str) -> Color32 {
+    match type_ {
+        "keyword" => SYNTAX_KEYWORD,
+        "keyword2" => SYNTAX_KEYWORD2,
+        "string" => SYNTAX_STRING,
+        "comment" => SYNTAX_COMMENT,
+        "number" => SYNTAX_NUMBER,
+        "operator" => SYNTAX_OPERATOR,
+        "function" => SYNTAX_FUNCTION,
+        "literal" => SYNTAX_LITERAL,
+        _ => TEXT_DEFAULT,
+    }
+}
+
+fn tokens_to_job(text: &str, tokens: &[Token], font_id: &FontId) -> egui::text::LayoutJob {
+    let mut job = egui::text::LayoutJob {
+        text: text.to_string(),
+        wrap: egui::text::TextWrapping {
+            max_width: f32::INFINITY,
             ..Default::default()
-        };
+        },
+        ..Default::default()
+    };
 
+    if tokens.is_empty() {
         if !text.is_empty() {
             job.sections.push(egui::text::LayoutSection {
                 leading_space: 0.0,
                 byte_range: 0..text.len(),
-                format: TextFormat::simple(self.font_id.clone(), TEXT_DEFAULT),
+                format: TextFormat::simple(font_id.clone(), TEXT_DEFAULT),
             });
         }
+        return job;
+    }
 
-        job
+    for (start, end, type_) in tokens {
+        let color = type_to_color(type_);
+        job.sections.push(egui::text::LayoutSection {
+            leading_space: 0.0,
+            byte_range: *start..*end,
+            format: TextFormat::simple(font_id.clone(), color),
+        });
+    }
+
+    job
+}
+
+// ---------------------------------------------------------------------------
+// Data directory discovery
+// ---------------------------------------------------------------------------
+
+fn find_data_dir() -> Option<std::path::PathBuf> {
+    let mut dir = std::env::current_dir().ok()?;
+    loop {
+        let candidate = dir.join("data");
+        if candidate.is_dir() {
+            return Some(candidate);
+        }
+        if !dir.pop() {
+            return None;
+        }
     }
 }
 
-// -- Original highlight logic preserved below --
-// pub fn highlight(&mut self, text: &str) -> egui::text::LayoutJob {
-//     if text.is_empty() {
-//         self.lines.clear();
-//         self.cached_text.clear();
-//         return egui::text::LayoutJob::default();
-//     }
-//     if text == self.cached_text {
-//         return self.build_job();
-//     }
-//     self.cached_text = text.to_string();
-//     let ss = syntax_set();
-//     let new_lines: Vec<&str> = LinesWithEndings::from(text).collect();
-//     let first_diff = self
-//         .lines.iter().zip(new_lines.iter())
-//         .position(|(cached, &new)| cached.content != new)
-//         .unwrap_or(usize::MAX).min(self.lines.len()).min(new_lines.len());
-//     if first_diff == self.lines.len() && self.lines.len() == new_lines.len() {
-//         return self.build_job();
-//     }
-//     let mut old_remainder: Vec<CachedLine> = self.lines.drain(first_diff..).collect();
-//     let mut hl = if first_diff == 0 {
-//         HighlightLines::new(self.syntax, self.theme)
-//     } else {
-//         let prev = &self.lines[first_diff - 1];
-//         HighlightLines::from_state(self.theme, prev.hl_state.clone(), prev.parse_state.clone())
-//     };
-//     let mut new_cache: Vec<CachedLine> = Vec::with_capacity(new_lines.len() - first_diff);
-//     for (rel_idx, &line) in new_lines[first_diff..].iter().enumerate() {
-//         let result = hl.highlight_line(line, ss);
-//         let (hls, ps) = hl.state();
-//         let sections = if let Ok(ref ranges) = result {
-//             ranges.iter().map(|(style, part)| {
-//                 let color = Color32::from_rgba_unmultiplied(
-//                     style.foreground.r, style.foreground.g,
-//                     style.foreground.b, style.foreground.a,
-//                 );
-//                 let part_start = part.as_ptr() as usize - line.as_ptr() as usize;
-//                 (part_start, part_start + part.len(), color)
-//             }).collect()
-//         } else { Vec::new() };
-//         let should_stop = if rel_idx < old_remainder.len()
-//             && hls == old_remainder[rel_idx].hl_state
-//             && ps == old_remainder[rel_idx].parse_state
-//         {
-//             let remaining_new = &new_lines[first_diff + rel_idx + 1..];
-//             let remaining_old = &old_remainder[rel_idx + 1..];
-//             remaining_new.len() == remaining_old.len()
-//                 && remaining_new.iter().zip(remaining_old.iter()).all(|(&n, o)| n == o.content)
-//         } else { false };
-//         new_cache.push(CachedLine {
-//             content: line.to_string(), sections,
-//             hl_state: hls.clone(), parse_state: ps.clone(),
-//         });
-//         if should_stop {
-//             new_cache.extend(old_remainder.split_off(rel_idx + 1));
-//             break;
-//         }
-//         hl = HighlightLines::from_state(self.theme, hls, ps);
-//     }
-//     self.lines.extend(new_cache);
-//     self.build_job()
-// }
-//
-// fn build_job(&self) -> egui::text::LayoutJob {
-//     ...
-// }
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+pub struct SyntaxHighlighter {
+    font_id: FontId,
+    syntax_def: Option<CompiledSyntax>,
+    cached_text: String,
+    cached_job: egui::text::LayoutJob,
+    state: HlState,
+}
+
+impl SyntaxHighlighter {
+    pub fn new(font_size: f32, extension: Option<&str>) -> Self {
+        let font_id = FontId::monospace(font_size);
+        let syntax_def = extension.and_then(|ext| {
+            let data_dir = find_data_dir()?;
+            load_syntax(&data_dir, ext)
+        });
+
+        Self {
+            font_id,
+            syntax_def,
+            cached_text: String::new(),
+            cached_job: egui::text::LayoutJob::default(),
+            state: HlState::Normal,
+        }
+    }
+
+    pub fn highlight(&mut self, text: &str) -> &egui::text::LayoutJob {
+        if text == self.cached_text && !self.cached_text.is_empty() {
+            return &self.cached_job;
+        }
+
+        self.cached_text = text.to_string();
+
+        let job = if let Some(ref def) = self.syntax_def {
+            if text.is_empty() {
+                let mut j = egui::text::LayoutJob::default();
+                j.text = String::new();
+                j
+            } else {
+                self.state = HlState::Normal;
+                let tokens = tokenize(text, def, &mut self.state);
+                tokens_to_job(text, &tokens, &self.font_id)
+            }
+        } else {
+            let mut job = egui::text::LayoutJob {
+                text: text.to_string(),
+                wrap: egui::text::TextWrapping {
+                    max_width: f32::INFINITY,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            if !text.is_empty() {
+                job.sections.push(egui::text::LayoutSection {
+                    leading_space: 0.0,
+                    byte_range: 0..text.len(),
+                    format: TextFormat::simple(self.font_id.clone(), TEXT_DEFAULT),
+                });
+            }
+            job
+        };
+
+        self.cached_job = job;
+        &self.cached_job
+    }
+}

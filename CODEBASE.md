@@ -196,26 +196,68 @@ Used by the edit actions (copy/cut) and status bar cursor display.
 
 **Files:** `src/lib.rs`
 
-Wraps [syntect](https://github.com/trishume/syntect) v5 with:
+Custom JSON-based syntax highlighting engine. Syntax definitions live in `data/<ext>.json` files
+in the project root (JereIDE walks up directories to find `data/`). The JSON is a flat format with
+no graph nodes or `$ref` pointers — just regex patterns ready to compile.
 
-- `SyntaxSet::load_defaults_newlines()` — bundled syntax definitions
-- `ThemeSet::load_defaults()` — defaults, uses "InspiredGitHub" (falls back to "base16-ocean.light")
+**Dependencies:** `regex`, `serde`, `serde_json`
+
+#### JSON format (`data/rs.json`)
+
+```json
+{
+  "syntax": {
+    "name": "Rust",
+    "files": ["\\.rs$"],
+    "symbols": { "fn": "keyword", "let": "keyword", ... },
+    "patterns": [
+      { "type": "comment", "pattern": "//!.*" },
+      { "type": "comment", "start": "/\\*", "end": "\\*/" },
+      { "type": "string",  "start": "b?\"", "end": "\"", "escape": "\\\\" }
+    ]
+  }
+}
+```
+
+Pattern objects use `"pattern"` for single-line regex matches, or `"start"/"end"`
+for multi-line block matches (with optional `"escape"` for escape characters).
+
+#### Key components
+
+- **Tokenizer** (`tokenize`) — scans text left-to-right applying ordered patterns.
+  Supports single-line patterns (regex) and block patterns (multi-line ranges with escapes).
+  Maintains `HlState` for tracking open blocks across lines.
 
 #### `SyntaxHighlighter`
 
-Struct that holds font, syntax reference, theme, and a line cache for incremental highlighting.
+- `new(font_size, extension)` — loads syntax definition from `data/<extension>.json`,
+  falls back to plain text if no definition found.
+- `highlight(text) -> &LayoutJob` — caches by full text; re-highlights only on change.
+  Returns a reference to the cached job (caller clones if ownership needed).
 
-- `new(font_size, extension)` — selects syntax by file extension, falls back to plain text
-- `highlight(text) -> LayoutJob` — incremental re-highlight:
-  - Compares cached text; returns cached job if unchanged
-  - Finds first differing line via `position()` on cached vs new lines
-  - Re-highlights from that point forward
-  - Short-circuits when highlight state matches old remainder (lines beyond edit are identical)
-- `build_job(text)` — converts cached `Vec<CachedLine>` into an egui `LayoutJob` with per-token color sections
+#### Color mapping (`jereide_settings`)
 
-#### `CachedLine`
+| Type            | Color                       |
+| --------------- | --------------------------- |
+| `keyword`       | Dark red `(175, 0, 0)`      |
+| `keyword2`      | Teal `(0, 128, 128)`        |
+| `string`        | Green `(0, 128, 0)`         |
+| `comment`       | Gray `(128, 128, 128)`      |
+| `number`        | Purple `(128, 0, 128)`      |
+| `function`      | Blue `(0, 100, 200)`        |
+| `literal`       | Orange `(200, 100, 0)`      |
+| `operator`      | Dark gray `(100, 100, 100)` |
+| `plain` / other | `TEXT_DEFAULT`              |
 
-Per-line cache: content string, `Vec<(start, end, Color32)>` sections, `HighlightState`, `ParseState`.
+#### Data directory discovery
+
+`find_data_dir()` starts from the current working directory and walks up until it
+finds a `data/` directory. This allows JereIDE to locate syntax files regardless
+of where the binary is executed from.
+
+#### Current syntax definitions
+
+- `data/rust.json` — Rust language (`.rs` files))
 
 ---
 

@@ -8,4 +8,4 @@ eframe = "0.34"
 jereide-core = { path = "../core" }
 jereide-settings = { path = "../settings" }
 jereide-text = { path = "../text" }
-# jereide-syntax = { path = "../syntax" }
+jereide-syntax = { path = "../syntax" }

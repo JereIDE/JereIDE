@@ -19,6 +19,15 @@ pub const COMPOSE_TEXT: Color32 = Color32::from_gray(20);
 
 pub const BORDER: Color32 = Color32::from_rgb(200, 200, 200);
 
+pub const SYNTAX_KEYWORD: Color32 = Color32::from_rgb(175, 0, 0); // dark red
+pub const SYNTAX_KEYWORD2: Color32 = Color32::from_rgb(0, 128, 128); // teal
+pub const SYNTAX_STRING: Color32 = Color32::from_rgb(0, 128, 0); // green
+pub const SYNTAX_COMMENT: Color32 = Color32::from_rgb(128, 128, 128); // gray
+pub const SYNTAX_NUMBER: Color32 = Color32::from_rgb(128, 0, 128); // purple
+pub const SYNTAX_OPERATOR: Color32 = Color32::from_rgb(100, 100, 100);
+pub const SYNTAX_FUNCTION: Color32 = Color32::from_rgb(0, 100, 200); // blue
+pub const SYNTAX_LITERAL: Color32 = Color32::from_rgb(200, 100, 0); // orange
+
 pub const ACCENT: Color32 = Color32::from_rgb(28, 225, 210);
 pub const DESTRUCTIVE: Color32 = Color32::from_rgb(220, 50, 50);
 
