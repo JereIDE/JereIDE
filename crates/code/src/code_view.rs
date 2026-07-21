@@ -9,12 +9,16 @@ use jereide_core::constants::{
     GUTTER_PADDING_LEFT, GUTTER_PADDING_RIGHT, SCROLL_BAR_WIDTH,
 };
 use jereide_core::AppState;
-use jereide_settings::{EDITOR_FONT_SIZE, SURFACE_BG, TEXT_CURRENT_LINE, TEXT_MUTED};
+use jereide_settings::{
+    DIFF_ADDED, DIFF_DELETED, DIFF_MODIFIED, EDITOR_FONT_SIZE, GUTTER_DIFF_INDICATOR_WIDTH,
+    SURFACE_BG, TEXT_CURRENT_LINE, TEXT_MUTED,
+};
 use jereide_syntax::SyntaxHighlighter;
-use jereide_text::char_index_to_line_col;
+use jereide_text::{char_index_to_line_col, diff_lines, DiffLineKind};
 
 thread_local! {
     static HIGHLIGHTERS: RefCell<HashMap<usize, SyntaxHighlighter>> = RefCell::new(HashMap::new());
+    static DIFF_CACHE: RefCell<HashMap<usize, (usize, usize, Vec<DiffLineKind>, Vec<usize>)>> = RefCell::new(HashMap::new());
 }
 
 fn visual_line_count(text: &str) -> usize {
@@ -78,6 +82,27 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
     let line_count = visual_line_count(&state.tabs[active_idx].text);
     let gutter_w = gutter_width(line_count);
     let cursor_line = state.tabs[active_idx].cursor_line;
+
+    let (diff, deletions) = {
+        let saved_len = state.tabs[active_idx].saved_text.len();
+        let editor_len = state.tabs[active_idx].text.len();
+        DIFF_CACHE.with(|cache| {
+            let mut cache = cache.borrow_mut();
+            cache.retain(|id, _| valid_ids.contains(id));
+            let should_compute = cache.get(&tab_id).map_or(true, |(old_len, new_len, _, _)| {
+                *old_len != saved_len || *new_len != editor_len
+            });
+            if should_compute {
+                let (diffs, dels) = diff_lines(
+                    &state.tabs[active_idx].saved_text,
+                    &state.tabs[active_idx].text,
+                );
+                cache.insert(tab_id, (saved_len, editor_len, diffs, dels));
+            }
+            let (_, _, diffs, dels) = cache.get(&tab_id).unwrap();
+            (diffs.clone(), dels.clone())
+        })
+    };
 
     let last_galley: RefCell<Option<Arc<egui::Galley>>> = RefCell::new(None);
 
@@ -155,6 +180,38 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                     } else {
                         TEXT_MUTED
                     };
+                    if let Some(&diff_kind) = diff.get(i) {
+                        if diff_kind != DiffLineKind::Same {
+                            let indicator_color = match diff_kind {
+                                DiffLineKind::Added => DIFF_ADDED,
+                                DiffLineKind::Modified => DIFF_MODIFIED,
+                                _ => unreachable!(),
+                            };
+                            let line_height = row.size.y;
+                            painter.rect_filled(
+                                egui::Rect::from_min_size(
+                                    egui::pos2(gutter_rect.left(), line_y),
+                                    egui::vec2(GUTTER_DIFF_INDICATOR_WIDTH, line_height),
+                                ),
+                                0.0,
+                                indicator_color,
+                            );
+                        }
+                    }
+                    if deletions.contains(&i) {
+                        let cx = gutter_rect.left() + 2.0;
+                        let cy = line_y;
+                        let r = 3.5;
+                        painter.add(egui::Shape::convex_polygon(
+                            vec![
+                                egui::pos2(cx, cy - r),
+                                egui::pos2(cx, cy + r),
+                                egui::pos2(cx + r + 1.0, cy),
+                            ],
+                            DIFF_DELETED,
+                            egui::Stroke::NONE,
+                        ));
+                    }
                     painter.text(
                         egui::pos2(gutter_w - GUTTER_LINE_NUMBER_RIGHT_OFFSET, line_y),
                         egui::Align2::RIGHT_TOP,

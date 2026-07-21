@@ -31,3 +31,8 @@ pub const WINDOW_WIDTH: f32 = 800.0;
 pub const WINDOW_HEIGHT: f32 = 600.0;
 
 pub const DIALOG_WIDTH: f32 = 240.0;
+
+pub const GUTTER_DIFF_INDICATOR_WIDTH: f32 = 4.0;
+pub const DIFF_ADDED: Color32 = Color32::from_rgb(200, 240, 200);
+pub const DIFF_MODIFIED: Color32 = Color32::from_rgb(255, 230, 180);
+pub const DIFF_DELETED: Color32 = Color32::from_rgb(255, 180, 180);
