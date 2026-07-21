@@ -5,29 +5,43 @@ pub enum DiffLineKind {
     Modified,
 }
 
+fn line_count(s: &str) -> usize {
+    s.as_bytes().iter().filter(|&&b| b == b'\n').count() + 1
+}
+
 pub fn diff_lines(old: &str, new: &str) -> (Vec<DiffLineKind>, Vec<usize>) {
     if old == new {
-        let n = new.lines().count().max(1);
+        let n = line_count(old);
         return (vec![DiffLineKind::Same; n], Vec::new());
     }
 
-    let old_lines: Vec<&str> = old.lines().collect();
-    let new_lines: Vec<&str> = new.lines().collect();
-    let m = old_lines.len();
-    let n = new_lines.len();
+    let m = line_count(old);
+    let n = line_count(new);
 
-    if n == 0 { return (vec![], Vec::new()); }
-    if m == 0 { return (vec![DiffLineKind::Added; n], Vec::new()); }
+    if n == 0 {
+        return (vec![], Vec::new());
+    }
+    if m == 0 {
+        return (vec![DiffLineKind::Added; n], Vec::new());
+    }
 
-    let prefix = old_lines.iter().zip(new_lines.iter())
+    let prefix = old
+        .lines()
+        .zip(new.lines())
         .take_while(|(a, b)| a == b)
         .count();
 
-    let suffix = old_lines.iter().rev().zip(new_lines.iter().rev())
-        .take_while(|(a, b)| a == b)
-        .count()
-        .min(m - prefix)
-        .min(n - prefix);
+    let max_suffix = (m - prefix).min(n - prefix);
+    let suffix = if max_suffix > 0 {
+        old.lines()
+            .rev()
+            .zip(new.lines().rev())
+            .take(max_suffix)
+            .take_while(|(a, b)| a == b)
+            .count()
+    } else {
+        0
+    };
 
     let mut result = vec![DiffLineKind::Same; n];
     let mut deletions = Vec::new();

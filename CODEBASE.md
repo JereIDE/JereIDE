@@ -181,14 +181,16 @@ Theme constants (hardcoded — TODO: make configurable at runtime):
 
 **Files:** `src/lib.rs`
 
-Pure functions for character-index-based text manipulation:
+Functions for line-diff computation and character-index-based text manipulation:
 
+- `line_count(s)` — counts `\n` bytes + 1 (no allocation)
+- `diff_lines(old, new) -> (Vec<DiffLineKind>, Vec<usize>)` — computes per-line diff between saved and current text using prefix/suffix matching on `str::lines()` iterators (no Vec allocation for lines)
 - `char_index_to_line_col(text, char_index)` — converts byte offset to (line, col)
 - `char_range_substring(text, start, end)` — extracts by char index
 - `delete_char_range(text, start, end)` — removes range by char index
 - `insert_at_char_index(text, char_index, insert)` — inserts at char index
 
-Used by the edit actions (copy/cut) and status bar cursor display.
+Used by diff gutter, edit actions (copy/cut), and status bar cursor display.
 
 ---
 
@@ -203,15 +205,17 @@ Wraps [syntect](https://github.com/trishume/syntect) v5 with:
 
 #### `SyntaxHighlighter`
 
-Struct that holds font, syntax reference, theme, and a line cache for incremental highlighting.
+Struct that holds font, syntax reference, theme, a line cache for incremental highlighting, and a cached `LayoutJob` to avoid rebuilding on unchanged frames.
 
 - `new(font_size, extension)` — selects syntax by file extension, falls back to plain text
-- `highlight(text) -> LayoutJob` — incremental re-highlight:
-  - Compares cached text; returns cached job if unchanged
-  - Finds first differing line via `position()` on cached vs new lines
-  - Re-highlights from that point forward
+- `highlight(text) -> LayoutJob` — deferred incremental highlighting:
+  - **Text changed:** Returns a plain (unhighlighted) `LayoutJob` instantly; sets `pending_update = true`
+  - **Text unchanged, pending update:** Runs full syntect highlighting (capped at `MAX_SYNTECT_LINES=200` per frame), caches result; sets `resume_from` if more lines remain
+  - **Text unchanged, no pending work:** Returns clone of cached `LayoutJob` (no rebuild)
   - Short-circuits when highlight state matches old remainder (lines beyond edit are identical)
-- `build_job(text)` — converts cached `Vec<CachedLine>` into an egui `LayoutJob` with per-token color sections
+- `build_plain_job(text)` — fast path: returns a single-section default-color `LayoutJob` (no syntect)
+- `build_job()` — converts cached `Vec<CachedLine>` into an egui `LayoutJob` with per-token color sections
+- Deferred highlighting ensures the editor frame is never blocked by syntect — the user sees text changes immediately, with syntax colors appearing 1-2 frames later
 
 #### `CachedLine`
 
@@ -382,11 +386,15 @@ Renders the main code editor area:
 
 - Thread-local `HIGHLIGHTERS` cache: `HashMap<tab_id, SyntaxHighlighter>`
   - Cleans defunct tab IDs on each render
+- Thread-local `DIFF_CACHE`: `HashMap<tab_id, (saved_len, editor_len, Arc<Vec<DiffLineKind>>, Arc<Vec<usize>>)>`
+  - Uses `Arc` to avoid cloning the diff result on every frame
 - `visual_line_count(text)` — counts `\n` + 1
 - `gutter_width(line_count)` — dynamic width based on digit count
 - Uses `egui::TextEdit::code_editor` with a custom `layouter` closure that calls `SyntaxHighlighter::highlight()`
-- Left gutter: line numbers drawn by position (`galley.rows` iteration)
-- Current line number rendered in `TEXT_CURRENT_LINE`, others in `TEXT_MUTED`
+- Left gutter:
+  - Diff indicators: colored bars (added=`DIFF_ADDED`, modified=`DIFF_MODIFIED`) and deletion triangles (`DIFF_DELETED`)
+  - Line numbers drawn only for rows visible in the scroll clip rect (skips off-screen rows)
+  - Current line number rendered in `TEXT_CURRENT_LINE`, others in `TEXT_MUTED`
 - Extra clickable surface area below text to request focus
 - Reads cursor position from `TextEdit::load_state` for status bar
 

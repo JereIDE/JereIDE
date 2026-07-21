@@ -18,7 +18,7 @@ use jereide_text::{char_index_to_line_col, diff_lines, DiffLineKind};
 
 thread_local! {
     static HIGHLIGHTERS: RefCell<HashMap<usize, SyntaxHighlighter>> = RefCell::new(HashMap::new());
-    static DIFF_CACHE: RefCell<HashMap<usize, (usize, usize, Vec<DiffLineKind>, Vec<usize>)>> = RefCell::new(HashMap::new());
+    static DIFF_CACHE: RefCell<HashMap<usize, (usize, usize, Arc<Vec<DiffLineKind>>, Arc<Vec<usize>>)>> = RefCell::new(HashMap::new());
 }
 
 fn visual_line_count(text: &str) -> usize {
@@ -97,7 +97,10 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                     &state.tabs[active_idx].saved_text,
                     &state.tabs[active_idx].text,
                 );
-                cache.insert(tab_id, (saved_len, editor_len, diffs, dels));
+                cache.insert(
+                    tab_id,
+                    (saved_len, editor_len, Arc::new(diffs), Arc::new(dels)),
+                );
             }
             let (_, _, diffs, dels) = cache.get(&tab_id).unwrap();
             (diffs.clone(), dels.clone())
@@ -106,21 +109,20 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
 
     let last_galley: RefCell<Option<Arc<egui::Galley>>> = RefCell::new(None);
 
-    let mut layouter = |layouter_ui: &egui::Ui,
-                        text: &dyn egui::widgets::TextBuffer,
-                        wrap_width: f32| {
-        let text_str = text.as_str();
+    let mut layouter =
+        |layouter_ui: &egui::Ui, text: &dyn egui::widgets::TextBuffer, wrap_width: f32| {
+            let text_str = text.as_str();
 
-        let mut layout_job = HIGHLIGHTERS.with(|cache| {
-            let mut c = cache.borrow_mut();
-            c.get_mut(&tab_id).unwrap().highlight(text_str)
-        });
+            let mut layout_job = HIGHLIGHTERS.with(|cache| {
+                let mut c = cache.borrow_mut();
+                c.get_mut(&tab_id).unwrap().highlight(text_str)
+            });
 
-        layout_job.wrap.max_width = wrap_width;
-        let galley = layouter_ui.fonts_mut(|f| f.layout_job(layout_job));
-        *last_galley.borrow_mut() = Some(galley.clone());
-        galley
-    };
+            layout_job.wrap.max_width = wrap_width;
+            let galley = layouter_ui.fonts_mut(|f| f.layout_job(layout_job));
+            *last_galley.borrow_mut() = Some(galley.clone());
+            galley
+        };
 
     let response = egui::ScrollArea::both()
         .auto_shrink(false)
@@ -171,8 +173,13 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
 
             let line_start_y = widget_top + EDITOR_INNER_MARGIN_TOP as f32;
             if let Some(galley) = last_galley.borrow().as_ref() {
+                let clip_rect = ui.clip_rect();
                 for (i, row) in galley.rows.iter().enumerate() {
                     let line_y = line_start_y + row.pos.y;
+                    // Only render rows visible in the scroll area
+                    if line_y + row.size.y < clip_rect.top() || line_y > clip_rect.bottom() {
+                        continue;
+                    }
                     let line_num = i + 1;
                     let is_current = line_num == cursor_line;
                     let color = if is_current {
