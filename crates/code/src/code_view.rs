@@ -80,29 +80,29 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
 
     let last_galley: RefCell<Option<Arc<egui::Galley>>> = RefCell::new(None);
 
-    let mut layouter = |layouter_ui: &egui::Ui,
-                        text: &dyn egui::widgets::TextBuffer,
-                        wrap_width: f32| {
-        let text_str = text.as_str();
+    let mut layouter =
+        |layouter_ui: &egui::Ui, text: &dyn egui::widgets::TextBuffer, wrap_width: f32| {
+            let text_str = text.as_str();
 
-        // Plain layout job — no syntax highlighting
-        let mut layout_job = egui::text::LayoutJob {
-            text: text_str.to_string(),
-            ..Default::default()
+            // Plain layout job — no syntax highlighting
+            let mut layout_job = egui::text::LayoutJob {
+                text: text_str.to_string(),
+                ..Default::default()
+            };
+            if !text_str.is_empty() {
+                layout_job.sections.push(egui::text::LayoutSection {
+                    leading_space: 0.0,
+                    byte_range: 0..text_str.len(),
+                    format: egui::text::TextFormat::simple(font_id.clone(), TEXT_DEFAULT),
+                });
+            }
+
+            // Horizontal scrolling — no wrapping, so gutter lines match logical lines
+            layout_job.wrap.max_width = f32::INFINITY;
+            let galley = layouter_ui.fonts_mut(|f| f.layout_job(layout_job));
+            *last_galley.borrow_mut() = Some(galley.clone());
+            galley
         };
-        if !text_str.is_empty() {
-            layout_job.sections.push(egui::text::LayoutSection {
-                leading_space: 0.0,
-                byte_range: 0..text_str.len(),
-                format: egui::text::TextFormat::simple(font_id.clone(), TEXT_DEFAULT),
-            });
-        }
-
-        layout_job.wrap.max_width = wrap_width;
-        let galley = layouter_ui.fonts_mut(|f| f.layout_job(layout_job));
-        *last_galley.borrow_mut() = Some(galley.clone());
-        galley
-    };
 
     // -- Original layouter with syntax highlighting --
     // let mut layouter = |layouter_ui: &egui::Ui,
@@ -136,7 +136,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                         &mut state.tabs[active_idx].text,
                     ))
                     .id_source("editor")
-                    .desired_width(viewport.x - gutter_w)
+                    .desired_width(f32::INFINITY)
                     .frame(egui::Frame {
                         inner_margin: egui::Margin {
                             left: EDITOR_INNER_MARGIN_LEFT_EXTRA,
