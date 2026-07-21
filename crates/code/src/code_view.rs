@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use eframe::egui;
@@ -9,13 +8,15 @@ use jereide_core::constants::{
     GUTTER_PADDING_LEFT, GUTTER_PADDING_RIGHT, SCROLL_BAR_WIDTH,
 };
 use jereide_core::AppState;
-use jereide_settings::{EDITOR_FONT_SIZE, SURFACE_BG, TEXT_CURRENT_LINE, TEXT_MUTED};
-use jereide_syntax::SyntaxHighlighter;
+use jereide_settings::{EDITOR_FONT_SIZE, SURFACE_BG, TEXT_CURRENT_LINE, TEXT_DEFAULT, TEXT_MUTED};
 use jereide_text::char_index_to_line_col;
 
-thread_local! {
-    static HIGHLIGHTERS: RefCell<HashMap<usize, SyntaxHighlighter>> = RefCell::new(HashMap::new());
-}
+// -- Syntax highlighter removed for performance --
+// use std::collections::HashMap;
+// use jereide_syntax::SyntaxHighlighter;
+// thread_local! {
+//     static HIGHLIGHTERS: RefCell<HashMap<usize, SyntaxHighlighter>> = RefCell::new(HashMap::new());
+// }
 
 fn visual_line_count(text: &str) -> usize {
     if text.is_empty() {
@@ -57,22 +58,20 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
     };
 
     let active_idx = state.active_tab_index;
-    let tab_id = state.tabs[active_idx].id;
-    let extension: Option<String> = state.tabs[active_idx]
-        .file_path
-        .as_ref()
-        .and_then(|p| std::path::Path::new(p).extension())
-        .and_then(|ext| ext.to_str())
-        .map(|s| s.to_string());
+    let _tab_id = state.tabs[active_idx].id;
+    // -- Extension-based syntax selection removed --
+    // let extension: Option<String> = state.tabs[active_idx]
+    //     .file_path.as_ref()
+    //     .and_then(|p| std::path::Path::new(p).extension())
+    //     .and_then(|ext| ext.to_str()).map(|s| s.to_string());
 
-    let valid_ids: std::collections::HashSet<usize> = state.tabs.iter().map(|t| t.id).collect();
-    HIGHLIGHTERS.with(|cache| {
-        let mut cache = cache.borrow_mut();
-        cache.retain(|id, _| valid_ids.contains(id));
-        cache
-            .entry(tab_id)
-            .or_insert_with(|| SyntaxHighlighter::new(EDITOR_FONT_SIZE, extension.as_deref()));
-    });
+    // -- Highlighter cache removed --
+    // let valid_ids: std::collections::HashSet<usize> = state.tabs.iter().map(|t| t.id).collect();
+    // HIGHLIGHTERS.with(|cache| {
+    //     let mut cache = cache.borrow_mut();
+    //     cache.retain(|id, _| valid_ids.contains(id));
+    //     cache.entry(tab_id).or_insert_with(|| SyntaxHighlighter::new(EDITOR_FONT_SIZE, extension.as_deref()));
+    // });
 
     let font_id = egui::FontId::monospace(EDITOR_FONT_SIZE);
     let line_count = visual_line_count(&state.tabs[active_idx].text);
@@ -86,16 +85,39 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                         wrap_width: f32| {
         let text_str = text.as_str();
 
-        let mut layout_job = HIGHLIGHTERS.with(|cache| {
-            let mut c = cache.borrow_mut();
-            c.get_mut(&tab_id).unwrap().highlight(text_str)
-        });
+        // Plain layout job — no syntax highlighting
+        let mut layout_job = egui::text::LayoutJob {
+            text: text_str.to_string(),
+            ..Default::default()
+        };
+        if !text_str.is_empty() {
+            layout_job.sections.push(egui::text::LayoutSection {
+                leading_space: 0.0,
+                byte_range: 0..text_str.len(),
+                format: egui::text::TextFormat::simple(font_id.clone(), TEXT_DEFAULT),
+            });
+        }
 
         layout_job.wrap.max_width = wrap_width;
         let galley = layouter_ui.fonts_mut(|f| f.layout_job(layout_job));
         *last_galley.borrow_mut() = Some(galley.clone());
         galley
     };
+
+    // -- Original layouter with syntax highlighting --
+    // let mut layouter = |layouter_ui: &egui::Ui,
+    //                     text: &dyn egui::widgets::TextBuffer,
+    //                     wrap_width: f32| {
+    //     let text_str = text.as_str();
+    //     let mut layout_job = HIGHLIGHTERS.with(|cache| {
+    //         let mut c = cache.borrow_mut();
+    //         c.get_mut(&tab_id).unwrap().highlight(text_str)
+    //     });
+    //     layout_job.wrap.max_width = wrap_width;
+    //     let galley = layouter_ui.fonts_mut(|f| f.layout_job(layout_job));
+    //     *last_galley.borrow_mut() = Some(galley.clone());
+    //     galley
+    // };
 
     let response = egui::ScrollArea::both()
         .auto_shrink(false)
