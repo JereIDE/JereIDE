@@ -6,12 +6,12 @@
       "indent_after": ["{", "(", "["]
     },
     {
-      "extensions": ["py"],
+      "extensions": ["py", "pyw"],
       "name": "Python",
       "indent_after": [":"]
     },
     {
-      "extensions": ["js", "jsx"],
+      "extensions": ["js", "jsx", "cjs", "mjs"],
       "name": "JavaScript",
       "indent_after": ["{", "(", "["]
     },
