@@ -15,7 +15,7 @@ fn alpha_image() -> egui::Image<'static> {
             .map(|dir| std::fs::read(dir.join("alpha.png")).unwrap_or_default())
             .unwrap_or_default()
     });
-    egui::Image::from_bytes("alpha.png", bytes.clone()).max_height(14.0)
+    egui::Image::from_bytes("alpha.png", bytes.clone()).max_height(19.0)
 }
 
 pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: bool) {
@@ -61,7 +61,10 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
                 state.switch_to_view(CurrentView::Code);
             }
             if ui
-                .add(egui::Button::selectable(state.current_view == CurrentView::Compose, ("Compose", alpha_image())))
+                .add(egui::Button::selectable(
+                    state.current_view == CurrentView::Compose,
+                    ("Compose", alpha_image()),
+                ))
                 .on_hover_cursor(egui::CursorIcon::PointingHand)
                 .clicked()
             {
