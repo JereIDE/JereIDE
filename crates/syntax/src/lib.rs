@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use eframe::egui::{self, Color32, FontId, TextFormat};
+use jereide_data::data_dir;
 use regex::Regex;
 use serde::Deserialize;
 
@@ -344,23 +345,6 @@ fn tokens_to_job(text: &str, tokens: &[Token], font_id: &FontId) -> egui::text::
 }
 
 // ---------------------------------------------------------------------------
-// Data directory discovery
-// ---------------------------------------------------------------------------
-
-fn find_data_dir() -> Option<std::path::PathBuf> {
-    let mut dir = std::env::current_dir().ok()?;
-    loop {
-        let candidate = dir.join("data");
-        if candidate.is_dir() {
-            return Some(candidate);
-        }
-        if !dir.pop() {
-            return None;
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -376,7 +360,7 @@ impl SyntaxHighlighter {
     pub fn new(font_size: f32, extension: Option<&str>) -> Self {
         let font_id = FontId::monospace(font_size);
         let syntax_def = extension.and_then(|ext| {
-            let data_dir = find_data_dir()?;
+            let data_dir = data_dir()?;
             load_syntax(&data_dir, ext)
         });
 

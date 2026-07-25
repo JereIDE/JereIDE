@@ -1,9 +1,22 @@
+use std::sync::OnceLock;
+
 use eframe::egui;
 use jereide_core::constants::{
     TITLE_BAR_FULLSCREEN_SPACE, TITLE_BAR_HEIGHT, TITLE_BAR_POPUP_GAP, TITLE_BAR_TRAFFIC_SPACE,
 };
 use jereide_core::{AppState, CurrentView};
+use jereide_data::data_dir;
 use jereide_settings::{ELEVATED_BG, TITLE_BAR_FONT_SIZE};
+
+fn alpha_image() -> egui::Image<'static> {
+    static BYTES: OnceLock<Vec<u8>> = OnceLock::new();
+    let bytes = BYTES.get_or_init(|| {
+        data_dir()
+            .map(|dir| std::fs::read(dir.join("alpha.png")).unwrap_or_default())
+            .unwrap_or_default()
+    });
+    egui::Image::from_bytes("alpha.png", bytes.clone()).max_height(14.0)
+}
 
 pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: bool) {
     let available = ui.available_size();
@@ -48,7 +61,7 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
                 state.switch_to_view(CurrentView::Code);
             }
             if ui
-                .selectable_label(state.current_view == CurrentView::Compose, "Compose")
+                .add(egui::Button::selectable(state.current_view == CurrentView::Compose, ("Compose", alpha_image())))
                 .on_hover_cursor(egui::CursorIcon::PointingHand)
                 .clicked()
             {

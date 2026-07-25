@@ -11,6 +11,7 @@ members = [
     "crates/code",
     "crates/compose",
     "crates/fs",
+    "crates/data",
 ]
 resolver = "2"
 

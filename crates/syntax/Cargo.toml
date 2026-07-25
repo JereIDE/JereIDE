@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 eframe = "0.34"
+jereide-data = { path = "../data" }
 jereide-settings = { path = "../settings" }
 regex = "1"
 serde = { version = "1", features = ["derive"] }

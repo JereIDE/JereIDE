@@ -14,6 +14,9 @@ fn main() -> Result<(), eframe::Error> {
     eframe::run_native(
         "JereIDE",
         options,
-        Box::new(|_cc| Ok(Box::new(JereIDEApp::new()))),
+        Box::new(|cc| {
+            egui_extras::install_image_loaders(&cc.egui_ctx);
+            Ok(Box::new(JereIDEApp::new()))
+        }),
     )
 }
