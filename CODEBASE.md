@@ -257,7 +257,8 @@ of where the binary is executed from.
 
 #### Current syntax definitions
 
-- `data/rust.json` — Rust language (`.rs` files))
+- `data/rs.json` — Rust language (`.rs` files)
+- `data/py.json` — Python language (`.py` files)
 
 ---
 
