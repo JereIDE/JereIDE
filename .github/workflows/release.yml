@@ -123,14 +123,15 @@ jobs:
   #     - name: Build
   #       run: cargo build --release -p JereIDE
   #
-  #     - name: Package tarball
-  #       run: |
-  #         ARCHIVE_BASE="JereIDE-v${APP_VERSION}-Linux-Intel"
-  #         mkdir "$ARCHIVE_BASE"
-  #         cp target/release/JereIDE "$ARCHIVE_BASE/"
-  #         cp LICENSE "$ARCHIVE_BASE/"
-  #         cp README.md "$ARCHIVE_BASE/"
-  #         tar -czf "${ARCHIVE_BASE}.tar.gz" "$ARCHIVE_BASE"
+      #     - name: Package tarball
+      #       run: |
+      #         ARCHIVE_BASE="JereIDE-v${APP_VERSION}-Linux-Intel"
+      #         mkdir "$ARCHIVE_BASE"
+      #         cp target/release/JereIDE "$ARCHIVE_BASE/"
+      #         cp -r data "$ARCHIVE_BASE/"
+      #         cp LICENSE "$ARCHIVE_BASE/"
+      #         cp README.md "$ARCHIVE_BASE/"
+      #         tar -czf "${ARCHIVE_BASE}.tar.gz" "$ARCHIVE_BASE"
   #
   #     - name: Upload Linux artifacts
   #       uses: actions/upload-artifact@v6
@@ -180,6 +181,7 @@ jobs:
           Copy-Item target\release\JereIDE.exe "$stage\"
           Copy-Item LICENSE "$stage\"
           Copy-Item README.md "$stage\"
+          Copy-Item data "$stage\" -Recurse
           Compress-Archive -Path "$stage\*" -DestinationPath "${stage}.zip"
 
       - name: Upload artifact
@@ -250,6 +252,7 @@ jobs:
           ARCHIVE_BASE="JereIDE-v${APP_VERSION}-macOS-${{ matrix.target.chip }}"
           mkdir "$ARCHIVE_BASE"
           cp "target/${{ matrix.target.rust-target }}/release/JereIDE" "$ARCHIVE_BASE/"
+          cp -r data "$ARCHIVE_BASE/"
           cp LICENSE "$ARCHIVE_BASE/"
           cp README.md "$ARCHIVE_BASE/"
           zip -r "${ARCHIVE_BASE}.zip" "$ARCHIVE_BASE"
