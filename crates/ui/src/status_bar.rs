@@ -3,33 +3,6 @@ use jereide_core::constants::STATUS_BAR_MARGIN;
 use jereide_core::{AppState, CurrentView};
 use jereide_settings::{COMPOSE_BG, SURFACE_BG, TEXT_SECONDARY};
 
-fn language_from_path(path: Option<&str>) -> &'static str {
-    let ext = path
-        .and_then(|p| std::path::Path::new(p).extension())
-        .and_then(|e| e.to_str())
-        .unwrap_or("");
-    match ext {
-        "rs" => "Rust",
-        "py" => "Python",
-        "js" | "jsx" => "JavaScript",
-        "ts" | "tsx" => "TypeScript",
-        "json" => "JSON",
-        "html" => "HTML",
-        "css" => "CSS",
-        "md" => "Markdown",
-        "toml" => "TOML",
-        "yaml" | "yml" => "YAML",
-        "sh" | "zsh" => "Shell",
-        "java" => "Java",
-        "c" | "h" => "C",
-        "cpp" | "cxx" | "hpp" | "hxx" => "C++",
-        "go" => "Go",
-        "rb" => "Ruby",
-        "sql" => "SQL",
-        _ => "",
-    }
-}
-
 pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) {
     let in_compose = state.current_view == CurrentView::Compose;
     let bg = if in_compose { COMPOSE_BG } else { SURFACE_BG };
@@ -45,11 +18,16 @@ pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) {
                 if !state.tabs.is_empty() {
                     let tab = state.current_tab();
                     if tab.file_path.is_some() {
-                        let lang = language_from_path(tab.file_path.as_deref());
-                        let sep = if lang.is_empty() { "" } else { " · " };
+                        let lang = jereide_data::lookup_language_by_path(tab.file_path.as_deref());
+                        let sep = if lang.is_some() { " · " } else { "" };
                         ui.colored_label(
                             TEXT_SECONDARY,
-                            format!("{}{}{}", lang, sep, tab.file_name()),
+                            format!(
+                                "{}{}{}",
+                                lang.as_ref().map(|l| l.name.as_str()).unwrap_or(""),
+                                sep,
+                                tab.file_name()
+                            ),
                         );
                     }
                 }

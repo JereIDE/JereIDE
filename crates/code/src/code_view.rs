@@ -237,7 +237,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         {
             let indent = {
                 let t = &state.tabs[active_idx].text;
-                compute_indent(t, cursor_idx)
+                compute_indent(t, cursor_idx, extension.as_deref())
             };
             if !indent.is_empty() {
                 state.tabs[active_idx].text.insert_str(cursor_idx, &indent);
@@ -333,7 +333,7 @@ fn find_match_backward(text: &str, start: usize, open: char, close: char) -> Opt
     None
 }
 
-fn compute_indent(text: &str, cursor_idx: usize) -> String {
+fn compute_indent(text: &str, cursor_idx: usize, ext: Option<&str>) -> String {
     let before = &text[..cursor_idx];
     let prev_start = before[..before.len() - 1]
         .rfind('\n')
@@ -343,11 +343,19 @@ fn compute_indent(text: &str, cursor_idx: usize) -> String {
     let indent_len = prev_line.len() - prev_line.trim_start().len();
     let indent = &prev_line[..indent_len];
     let trimmed = prev_line.trim();
-    let extra = if trimmed.ends_with('{') || trimmed.ends_with('(') || trimmed.ends_with('[') {
+
+    let triggers = jereide_data::lookup_language(ext)
+        .map(|info| info.indent_triggers)
+        .unwrap_or_default();
+
+    let extra = if triggers.is_empty() {
+        ""
+    } else if triggers.iter().any(|c| trimmed.ends_with(*c)) {
         "\t"
     } else {
         ""
     };
+
     format!("{}{}", indent, extra)
 }
 

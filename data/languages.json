@@ -1,0 +1,114 @@
+{
+  "languages": [
+    {
+      "extensions": ["rs"],
+      "name": "Rust",
+      "indent_after": ["{", "(", "["]
+    },
+    {
+      "extensions": ["py"],
+      "name": "Python",
+      "indent_after": [":"]
+    },
+    {
+      "extensions": ["js", "jsx"],
+      "name": "JavaScript",
+      "indent_after": ["{", "(", "["]
+    },
+    {
+      "extensions": ["ts", "tsx"],
+      "name": "TypeScript",
+      "indent_after": ["{", "(", "["]
+    },
+    {
+      "extensions": ["cjs", "mjs"],
+      "name": "JavaScript",
+      "indent_after": ["{", "(", "["]
+    },
+    {
+      "extensions": ["json"],
+      "name": "JSON",
+      "indent_after": ["{", "["]
+    },
+    {
+      "extensions": ["html"],
+      "name": "HTML",
+      "indent_after": []
+    },
+    {
+      "extensions": ["css"],
+      "name": "CSS",
+      "indent_after": ["{"]
+    },
+    {
+      "extensions": ["md"],
+      "name": "Markdown",
+      "indent_after": []
+    },
+    {
+      "extensions": ["toml"],
+      "name": "TOML",
+      "indent_after": []
+    },
+    {
+      "extensions": ["yaml", "yml"],
+      "name": "YAML",
+      "indent_after": []
+    },
+    {
+      "extensions": ["sh", "zsh", "bash"],
+      "name": "Shell",
+      "indent_after": []
+    },
+    {
+      "extensions": ["java"],
+      "name": "Java",
+      "indent_after": ["{", "(", "["]
+    },
+    {
+      "extensions": ["c", "h"],
+      "name": "C",
+      "indent_after": ["{", "(", "["]
+    },
+    {
+      "extensions": ["cpp", "cxx", "hpp", "hxx", "cc", "hh"],
+      "name": "C++",
+      "indent_after": ["{", "(", "["]
+    },
+    {
+      "extensions": ["go"],
+      "name": "Go",
+      "indent_after": ["{", "(", "["]
+    },
+    {
+      "extensions": ["rb"],
+      "name": "Ruby",
+      "indent_after": ["{", "(", "["]
+    },
+    {
+      "extensions": ["sql"],
+      "name": "SQL",
+      "indent_after": []
+    },
+    {
+      "extensions": ["kt", "kts"],
+      "name": "Kotlin",
+      "indent_after": ["{", "(", "["]
+    },
+    {
+      "extensions": ["swift"],
+      "name": "Swift",
+      "indent_after": ["{", "(", "["]
+    },
+    {
+      "extensions": ["scala"],
+      "name": "Scala",
+      "indent_after": ["{", "(", "["]
+    },
+    {
+      "extensions": ["cs"],
+      "name": "C#",
+      "indent_after": ["{", "(", "["]
+    }
+  ]
+}
