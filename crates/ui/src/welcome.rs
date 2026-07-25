@@ -1,17 +1,30 @@
+use std::sync::OnceLock;
+
 use eframe::egui;
+use jereide_data::data_dir;
 use jereide_settings::{
     COMPOSE_VIEW_FONT_SIZE, EDITOR_FONT_SIZE, SURFACE_BG, TEXT_MUTED, TEXT_PRIMARY, TEXT_SECONDARY,
 };
 
+fn app_icon() -> egui::Image<'static> {
+    static BYTES: OnceLock<Vec<u8>> = OnceLock::new();
+    let bytes = BYTES.get_or_init(|| {
+        data_dir()
+            .map(|dir| std::fs::read(dir.join("AppIcon.png")).unwrap_or_default())
+            .unwrap_or_default()
+    });
+    egui::Image::from_bytes("AppIcon.png", bytes.clone()).max_height(48.0)
+}
+
 pub fn render_welcome_view(ui: &mut egui::Ui) {
     let rect = ui.max_rect();
     ui.painter().rect_filled(rect, 0.0, SURFACE_BG);
-    ui.painter().text(
-        egui::Pos2::new(rect.center().x - 110.0, rect.center().y + 13.0),
-        egui::Align2::CENTER_CENTER,
-        "[LOGO]",
-        egui::FontId::proportional(COMPOSE_VIEW_FONT_SIZE),
-        TEXT_PRIMARY,
+    ui.put(
+        egui::Rect::from_center_size(
+            egui::pos2(rect.center().x - 110.0, rect.center().y + 13.0),
+            egui::vec2(48.0, 48.0),
+        ),
+        app_icon(),
     );
     let font = egui::FontId::proportional(COMPOSE_VIEW_FONT_SIZE);
     let version = format!("v{}", env!("CARGO_PKG_VERSION"));
