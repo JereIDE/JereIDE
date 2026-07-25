@@ -8,6 +8,7 @@ version = "0.24.0"
 dependencies = [
  "eframe",
  "egui_extras",
+ "jereide-data",
  "jereide-main-window",
  "jereide-settings",
 ]
