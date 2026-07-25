@@ -2,13 +2,16 @@ use std::cell::RefCell;
 use std::sync::Arc;
 
 use eframe::egui;
+use egui::text::CCursor;
 use jereide_core::constants::{
     EDITOR_INNER_MARGIN_BOTTOM, EDITOR_INNER_MARGIN_LEFT_EXTRA, EDITOR_INNER_MARGIN_RIGHT,
     EDITOR_INNER_MARGIN_TOP, GUTTER_DIGIT_WIDTH, GUTTER_LINE_NUMBER_RIGHT_OFFSET,
     GUTTER_PADDING_LEFT, GUTTER_PADDING_RIGHT, SCROLL_BAR_WIDTH,
 };
 use jereide_core::AppState;
-use jereide_settings::{EDITOR_FONT_SIZE, SURFACE_BG, TEXT_CURRENT_LINE, TEXT_MUTED};
+use jereide_settings::{
+    BRACKET_MATCH, EDITOR_FONT_SIZE, SURFACE_BG, TEXT_CURRENT_LINE, TEXT_MUTED,
+};
 use jereide_text::char_index_to_line_col;
 
 use jereide_syntax::SyntaxHighlighter;
@@ -95,22 +98,9 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
             galley
         };
 
-    // -- Original layouter with syntax highlighting --
-    // let mut layouter = |layouter_ui: &egui::Ui,
-    //                     text: &dyn egui::widgets::TextBuffer,
-    //                     wrap_width: f32| {
-    //     let text_str = text.as_str();
-    //     let mut layout_job = HIGHLIGHTERS.with(|cache| {
-    //         let mut c = cache.borrow_mut();
-    //         c.get_mut(&tab_id).unwrap().highlight(text_str)
-    //     });
-    //     layout_job.wrap.max_width = wrap_width;
-    //     let galley = layouter_ui.fonts_mut(|f| f.layout_job(layout_job));
-    //     *last_galley.borrow_mut() = Some(galley.clone());
-    //     galley
-    // };
+    let old_text = state.tabs[active_idx].text.clone();
 
-    let response = egui::ScrollArea::both()
+    let text_edit_output = egui::ScrollArea::both()
         .auto_shrink(false)
         .show(ui, |ui| {
             let viewport = ui.max_rect().size();
@@ -122,28 +112,28 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 let (gutter_rect, gutter_resp) =
                     ui.allocate_exact_size(egui::vec2(gutter_w, 0.0), egui::Sense::click());
 
-                let text_response = ui.add(
-                    egui::TextEdit::code_editor(egui::TextEdit::multiline(
-                        &mut state.tabs[active_idx].text,
-                    ))
-                    .id_source("editor")
-                    .desired_width(f32::INFINITY)
-                    .frame(egui::Frame {
-                        inner_margin: egui::Margin {
-                            left: EDITOR_INNER_MARGIN_LEFT_EXTRA,
-                            right: EDITOR_INNER_MARGIN_RIGHT,
-                            top: EDITOR_INNER_MARGIN_TOP,
-                            bottom: EDITOR_INNER_MARGIN_BOTTOM,
-                        },
-                        ..egui::Frame::NONE
-                    })
-                    .layouter(&mut layouter),
-                );
+                let text_output = egui::TextEdit::code_editor(egui::TextEdit::multiline(
+                    &mut state.tabs[active_idx].text,
+                ))
+                .id_source("editor")
+                .desired_width(f32::INFINITY)
+                .frame(egui::Frame {
+                    inner_margin: egui::Margin {
+                        left: EDITOR_INNER_MARGIN_LEFT_EXTRA,
+                        right: EDITOR_INNER_MARGIN_RIGHT,
+                        top: EDITOR_INNER_MARGIN_TOP,
+                        bottom: EDITOR_INNER_MARGIN_BOTTOM,
+                    },
+                    ..egui::Frame::NONE
+                })
+                .layouter(&mut layouter)
+                .show(ui);
 
-                (gutter_rect, gutter_resp, text_response)
+                (gutter_rect, gutter_resp, text_output)
             });
 
-            let (gutter_rect, gutter_resp, text_response) = horiz.inner;
+            let (gutter_rect, gutter_resp, text_output) = horiz.inner;
+            let text_response = &text_output.response;
             let text_alloc = text_response.rect;
 
             let g_bottom = text_alloc.bottom().max(ui.clip_rect().bottom());
@@ -178,6 +168,40 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 }
             }
 
+            let galley = text_output.galley.clone();
+            let galley_pos = text_output.galley_pos;
+
+            if let Some(cursor_range) = text_output.cursor_range {
+                let tab_text = &state.tabs[active_idx].text;
+                if let Some((open_idx, close_idx)) = find_matching_bracket(tab_text, cursor_range.primary.index) {
+                    let highlight_at = |char_index: usize| {
+                        if char_index >= tab_text.len() {
+                            return;
+                        }
+                        let lc = galley.layout_from_cursor(CCursor::new(char_index));
+                        if let Some(placed_row) = galley.rows.get(lc.row) {
+                            if let Some(glyph) = placed_row.glyphs.get(lc.column) {
+                                let screen_x = galley_pos.x + placed_row.pos.x + glyph.pos.x;
+                                let screen_y = galley_pos.y + placed_row.pos.y;
+                                let w = glyph.advance_width;
+                                let h = placed_row.height();
+                                painter.rect_stroke(
+                                    egui::Rect::from_min_size(
+                                        egui::pos2(screen_x, screen_y),
+                                        egui::vec2(w, h),
+                                    ),
+                                    1.0,
+                                    egui::Stroke::new(1.5, BRACKET_MATCH),
+                                    egui::StrokeKind::Outside,
+                                );
+                            }
+                        }
+                    };
+                    highlight_at(open_idx);
+                    highlight_at(close_idx);
+                }
+            }
+
             // Fill up the whole Y available space
             let remaining = ui.available_size();
             if remaining.y > 0.0 {
@@ -189,24 +213,142 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
             }
             gutter_resp.on_hover_cursor(egui::CursorIcon::Text);
 
-            text_response
+            text_output
         })
         .inner;
-    state.editor_id = response.id;
-    // For the status bar Line/Col indicator
-    if let Some(edit_state) = egui::TextEdit::load_state(&ctx, response.id) {
-        if let Some(range) = edit_state.cursor.char_range() {
-            let (line, col) =
-                char_index_to_line_col(&state.tabs[active_idx].text, range.primary.index);
-            state.tabs[active_idx].cursor_line = line;
-            state.tabs[active_idx].cursor_col = col;
+    state.editor_id = text_edit_output.response.id;
+
+    if let Some(cursor_range) = text_edit_output.cursor_range {
+        let cursor_idx = cursor_range.primary.index;
+
+        // For the status bar Line/Col indicator
+        let (line, col) =
+            char_index_to_line_col(&state.tabs[active_idx].text, cursor_idx);
+        state.tabs[active_idx].cursor_line = line;
+        state.tabs[active_idx].cursor_col = col;
+
+        // Auto-indent on Enter
+        let text_len = state.tabs[active_idx].text.len();
+        if text_len > old_text.len()
+            && cursor_idx > 0
+            && state.tabs[active_idx].text.as_bytes()[cursor_idx - 1] == b'\n'
+            && (cursor_idx > old_text.len()
+                || old_text.as_bytes().get(cursor_idx - 1) != Some(&b'\n'))
+        {
+            let indent = {
+                let t = &state.tabs[active_idx].text;
+                compute_indent(t, cursor_idx)
+            };
+            if !indent.is_empty() {
+                state.tabs[active_idx].text.insert_str(cursor_idx, &indent);
+                let new_cursor = cursor_idx + indent.len();
+                if let Some(mut edit_state) =
+                    egui::TextEdit::load_state(&ctx, text_edit_output.response.id)
+                {
+                    edit_state
+                        .cursor
+                        .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
+                            new_cursor,
+                        ))));
+                    edit_state.store(&ctx, text_edit_output.response.id);
+                }
+            }
         }
     }
 
     if !state.editor_focused {
         state.editor_focused = true;
-        response.request_focus();
+        text_edit_output.response.request_focus();
     }
+}
+
+fn find_matching_bracket(text: &str, cursor_char_index: usize) -> Option<(usize, usize)> {
+    let bytes = text.as_bytes();
+
+    let check_at = |idx: usize| -> Option<(usize, usize)> {
+        let c = bytes[idx] as char;
+        match c {
+            '(' => find_match_forward(text, idx + 1, '(', ')').map(|m| (idx, m)),
+            ')' => find_match_backward(text, idx, '(', ')').map(|m| (m, idx)),
+            '[' => find_match_forward(text, idx + 1, '[', ']').map(|m| (idx, m)),
+            ']' => find_match_backward(text, idx, '[', ']').map(|m| (m, idx)),
+            '{' => find_match_forward(text, idx + 1, '{', '}').map(|m| (idx, m)),
+            '}' => find_match_backward(text, idx, '{', '}').map(|m| (m, idx)),
+            _ => None,
+        }
+    };
+
+    if cursor_char_index < text.len() {
+        let c = bytes[cursor_char_index] as char;
+        if matches!(c, '(' | ')' | '[' | ']' | '{' | '}') {
+            if let Some(pair) = check_at(cursor_char_index) {
+                return Some(pair);
+            }
+        }
+    }
+
+    if cursor_char_index > 0 {
+        let c = bytes[cursor_char_index - 1] as char;
+        if matches!(c, '(' | ')' | '[' | ']' | '{' | '}') {
+            if let Some(pair) = check_at(cursor_char_index - 1) {
+                return Some(pair);
+            }
+        }
+    }
+
+    None
+}
+
+fn find_match_forward(text: &str, start: usize, open: char, close: char) -> Option<usize> {
+    let bytes = text.as_bytes();
+    let mut depth = 1;
+    for i in start..text.len() {
+        let c = bytes[i] as char;
+        if c == open {
+            depth += 1;
+        } else if c == close {
+            depth -= 1;
+            if depth == 0 {
+                return Some(i);
+            }
+        }
+    }
+    None
+}
+
+fn find_match_backward(text: &str, start: usize, open: char, close: char) -> Option<usize> {
+    let bytes = text.as_bytes();
+    let mut depth = 1;
+    for i in (0..start).rev() {
+        let c = bytes[i] as char;
+        if c == close {
+            depth += 1;
+        } else if c == open {
+            depth -= 1;
+            if depth == 0 {
+                return Some(i);
+            }
+        }
+    }
+    None
+}
+
+fn compute_indent(text: &str, cursor_idx: usize) -> String {
+    let before = &text[..cursor_idx];
+    let prev_start = before[..before.len() - 1]
+        .rfind('\n')
+        .map(|pos| pos + 1)
+        .unwrap_or(0);
+    let prev_line = &text[prev_start..cursor_idx - 1];
+    let indent_len = prev_line.len() - prev_line.trim_start().len();
+    let indent = &prev_line[..indent_len];
+    let trimmed = prev_line.trim();
+    let extra = if trimmed.ends_with('{') || trimmed.ends_with('(') || trimmed.ends_with('[') {
+        "\t"
+    } else {
+        ""
+    };
+    format!("{}{}", indent, extra)
 }
 
 #[cfg(test)]

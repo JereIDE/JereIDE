@@ -31,6 +31,8 @@ pub const SYNTAX_LITERAL: Color32 = Color32::from_rgb(200, 100, 0); // orange
 pub const ACCENT: Color32 = Color32::from_rgb(28, 225, 210);
 pub const DESTRUCTIVE: Color32 = Color32::from_rgb(220, 50, 50);
 
+pub const BRACKET_MATCH: Color32 = Color32::from_rgb(255, 220, 80);
+
 pub const TITLE_BAR_FONT_SIZE: f32 = 12.0;
 pub const TAB_FONT_SIZE: f32 = 12.0;
 pub const EDITOR_FONT_SIZE: f32 = 14.0;
