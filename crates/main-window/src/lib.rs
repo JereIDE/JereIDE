@@ -115,6 +115,7 @@ pub struct JereIDEApp {
     file_manager: FileManager,
     visuals_initialized: bool,
     palette: Option<Palette>,
+    compose: jereide_compose::compose_view::Compose,
 }
 
 impl JereIDEApp {
@@ -125,6 +126,7 @@ impl JereIDEApp {
             file_manager: FileManager::new(),
             visuals_initialized: false,
             palette: None,
+            compose: jereide_compose::compose_view::Compose::new(),
         }
     }
 
@@ -167,7 +169,9 @@ impl JereIDEApp {
         match path {
             Some(p) => {
                 if let Err(e) = FileManager::save_to_path(
-                    &self.state.current_tab().text, &std::path::PathBuf::from(&p)) {
+                    &self.state.current_tab().text,
+                    &std::path::PathBuf::from(&p),
+                ) {
                     eprintln!("Failed to save file: {}", e);
                 } else {
                     self.state.mark_saved();
@@ -182,8 +186,7 @@ impl JereIDEApp {
             return;
         }
         if let Some(path) = FileManager::save_as_dialog() {
-            if let Err(e) = FileManager::save_to_path(
-                &self.state.current_tab().text, &path) {
+            if let Err(e) = FileManager::save_to_path(&self.state.current_tab().text, &path) {
                 eprintln!("Failed to save file: {}", e);
             } else {
                 let path_str = path.display().to_string();
@@ -199,7 +202,9 @@ impl JereIDEApp {
         match path {
             Some(p) => {
                 if let Err(e) = FileManager::save_to_path(
-                    &self.state.tabs[idx].text, &std::path::PathBuf::from(&p)) {
+                    &self.state.tabs[idx].text,
+                    &std::path::PathBuf::from(&p),
+                ) {
                     eprintln!("Failed to save file: {}", e);
                     false
                 } else {
@@ -208,8 +213,7 @@ impl JereIDEApp {
             }
             None => {
                 if let Some(path) = FileManager::save_as_dialog() {
-                    if let Err(e) = FileManager::save_to_path(
-                        &self.state.tabs[idx].text, &path) {
+                    if let Err(e) = FileManager::save_to_path(&self.state.tabs[idx].text, &path) {
                         eprintln!("Failed to save file: {}", e);
                         false
                     } else {
@@ -430,7 +434,7 @@ impl eframe::App for JereIDEApp {
                         .max_rect(overlay_rect)
                         .layout(egui::Layout::top_down(egui::Align::LEFT)),
                 );
-                jereide_compose::compose_view::render_compose_view(&mut overlay_ui);
+                self.compose.render(&mut overlay_ui);
             }
         }
 
