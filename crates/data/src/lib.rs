@@ -12,12 +12,15 @@ struct LanguageDef {
     extensions: Vec<String>,
     name: String,
     indent_after: Vec<String>,
+    file: Option<String>,
 }
 
 #[derive(Debug, Clone)]
 pub struct LanguageInfo {
     pub name: String,
     pub indent_triggers: Vec<char>,
+    /// Stem of the syntax JSON file in data/ (e.g. "rs" for data/rs.json).
+    pub syntax_file: Option<String>,
 }
 
 pub fn data_dir() -> Option<std::path::PathBuf> {
@@ -69,6 +72,7 @@ pub fn lookup_language(extension: Option<&str>) -> Option<LanguageInfo> {
     Some(LanguageInfo {
         name: def.name.clone(),
         indent_triggers: def.indent_after.iter().filter_map(|s| s.chars().next()).collect(),
+        syntax_file: def.file.clone(),
     })
 }
 

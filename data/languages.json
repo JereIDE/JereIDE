@@ -3,112 +3,128 @@
     {
       "extensions": ["rs"],
       "name": "Rust",
-      "indent_after": ["{", "(", "["]
+      "indent_after": ["{", "(", "["],
+      "file": "rs"
     },
     {
       "extensions": ["py", "pyw"],
       "name": "Python",
-      "indent_after": [":"]
+      "indent_after": [":"],
+      "file": "py"
     },
     {
       "extensions": ["js", "jsx", "cjs", "mjs"],
       "name": "JavaScript",
-      "indent_after": ["{", "(", "["]
+      "indent_after": ["{", "(", "["],
+      "file": null
     },
     {
       "extensions": ["ts", "tsx"],
       "name": "TypeScript",
-      "indent_after": ["{", "(", "["]
-    },
-    {
-      "extensions": ["cjs", "mjs"],
-      "name": "JavaScript",
-      "indent_after": ["{", "(", "["]
+      "indent_after": ["{", "(", "["],
+      "file": null
     },
     {
       "extensions": ["json"],
       "name": "JSON",
-      "indent_after": ["{", "["]
+      "indent_after": ["{", "["],
+      "file": null
     },
     {
       "extensions": ["html"],
       "name": "HTML",
-      "indent_after": []
+      "indent_after": [],
+      "file": null
     },
     {
       "extensions": ["css"],
       "name": "CSS",
-      "indent_after": ["{"]
+      "indent_after": ["{"],
+      "file": null
     },
     {
       "extensions": ["md"],
       "name": "Markdown",
-      "indent_after": []
+      "indent_after": [],
+      "file": null
     },
     {
       "extensions": ["toml"],
       "name": "TOML",
-      "indent_after": []
+      "indent_after": [],
+      "file": null
     },
     {
       "extensions": ["yaml", "yml"],
       "name": "YAML",
-      "indent_after": []
+      "indent_after": [],
+      "file": null
     },
     {
       "extensions": ["sh", "zsh", "bash"],
       "name": "Shell",
-      "indent_after": []
+      "indent_after": [],
+      "file": null
     },
     {
       "extensions": ["java"],
       "name": "Java",
-      "indent_after": ["{", "(", "["]
+      "indent_after": ["{", "(", "["],
+      "file": null
     },
     {
       "extensions": ["c", "h"],
       "name": "C",
-      "indent_after": ["{", "(", "["]
+      "indent_after": ["{", "(", "["],
+      "file": null
     },
     {
       "extensions": ["cpp", "cxx", "hpp", "hxx", "cc", "hh"],
       "name": "C++",
-      "indent_after": ["{", "(", "["]
+      "indent_after": ["{", "(", "["],
+      "file": null
     },
     {
       "extensions": ["go"],
       "name": "Go",
-      "indent_after": ["{", "(", "["]
+      "indent_after": ["{", "(", "["],
+      "file": null
     },
     {
       "extensions": ["rb"],
       "name": "Ruby",
-      "indent_after": ["{", "(", "["]
+      "indent_after": ["{", "(", "["],
+      "file": null
     },
     {
       "extensions": ["sql"],
       "name": "SQL",
-      "indent_after": []
+      "indent_after": [],
+      "file": null
     },
     {
       "extensions": ["kt", "kts"],
       "name": "Kotlin",
-      "indent_after": ["{", "(", "["]
+      "indent_after": ["{", "(", "["],
+      "file": null
     },
     {
       "extensions": ["swift"],
       "name": "Swift",
-      "indent_after": ["{", "(", "["]
+      "indent_after": ["{", "(", "["],
+      "file": null
     },
     {
       "extensions": ["scala"],
       "name": "Scala",
-      "indent_after": ["{", "(", "["]
+      "indent_after": ["{", "(", "["],
+      "file": null
     },
     {
       "extensions": ["cs"],
       "name": "C#",
-      "indent_after": ["{", "(", "["]
+      "indent_after": ["{", "(", "["],
+      "file": null
     }
   ]
 }

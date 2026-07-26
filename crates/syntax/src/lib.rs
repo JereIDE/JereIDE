@@ -22,6 +22,7 @@ struct SyntaxFile {
 #[derive(Debug, Deserialize)]
 struct SyntaxDef {
     name: String,
+    #[allow(dead_code)]
     files: Vec<String>,
     symbols: HashMap<String, String>,
     patterns: Vec<RawPattern>,
@@ -49,11 +50,13 @@ enum RawPattern {
 // Compiled syntax definition (regexes compiled at load time)
 // ---------------------------------------------------------------------------
 
+#[derive(Clone)]
 struct CompiledPattern {
     type_: String,
     kind: CompiledPatternKind,
 }
 
+#[derive(Clone)]
 enum CompiledPatternKind {
     Line(Regex),
     Block {
@@ -63,29 +66,23 @@ enum CompiledPatternKind {
     },
 }
 
+#[derive(Clone)]
 struct CompiledSyntax {
     _name: String,
-    _file_patterns: Vec<Regex>,
     symbols: HashMap<String, String>,
     patterns: Vec<CompiledPattern>,
 }
 
 // ---------------------------------------------------------------------------
-// Loading
+// Loading — loads data/{file}.json
 // ---------------------------------------------------------------------------
 
-fn load_syntax(data_dir: &std::path::Path, extension: &str) -> Option<CompiledSyntax> {
-    let path = data_dir.join(format!("{extension}.json"));
+fn load_syntax(data_dir: &std::path::Path, file: &str) -> Option<CompiledSyntax> {
+    let path = data_dir.join(format!("{file}.json"));
     let content = std::fs::read_to_string(&path).ok()?;
     let file: SyntaxFile = serde_json::from_str(&content).ok()?;
 
     let def = file.syntax;
-
-    let _file_patterns: Vec<Regex> = def
-        .files
-        .iter()
-        .filter_map(|s| Regex::new(s).ok())
-        .collect();
 
     let patterns: Vec<CompiledPattern> = def
         .patterns
@@ -95,7 +92,6 @@ fn load_syntax(data_dir: &std::path::Path, extension: &str) -> Option<CompiledSy
 
     Some(CompiledSyntax {
         _name: def.name,
-        _file_patterns,
         symbols: def.symbols,
         patterns,
     })
@@ -357,11 +353,11 @@ pub struct SyntaxHighlighter {
 }
 
 impl SyntaxHighlighter {
-    pub fn new(font_size: f32, extension: Option<&str>) -> Self {
+    pub fn new(font_size: f32, syntax_file: Option<&str>) -> Self {
         let font_id = FontId::monospace(font_size);
-        let syntax_def = extension.and_then(|ext| {
-            let data_dir = data_dir()?;
-            load_syntax(&data_dir, ext)
+        let syntax_def = syntax_file.and_then(|file| {
+            let dir = data_dir()?;
+            load_syntax(&dir, file)
         });
 
         Self {

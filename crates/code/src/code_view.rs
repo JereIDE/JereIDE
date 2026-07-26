@@ -68,13 +68,18 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         .and_then(|ext| ext.to_str())
         .map(|s| s.to_string());
 
+    let syntax_file = extension
+        .as_deref()
+        .and_then(|ext| jereide_data::lookup_language(Some(ext)))
+        .and_then(|info| info.syntax_file);
+
     let valid_ids: std::collections::HashSet<usize> = state.tabs.iter().map(|t| t.id).collect();
     HIGHLIGHTERS.with(|cache| {
         let mut cache = cache.borrow_mut();
         cache.retain(|id, _| valid_ids.contains(id));
         cache
             .entry(tab_id)
-            .or_insert_with(|| SyntaxHighlighter::new(EDITOR_FONT_SIZE, extension.as_deref()));
+            .or_insert_with(|| SyntaxHighlighter::new(EDITOR_FONT_SIZE, syntax_file.as_deref()));
     });
 
     let font_id = egui::FontId::monospace(EDITOR_FONT_SIZE);
