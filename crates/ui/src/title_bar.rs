@@ -18,6 +18,17 @@ fn alpha_image() -> egui::Image<'static> {
     egui::Image::from_bytes("alpha.png", bytes.clone()).max_height(19.0)
 }
 
+fn user_icon_image() -> egui::Image<'static> {
+    static BYTES: OnceLock<Vec<u8>> = OnceLock::new();
+    let bytes = BYTES.get_or_init(|| {
+        data_dir()
+            .map(|dir| std::fs::read(dir.join("usericon.png")).unwrap_or_default())
+            .unwrap_or_default()
+    });
+    // TODO: I probably need the actual user icon thingy, perhaps from GitHub or Gravatar?
+    egui::Image::from_bytes("usericon.png", bytes.clone()).max_height(19.0)
+}
+
 pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: bool) {
     let available = ui.available_size();
     let (rect, _) = ui.allocate_exact_size(
@@ -71,8 +82,23 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
                 state.switch_to_view(CurrentView::Compose);
             }
 
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |_ui| {
-                // Reserved for future right-side title bar content.
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                ui.add_space(TITLE_BAR_FULLSCREEN_SPACE);
+
+                let d = 20.0;
+                let usericon_clicked = ui.add_sized(
+                    egui::vec2(d, d),
+                    egui::Button::new(user_icon_image()).corner_radius(d / 2.0),
+                );
+                egui::Popup::menu(&usericon_clicked)
+                    .gap(TITLE_BAR_POPUP_GAP)
+                    .close_behavior(egui::PopupCloseBehavior::CloseOnClick)
+                    .show(|ui| {
+                        ui.vertical(|ui| {
+                            let _ = ui.button("Username");
+                            let _ = ui.button("Star us on GitHub");
+                        });
+                    });
             });
         });
     });
