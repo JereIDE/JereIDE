@@ -90,7 +90,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
     let last_galley: RefCell<Option<Arc<egui::Galley>>> = RefCell::new(None);
 
     let mut layouter =
-        |layouter_ui: &egui::Ui, text: &dyn egui::widgets::TextBuffer, _wrap_width: f32| {
+        |layouter_ui: &egui::Ui, text: &dyn jereide_editor::TextBuffer, _wrap_width: f32| {
             let text_str = text.as_str();
 
             let mut layout_job = HIGHLIGHTERS.with(|cache| {
@@ -117,7 +117,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 let (gutter_rect, gutter_resp) =
                     ui.allocate_exact_size(egui::vec2(gutter_w, 0.0), egui::Sense::click());
 
-                let text_output = egui::TextEdit::code_editor(egui::TextEdit::multiline(
+                let text_output = jereide_editor::TextEdit::code_editor(jereide_editor::TextEdit::multiline(
                     &mut state.tabs[active_idx].text,
                 ))
                 .id_source("editor")
@@ -248,7 +248,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 state.tabs[active_idx].text.insert_str(cursor_idx, &indent);
                 let new_cursor = cursor_idx + indent.len();
                 if let Some(mut edit_state) =
-                    egui::TextEdit::load_state(&ctx, text_edit_output.response.id)
+                    jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
                 {
                     edit_state
                         .cursor

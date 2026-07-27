@@ -12,6 +12,7 @@ members = [
     "crates/compose",
     "crates/fs",
     "crates/data",
+    "crates/editor",
 ]
 resolver = "2"
 

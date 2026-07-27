@@ -2055,6 +2055,7 @@ dependencies = [
  "eframe",
  "jereide-core",
  "jereide-data",
+ "jereide-editor",
  "jereide-settings",
  "jereide-syntax",
  "jereide-text",
@@ -2081,6 +2082,13 @@ version = "0.24.0"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "jereide-editor"
+version = "0.24.0"
+dependencies = [
+ "eframe",
 ]
 
 [[package]]

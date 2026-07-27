@@ -36,6 +36,7 @@ jereide/
 │   ├── ui/           # Title bar, tab strip, status bar, dialogs, welcome view
 │   ├── code/         # Code editor view & edit actions (undo/redo, clipboard)
 │   ├── compose/      # Compose palette view (placeholder)
+│   ├── editor/       # Vendored egui TextEdit widget
 │   └── fs/           # File system operations & dialogs (rfd)
 ├── Cargo.toml        # Workspace root
 ├── AGENTS.md         # Agent-specific instructions
@@ -58,7 +59,10 @@ main-window
  └── (macOS-only) objc2, objc2-foundation
 
 code
- ├── core, settings, text, syntax
+ ├── core, editor, settings, text, syntax
+
+editor
+ └── egui
 
 compose
  └── settings
@@ -415,9 +419,11 @@ Uses `Palette<Command>` to provide a command palette overlay. `Command` enum cov
 
 ---
 
-### `crates/code` — Code Editor
+### `crates/code` — Code Editor View
 
 **Files:** `src/lib.rs`, `src/code_view.rs`, `src/edit.rs`
+
+Uses `jereide_editor::TextEdit` (the vendored egui TextEdit) for the editing widget.
 
 #### Code View (`code_view.rs`)
 
@@ -447,7 +453,7 @@ pub enum EditAction { SelectAll, Copy, Cut, Paste, Undo, Redo }
 - **Copy:** Reads selection range, calls `ctx.copy_text()`
 - **Cut:** Copies selection then deletes range from text
 - **Paste:** Sends `ViewportCommand::RequestPaste`
-- **Undo/Redo:** Uses egui's built-in `TextEdit::undoer()` with char-range snapshots
+- **Undo/Redo:** Uses the vendored `TextEdit::undoer()` with char-range snapshots
 
 ---
 
@@ -456,6 +462,22 @@ pub enum EditAction { SelectAll, Copy, Cut, Paste, Undo, Redo }
 **Files:** `src/lib.rs`, `src/compose_view.rs`
 
 Currently a placeholder. Renders a full-viewport overlay with `COMPOSE_BG` and "Needs implementation" text.
+
+---
+
+### `crates/editor` — Vendored egui TextEdit
+
+**Files:** `src/lib.rs`, `src/text_edit/{mod.rs,builder.rs,output.rs,state.rs,text_buffer.rs}`
+
+A vendored copy of `egui::TextEdit` (0.34.3), imported so it can be freely modified without touching egui's source. Contains the full multiline text editing widget:
+
+- **`TextEdit`** — builder struct with chaining API (`.id()`, `.font()`, `.layouter()`, etc.)
+- **`TextEdit::show()`** — renders the widget: handles mouse/keyboard/IME events, cursor & selection painting, undo/redo, clipboard, accessibility
+- **`TextEditState`** — persisted per-widget state (cursor, undo stack, IME state)
+- **`TextBuffer`** — trait for editable text buffers (implemented for `String`, `&str`, `Cow<str>`)
+- **`TextEditOutput`** — returned from `show()` with galley, cursor range, response
+
+All `crate::` imports from egui have been rewritten to `egui::`. The module is a drop-in replacement for `egui::TextEdit` with no functional changes yet.
 
 ---
 
@@ -487,7 +509,7 @@ Menu "Save" → handle_save()
 ### Typing in the editor
 
 ```
-User types → egui TextEdit handles input
+User types → vendored TextEdit handles input
   → custom layouter calls SyntaxHighlighter::highlight()
      → incremental: finds first changed line
      → re-highlights from there
