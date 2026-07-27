@@ -318,6 +318,7 @@ impl eframe::App for JereIDEApp {
                     cmd && i.key_pressed(egui::Key::A),
                     cmd && i.key_pressed(egui::Key::W),
                     cmd && i.modifiers.shift && i.key_pressed(egui::Key::P),
+                    cmd && i.key_pressed(egui::Key::B),
                 )
             });
             let (
@@ -334,6 +335,7 @@ impl eframe::App for JereIDEApp {
                 want_select_all,
                 want_close_tab,
                 want_command_palette,
+                want_toggle_sidebar,
             ) = input;
             if want_new {
                 self.handle_action("file: new", &ctx);
@@ -370,6 +372,9 @@ impl eframe::App for JereIDEApp {
             }
             if want_close_tab {
                 self.handle_action("file: close tab", &ctx);
+            }
+            if want_toggle_sidebar {
+                self.handle_action("view: toggle sidebar", &ctx);
             }
             if want_command_palette {
                 self.state.command_palette_open = !self.state.command_palette_open;

@@ -74,6 +74,8 @@ impl AppMenu {
             .append_items(&[
                 &MenuItem::with_id("command palette: toggle", "Command Palette", true, None),
                 &PredefinedMenuItem::separator(),
+                &MenuItem::with_id("view: toggle sidebar", "Toggle Sidebar", true, None),
+                &PredefinedMenuItem::separator(),
                 &PredefinedMenuItem::fullscreen(None),
             ])
             .ok();
