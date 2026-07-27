@@ -1,6 +1,6 @@
 <div align="center">
 
-# JereIDER
+# JereIDE
 
 **The ready-to-use, open-source editor that nobody uses.**
 

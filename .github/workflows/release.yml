@@ -123,15 +123,15 @@ jobs:
   #     - name: Build
   #       run: cargo build --release -p JereIDE
   #
-      #     - name: Package tarball
-      #       run: |
-      #         ARCHIVE_BASE="JereIDE-v${APP_VERSION}-Linux-Intel"
-      #         mkdir "$ARCHIVE_BASE"
-      #         cp target/release/JereIDE "$ARCHIVE_BASE/"
-      #         cp -r data "$ARCHIVE_BASE/"
-      #         cp LICENSE "$ARCHIVE_BASE/"
-      #         cp README.md "$ARCHIVE_BASE/"
-      #         tar -czf "${ARCHIVE_BASE}.tar.gz" "$ARCHIVE_BASE"
+  #     - name: Package tarball
+  #       run: |
+  #         ARCHIVE_BASE="JereIDE-v${APP_VERSION}-Linux-Intel"
+  #         mkdir "$ARCHIVE_BASE"
+  #         cp target/release/JereIDE "$ARCHIVE_BASE/"
+  #         cp -r data "$ARCHIVE_BASE/"
+  #         cp LICENSE "$ARCHIVE_BASE/"
+  #         cp README.md "$ARCHIVE_BASE/"
+  #         tar -czf "${ARCHIVE_BASE}.tar.gz" "$ARCHIVE_BASE"
   #
   #     - name: Upload Linux artifacts
   #       uses: actions/upload-artifact@v6
@@ -200,7 +200,7 @@ jobs:
           - label: macOS Apple Silicon (aarch64)
             rust-target: aarch64-apple-darwin
             arch: aarch64
-            chip: AppleSilicon
+            chip: Apple-Silicon
           - label: macOS Intel (x86_64)
             rust-target: x86_64-apple-darwin
             arch: x86_64
