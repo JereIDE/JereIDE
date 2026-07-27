@@ -230,7 +230,7 @@ pub fn render_about_dialog(ctx: &egui::Context, open: &mut bool) {
         .show(ctx, |ui| {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 ui.heading("JereIDE");
-                ui.label("Version 0.22.0");
+                ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
                 ui.add_space(8.0);
                 ui.colored_label(
                     TEXT_SECONDARY,
