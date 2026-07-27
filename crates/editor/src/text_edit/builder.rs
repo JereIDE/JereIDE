@@ -885,11 +885,38 @@ fn events(
 
     let mut any_change = false;
 
+    let mut galley_dirty = false;
+
     let events = ui.input(|i| i.filtered_events(&event_filter));
 
     for event in &events {
         let did_mutate_text = match event {
-            event if cursor_range.on_event(os, event, galley, id) => None,
+            event
+                if {
+                    if galley_dirty {
+                        if let Event::Key {
+                            pressed: true,
+                            key:
+                                Key::ArrowLeft
+                                | Key::ArrowRight
+                                | Key::ArrowUp
+                                | Key::ArrowDown
+                                | Key::Home
+                                | Key::End
+                                | Key::PageUp
+                                | Key::PageDown,
+                            ..
+                        } = event
+                        {
+                            *galley = layouter(ui, text, wrap_width);
+                            galley_dirty = false;
+                        }
+                    }
+                    cursor_range.on_event(os, event, galley, id)
+                } =>
+            {
+                None
+            }
 
             Event::Copy => {
                 if !cursor_range.is_empty() {
@@ -1068,11 +1095,13 @@ fn events(
 
         if let Some(new_ccursor_range) = did_mutate_text {
             any_change = true;
-
-            *galley = layouter(ui, text, wrap_width);
-
+            galley_dirty = true;
             cursor_range = new_ccursor_range;
         }
+    }
+
+    if galley_dirty {
+        *galley = layouter(ui, text, wrap_width);
     }
 
     state.cursor.set_char_range(Some(cursor_range));

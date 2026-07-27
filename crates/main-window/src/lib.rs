@@ -298,7 +298,6 @@ impl eframe::App for JereIDEApp {
             self.app_menu.set_initialized();
         }
 
-        #[cfg(not(target_os = "macos"))]
         {
             let input = ctx.input(|i| {
                 let cmd = i.modifiers.command;

@@ -44,37 +44,12 @@ impl AppMenu {
         // The file menu
         file_menu
             .append_items(&[
-                &MenuItem::with_id(
-                    "file: new",
-                    "New",
-                    true,
-                    "CmdOrCtrl+N".parse::<Accelerator>().ok(),
-                ),
-                &MenuItem::with_id(
-                    "file: open",
-                    "Open...",
-                    true,
-                    "CmdOrCtrl+O".parse::<Accelerator>().ok(),
-                ),
-                &MenuItem::with_id(
-                    "file: save",
-                    "Save",
-                    true,
-                    "CmdOrCtrl+S".parse::<Accelerator>().ok(),
-                ),
-                &MenuItem::with_id(
-                    "file: save as",
-                    "Save As…",
-                    true,
-                    "CmdOrCtrl+Shift+S".parse::<Accelerator>().ok(),
-                ),
+                &MenuItem::with_id("file: new", "New\t⌘N", true, None),
+                &MenuItem::with_id("file: open", "Open...\t⌘O", true, None),
+                &MenuItem::with_id("file: save", "Save\t⌘S", true, None),
+                &MenuItem::with_id("file: save as", "Save As…\t⌘⇧S", true, None),
                 &PredefinedMenuItem::separator(),
-                &MenuItem::with_id(
-                    "file: close tab",
-                    "Close Tab",
-                    true,
-                    "CmdOrCtrl+W".parse::<Accelerator>().ok(),
-                ),
+                &MenuItem::with_id("file: close tab", "Close Tab\t⌘W", true, None),
             ])
             .ok();
 
@@ -82,44 +57,14 @@ impl AppMenu {
         let edit_menu = Submenu::with_id("edit", "Edit", true);
         edit_menu
             .append_items(&[
-                &MenuItem::with_id(
-                    "editor: undo",
-                    "Undo",
-                    true,
-                    "CmdOrCtrl+Z".parse::<Accelerator>().ok(),
-                ),
-                &MenuItem::with_id(
-                    "editor: redo",
-                    "Redo",
-                    true,
-                    "CmdOrCtrl+Shift+Z".parse::<Accelerator>().ok(),
-                ),
+                &MenuItem::with_id("editor: undo", "Undo\t⌘Z", true, None),
+                &MenuItem::with_id("editor: redo", "Redo\t⌘⇧Z", true, None),
                 &PredefinedMenuItem::separator(),
-                &MenuItem::with_id(
-                    "editor: cut",
-                    "Cut",
-                    true,
-                    "CmdOrCtrl+X".parse::<Accelerator>().ok(),
-                ),
-                &MenuItem::with_id(
-                    "editor: copy",
-                    "Copy",
-                    true,
-                    "CmdOrCtrl+C".parse::<Accelerator>().ok(),
-                ),
-                &MenuItem::with_id(
-                    "editor: paste",
-                    "Paste",
-                    true,
-                    "CmdOrCtrl+V".parse::<Accelerator>().ok(),
-                ),
+                &MenuItem::with_id("editor: cut", "Cut\t⌘X", true, None),
+                &MenuItem::with_id("editor: copy", "Copy\t⌘C", true, None),
+                &MenuItem::with_id("editor: paste", "Paste\t⌘V", true, None),
                 &PredefinedMenuItem::separator(),
-                &MenuItem::with_id(
-                    "editor: select all",
-                    "Select All",
-                    true,
-                    "CmdOrCtrl+A".parse::<Accelerator>().ok(),
-                ),
+                &MenuItem::with_id("editor: select all", "Select All\t⌘A", true, None),
             ])
             .ok();
 
@@ -129,9 +74,9 @@ impl AppMenu {
             .append_items(&[
                 &MenuItem::with_id(
                     "command palette: toggle",
-                    "Command Palette",
+                    "Command Palette\t⌘⇧P",
                     true,
-                    "CmdOrCtrl+Shift+P".parse::<Accelerator>().ok(),
+                    None,
                 ),
                 &PredefinedMenuItem::separator(),
                 &PredefinedMenuItem::fullscreen(None),
