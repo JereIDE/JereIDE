@@ -168,16 +168,6 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
         }
     }
 
-    // Top border across the full strip width
-    painter.rect_filled(
-        Rect::from_min_size(
-            Pos2::new(strip_rect.left(), strip_rect.top()),
-            Vec2::new(strip_rect.width(), TAB_BORDER_WIDTH),
-        ),
-        0.0,
-        BORDER,
-    );
-
     painter.rect_filled(
         Rect::from_min_size(
             Pos2::new(strip_rect.left(), tab_bottom - TAB_BORDER_WIDTH),

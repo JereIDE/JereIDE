@@ -2,11 +2,12 @@ use std::sync::OnceLock;
 
 use eframe::egui;
 use jereide_core::constants::{
-    TITLE_BAR_FULLSCREEN_SPACE, TITLE_BAR_HEIGHT, TITLE_BAR_POPUP_GAP, TITLE_BAR_TRAFFIC_SPACE,
+    TAB_BORDER_WIDTH, TITLE_BAR_FULLSCREEN_SPACE, TITLE_BAR_HEIGHT, TITLE_BAR_POPUP_GAP,
+    TITLE_BAR_TRAFFIC_SPACE,
 };
 use jereide_core::{AppState, CurrentView};
 use jereide_data::data_dir;
-use jereide_settings::{ELEVATED_BG, TITLE_BAR_FONT_SIZE};
+use jereide_settings::{BORDER, ELEVATED_BG, TITLE_BAR_FONT_SIZE};
 
 fn alpha_image() -> egui::Image<'static> {
     static BYTES: OnceLock<Vec<u8>> = OnceLock::new();
@@ -36,6 +37,14 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
         egui::Sense::hover(),
     );
     ui.painter().rect_filled(rect, 0.0, ELEVATED_BG);
+    ui.painter().rect_filled(
+        egui::Rect::from_min_size(
+            egui::pos2(rect.left(), rect.bottom() - TAB_BORDER_WIDTH),
+            egui::vec2(rect.width(), TAB_BORDER_WIDTH),
+        ),
+        0.0,
+        BORDER,
+    );
     ui.scope_builder(egui::UiBuilder::new().max_rect(rect), |ui| {
         ui.style_mut().text_styles.insert(
             egui::TextStyle::Button,
