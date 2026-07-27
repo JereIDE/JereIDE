@@ -22,6 +22,7 @@ struct TabLayout {
 }
 
 pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
+    let sidebar_open = state.sidebar_open;
     let available = ui.available_size();
     let (strip_rect, strip_resp) =
         ui.allocate_exact_size(Vec2::new(available.x, TAB_STRIP_HEIGHT), Sense::click());
@@ -198,6 +199,9 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
     }
 
     for idx in 0..state.tabs.len() {
+        if idx == 0 && sidebar_open {
+            continue;
+        }
         painter.vline(
             layouts[idx].rect.left(),
             layouts[idx].rect.y_range(),

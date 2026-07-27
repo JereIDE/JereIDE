@@ -244,6 +244,9 @@ impl JereIDEApp {
                     }
                 }
             }
+            "view: toggle sidebar" => {
+                self.state.sidebar_open = !self.state.sidebar_open;
+            }
             "jereide: quit" => {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             }
@@ -402,6 +405,11 @@ impl eframe::App for JereIDEApp {
 
                     let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
                     jereide_ui::title_bar::render_title_bar(state, ui, is_fullscreen);
+
+                    if state.sidebar_open {
+                        jereide_ui::sidebar::render_sidebar(state, ui);
+                    }
+
                     if !state.tabs.is_empty() {
                         jereide_ui::tab_strip::render_tab_strip(state, ui);
                     }

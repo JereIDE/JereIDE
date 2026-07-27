@@ -86,6 +86,8 @@ pub struct AppState {
 
     pub command_palette_open: bool,
 
+    pub sidebar_open: bool,
+
     pub show_about_dialog: bool,
 }
 
@@ -104,6 +106,7 @@ impl AppState {
             pending_large_file_blocked: None,
             pending_large_file_warn: None,
             command_palette_open: false,
+            sidebar_open: false,
             show_about_dialog: false,
         }
     }

@@ -33,6 +33,9 @@ pub fn items() -> Vec<PaletteItem> {
             code: "command palette: toggle",
         },
         PaletteItem {
+            code: "view: toggle sidebar",
+        },
+        PaletteItem {
             code: "jereide: toggle fullscreen",
         },
         PaletteItem {
@@ -52,9 +55,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn command_palette_has_16_items() {
+    fn command_palette_has_17_items() {
         let items = items();
-        assert_eq!(items.len(), 16);
+        assert_eq!(items.len(), 17);
     }
 
     #[test]
