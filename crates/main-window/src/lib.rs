@@ -296,14 +296,8 @@ impl eframe::App for JereIDEApp {
             let raw = frame.window_handle().ok().map(|h| h.as_raw());
             self.app_menu.init(raw);
             self.app_menu.set_initialized();
-            #[cfg(target_os = "macos")]
-            self.app_menu.start_waker(Box::new({
-                let ctx = ctx.clone();
-                move || ctx.request_repaint()
-            }));
         }
 
-        #[cfg(not(target_os = "macos"))]
         {
             let input = ctx.input(|i| {
                 let cmd = i.modifiers.command;
@@ -382,9 +376,7 @@ impl eframe::App for JereIDEApp {
             }
         }
 
-        let menu_events = self.app_menu.poll_events();
-
-        for event_id in &menu_events {
+        for event_id in self.app_menu.poll_events() {
             match event_id.as_ref() {
                 "command palette: toggle" => {
                     self.state.command_palette_open = !self.state.command_palette_open;

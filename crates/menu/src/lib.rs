@@ -2,15 +2,12 @@ use muda::{
     accelerator::Accelerator, Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem, Submenu,
 };
 use raw_window_handle::RawWindowHandle;
-use std::sync::{Arc, Mutex};
 
 /// A struct about the menu.
 pub struct AppMenu {
     menu: Menu,
     receiver: &'static crossbeam_channel::Receiver<MenuEvent>,
     initialized: bool,
-    #[cfg(target_os = "macos")]
-    pending: Arc<Mutex<Vec<MenuEvent>>>,
 }
 
 impl AppMenu {
@@ -47,37 +44,12 @@ impl AppMenu {
         // The file menu
         file_menu
             .append_items(&[
-                &MenuItem::with_id(
-                    "file: new",
-                    "New",
-                    true,
-                    "CmdOrCtrl+N".parse::<Accelerator>().ok(),
-                ),
-                &MenuItem::with_id(
-                    "file: open",
-                    "Open...",
-                    true,
-                    "CmdOrCtrl+O".parse::<Accelerator>().ok(),
-                ),
-                &MenuItem::with_id(
-                    "file: save",
-                    "Save",
-                    true,
-                    "CmdOrCtrl+S".parse::<Accelerator>().ok(),
-                ),
-                &MenuItem::with_id(
-                    "file: save as",
-                    "Save As…",
-                    true,
-                    "CmdOrCtrl+Shift+S".parse::<Accelerator>().ok(),
-                ),
+                &MenuItem::with_id("file: new", "New", true, None),
+                &MenuItem::with_id("file: open", "Open...", true, None),
+                &MenuItem::with_id("file: save", "Save", true, None),
+                &MenuItem::with_id("file: save as", "Save As…", true, None),
                 &PredefinedMenuItem::separator(),
-                &MenuItem::with_id(
-                    "file: close tab",
-                    "Close Tab",
-                    true,
-                    "CmdOrCtrl+W".parse::<Accelerator>().ok(),
-                ),
+                &MenuItem::with_id("file: close tab", "Close Tab", true, None),
             ])
             .ok();
 
@@ -85,44 +57,14 @@ impl AppMenu {
         let edit_menu = Submenu::with_id("edit", "Edit", true);
         edit_menu
             .append_items(&[
-                &MenuItem::with_id(
-                    "editor: undo",
-                    "Undo",
-                    true,
-                    "CmdOrCtrl+Z".parse::<Accelerator>().ok(),
-                ),
-                &MenuItem::with_id(
-                    "editor: redo",
-                    "Redo",
-                    true,
-                    "CmdOrCtrl+Shift+Z".parse::<Accelerator>().ok(),
-                ),
+                &MenuItem::with_id("editor: undo", "Undo", true, None),
+                &MenuItem::with_id("editor: redo", "Redo", true, None),
                 &PredefinedMenuItem::separator(),
-                &MenuItem::with_id(
-                    "editor: cut",
-                    "Cut",
-                    true,
-                    "CmdOrCtrl+X".parse::<Accelerator>().ok(),
-                ),
-                &MenuItem::with_id(
-                    "editor: copy",
-                    "Copy",
-                    true,
-                    "CmdOrCtrl+C".parse::<Accelerator>().ok(),
-                ),
-                &MenuItem::with_id(
-                    "editor: paste",
-                    "Paste",
-                    true,
-                    "CmdOrCtrl+V".parse::<Accelerator>().ok(),
-                ),
+                &MenuItem::with_id("editor: cut", "Cut", true, None),
+                &MenuItem::with_id("editor: copy", "Copy", true, None),
+                &MenuItem::with_id("editor: paste", "Paste", true, None),
                 &PredefinedMenuItem::separator(),
-                &MenuItem::with_id(
-                    "editor: select all",
-                    "Select All",
-                    true,
-                    "CmdOrCtrl+A".parse::<Accelerator>().ok(),
-                ),
+                &MenuItem::with_id("editor: select all", "Select All", true, None),
             ])
             .ok();
 
@@ -130,12 +72,7 @@ impl AppMenu {
         let view_menu = Submenu::with_id("view", "View", true);
         view_menu
             .append_items(&[
-                &MenuItem::with_id(
-                    "command palette: toggle",
-                    "Command Palette",
-                    true,
-                    "CmdOrCtrl+Shift+P".parse::<Accelerator>().ok(),
-                ),
+                &MenuItem::with_id("command palette: toggle", "Command Palette", true, None),
                 &PredefinedMenuItem::separator(),
                 &PredefinedMenuItem::fullscreen(None),
             ])
@@ -164,8 +101,6 @@ impl AppMenu {
             menu,
             receiver,
             initialized: false,
-            #[cfg(target_os = "macos")]
-            pending: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -179,36 +114,11 @@ impl AppMenu {
         }
     }
 
-    #[cfg(target_os = "macos")]
-    pub fn start_waker(&self, waker: Box<dyn Fn() + Send + Sync>) {
-        let receiver = self.receiver.clone();
-        let pending = self.pending.clone();
-        std::thread::spawn(move || loop {
-            match receiver.recv() {
-                Ok(event) => {
-                    pending.lock().unwrap().push(event);
-                    waker();
-                }
-                Err(_) => break,
-            }
-        });
-    }
-
     pub fn poll_events(&self) -> Vec<MenuId> {
         let mut events = Vec::new();
-
-        #[cfg(target_os = "macos")]
-        {
-            let mut pending = self.pending.lock().unwrap();
-            while let Some(event) = pending.pop() {
-                events.push(event.id);
-            }
-        }
-
         while let Ok(event) = self.receiver.try_recv() {
             events.push(event.id);
         }
-
         events
     }
 
