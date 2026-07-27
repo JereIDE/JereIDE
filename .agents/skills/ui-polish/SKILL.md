@@ -1,7 +1,10 @@
 ---
 name: ui-polish
 description: Suggests 10 very minor UI polish improvements, picks the best one, implements it, verifies it builds, then proceeds to the next until all 10 are done. Does not suggest replacing placeholder text/content.
+disable-model-invocation: true
 ---
+
+# STOP!!!! DO NOT USE THIS SKILL UNLESS THE USER TOLD YOU TO.
 
 # UI Polish Skill
 
@@ -35,6 +38,7 @@ Suggest exactly 10 very minor UI polish improvements. Each suggestion must be:
 - **Low risk**: Should be trivially revertible if something goes wrong.
 
 For each suggestion, include:
+
 - A short title
 - The specific file and line(s) to change
 - The current value and the proposed new value
