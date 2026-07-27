@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::sync::Arc;
 
 use eframe::egui;
 use egui::text::CCursor;
@@ -18,27 +17,6 @@ use jereide_syntax::SyntaxHighlighter;
 use std::collections::HashMap;
 thread_local! {
     static HIGHLIGHTERS: RefCell<HashMap<usize, SyntaxHighlighter>> = RefCell::new(HashMap::new());
-}
-
-fn visual_line_count(text: &str) -> usize {
-    if text.is_empty() {
-        1
-    } else {
-        text.as_bytes().iter().filter(|&&b| b == b'\n').count() + 1
-    }
-}
-
-fn digit_count(mut n: usize) -> usize {
-    let mut count = 1;
-    while n >= 10 {
-        n /= 10;
-        count += 1;
-    }
-    count
-}
-
-fn gutter_width(line_count: usize) -> f32 {
-    GUTTER_PADDING_LEFT + digit_count(line_count) as f32 * GUTTER_DIGIT_WIDTH + GUTTER_PADDING_RIGHT
 }
 
 pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
@@ -83,11 +61,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
     });
 
     let font_id = egui::FontId::monospace(EDITOR_FONT_SIZE);
-    let line_count = visual_line_count(&state.tabs[active_idx].text);
-    let gutter_w = gutter_width(line_count);
     let cursor_line = state.tabs[active_idx].cursor_line;
-
-    let last_galley: RefCell<Option<Arc<egui::Galley>>> = RefCell::new(None);
 
     let mut layouter =
         |layouter_ui: &egui::Ui, text: &dyn jereide_editor::TextBuffer, _wrap_width: f32| {
@@ -98,9 +72,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 c.get_mut(&tab_id).unwrap().highlight(text_str).clone()
             });
             layout_job.wrap.max_width = f32::INFINITY;
-            let galley = layouter_ui.fonts_mut(|f| f.layout_job(layout_job));
-            *last_galley.borrow_mut() = Some(galley.clone());
-            galley
+            layouter_ui.fonts_mut(|f| f.layout_job(layout_job))
         };
 
     let old_text = state.tabs[active_idx].text.clone();
@@ -111,74 +83,43 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
             let viewport = ui.max_rect().size();
             ui.set_min_size(viewport);
 
-            let widget_top = ui.cursor().min.y;
+            let text_output = jereide_editor::TextEdit::code_editor(
+                jereide_editor::TextEdit::multiline(&mut state.tabs[active_idx].text),
+            )
+            .id_source("editor")
+            .desired_width(f32::INFINITY)
+            .frame(egui::Frame {
+                inner_margin: egui::Margin {
+                    left: EDITOR_INNER_MARGIN_LEFT_EXTRA,
+                    right: EDITOR_INNER_MARGIN_RIGHT,
+                    top: EDITOR_INNER_MARGIN_TOP,
+                    bottom: EDITOR_INNER_MARGIN_BOTTOM,
+                },
+                ..egui::Frame::NONE
+            })
+            .layouter(&mut layouter)
+            .show_gutter(jereide_editor::GutterConfig {
+                padding_left: GUTTER_PADDING_LEFT,
+                padding_right: GUTTER_PADDING_RIGHT,
+                digit_width: GUTTER_DIGIT_WIDTH,
+                line_number_right_offset: GUTTER_LINE_NUMBER_RIGHT_OFFSET,
+                current_line_color: TEXT_CURRENT_LINE,
+                muted_color: TEXT_MUTED,
+                background_color: SURFACE_BG,
+                font_id: font_id.clone(),
+                current_line: cursor_line,
+            })
+            .show(ui);
 
-            let horiz = ui.horizontal_top(|ui| {
-                let (gutter_rect, gutter_resp) =
-                    ui.allocate_exact_size(egui::vec2(gutter_w, 0.0), egui::Sense::click());
-
-                let text_output = jereide_editor::TextEdit::code_editor(jereide_editor::TextEdit::multiline(
-                    &mut state.tabs[active_idx].text,
-                ))
-                .id_source("editor")
-                .desired_width(f32::INFINITY)
-                .frame(egui::Frame {
-                    inner_margin: egui::Margin {
-                        left: EDITOR_INNER_MARGIN_LEFT_EXTRA,
-                        right: EDITOR_INNER_MARGIN_RIGHT,
-                        top: EDITOR_INNER_MARGIN_TOP,
-                        bottom: EDITOR_INNER_MARGIN_BOTTOM,
-                    },
-                    ..egui::Frame::NONE
-                })
-                .layouter(&mut layouter)
-                .show(ui);
-
-                (gutter_rect, gutter_resp, text_output)
-            });
-
-            let (gutter_rect, gutter_resp, text_output) = horiz.inner;
             let text_response = &text_output.response;
-            let text_alloc = text_response.rect;
-
-            let g_bottom = text_alloc.bottom().max(ui.clip_rect().bottom());
-            let painter = ui.painter();
-            painter.rect_filled(
-                egui::Rect::from_min_size(
-                    egui::pos2(gutter_rect.left(), gutter_rect.top()),
-                    egui::vec2(gutter_w, g_bottom - gutter_rect.top()),
-                ),
-                0.0,
-                SURFACE_BG,
-            );
-
-            let line_start_y = widget_top + EDITOR_INNER_MARGIN_TOP as f32;
-            if let Some(galley) = last_galley.borrow().as_ref() {
-                for (i, row) in galley.rows.iter().enumerate() {
-                    let line_y = line_start_y + row.pos.y;
-                    let line_num = i + 1;
-                    let is_current = line_num == cursor_line;
-                    let color = if is_current {
-                        TEXT_CURRENT_LINE
-                    } else {
-                        TEXT_MUTED
-                    };
-                    painter.text(
-                        egui::pos2(gutter_w - GUTTER_LINE_NUMBER_RIGHT_OFFSET, line_y),
-                        egui::Align2::RIGHT_TOP,
-                        line_num.to_string(),
-                        font_id.clone(),
-                        color,
-                    );
-                }
-            }
-
             let galley = text_output.galley.clone();
             let galley_pos = text_output.galley_pos;
 
             if let Some(cursor_range) = text_output.cursor_range {
                 let tab_text = &state.tabs[active_idx].text;
-                if let Some((open_idx, close_idx)) = find_matching_bracket(tab_text, cursor_range.primary.index) {
+                if let Some((open_idx, close_idx)) =
+                    find_matching_bracket(tab_text, cursor_range.primary.index)
+                {
                     let highlight_at = |char_index: usize| {
                         if char_index >= tab_text.len() {
                             return;
@@ -190,6 +131,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                                 let screen_y = galley_pos.y + placed_row.pos.y;
                                 let w = glyph.advance_width;
                                 let h = placed_row.height();
+                                let painter = ui.painter();
                                 painter.rect_stroke(
                                     egui::Rect::from_min_size(
                                         egui::pos2(screen_x, screen_y),
@@ -211,12 +153,11 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
             let remaining = ui.available_size();
             if remaining.y > 0.0 {
                 let (_, bg) = ui.allocate_exact_size(remaining, egui::Sense::click());
-                if bg.clicked() || gutter_resp.clicked() {
+                if bg.clicked() {
                     text_response.request_focus();
                 }
                 bg.on_hover_cursor(egui::CursorIcon::Text);
             }
-            gutter_resp.on_hover_cursor(egui::CursorIcon::Text);
 
             text_output
         })
@@ -227,8 +168,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         let cursor_idx = cursor_range.primary.index;
 
         // For the status bar Line/Col indicator
-        let (line, col) =
-            char_index_to_line_col(&state.tabs[active_idx].text, cursor_idx);
+        let (line, col) = char_index_to_line_col(&state.tabs[active_idx].text, cursor_idx);
         state.tabs[active_idx].cursor_line = line;
         state.tabs[active_idx].cursor_col = col;
 
@@ -365,53 +305,4 @@ fn compute_indent(text: &str, cursor_idx: usize, ext: Option<&str>) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn visual_line_count_empty() {
-        assert_eq!(visual_line_count(""), 1);
-    }
-
-    #[test]
-    fn visual_line_count_single_line() {
-        assert_eq!(visual_line_count("hello"), 1);
-    }
-
-    #[test]
-    fn visual_line_count_multi_line() {
-        assert_eq!(visual_line_count("line1\nline2\nline3"), 3);
-    }
-
-    #[test]
-    fn visual_line_count_trailing_newline() {
-        assert_eq!(visual_line_count("line1\nline2\n"), 3);
-    }
-
-    #[test]
-    fn gutter_width_single_digit() {
-        let w = gutter_width(5);
-        assert!(w.is_finite() && w > 0.0);
-    }
-
-    #[test]
-    fn gutter_width_double_digit() {
-        let w_single = gutter_width(5);
-        let w_double = gutter_width(50);
-        assert!(w_double > w_single);
-    }
-
-    #[test]
-    fn gutter_width_triple_digit() {
-        let w_double = gutter_width(50);
-        let w_triple = gutter_width(500);
-        assert!(w_triple > w_double);
-    }
-
-    #[test]
-    fn gutter_width_exact_powers_of_ten() {
-        let w_9 = gutter_width(9);
-        let w_10 = gutter_width(10);
-        assert!(w_10 > w_9);
-    }
-}
+mod tests {}

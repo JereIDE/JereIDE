@@ -4,5 +4,8 @@ mod state;
 mod text_buffer;
 
 pub use {
-    builder::TextEdit, output::TextEditOutput, state::TextEditState, text_buffer::TextBuffer,
+    builder::{GutterConfig, TextEdit},
+    output::TextEditOutput,
+    state::TextEditState,
+    text_buffer::TextBuffer,
 };

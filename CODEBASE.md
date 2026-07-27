@@ -431,11 +431,8 @@ Renders the main code editor area:
 
 - Thread-local `HIGHLIGHTERS` cache: `HashMap<tab_id, SyntaxHighlighter>`
   - Cleans defunct tab IDs on each render
-- `visual_line_count(text)` — counts `\n` + 1
-- `gutter_width(line_count)` — dynamic width based on digit count
-- Uses `egui::TextEdit::code_editor` with a custom `layouter` closure that calls `SyntaxHighlighter::highlight()`
-- Left gutter: line numbers drawn by position (`galley.rows` iteration)
-- Current line number rendered in `TEXT_CURRENT_LINE`, others in `TEXT_MUTED`
+- Uses vendored `jereide_editor::TextEdit::code_editor` with a custom `layouter` closure that calls `SyntaxHighlighter::highlight()`
+- Gutter line numbers are rendered inline by the TextEdit widget via `.show_gutter(GutterConfig)`, using colors/dimensions from settings
 - Extra clickable surface area below text to request focus
 - Reads cursor position from `TextEdit::load_state` for status bar
 
@@ -476,8 +473,11 @@ A vendored copy of `egui::TextEdit` (0.34.3), imported so it can be freely modif
 - **`TextEditState`** — persisted per-widget state (cursor, undo stack, IME state)
 - **`TextBuffer`** — trait for editable text buffers (implemented for `String`, `&str`, `Cow<str>`)
 - **`TextEditOutput`** — returned from `show()` with galley, cursor range, response
+- **`GutterConfig`** — configuration for the integrated line number gutter (colors, font, dimensions, current line)
 
-All `crate::` imports from egui have been rewritten to `egui::`. The module is a drop-in replacement for `egui::TextEdit` with no functional changes yet.
+All `crate::` imports from egui have been rewritten to `egui::`. Modifications to egui's original:
+
+- **Inline gutter** — `show_gutter(GutterConfig)` enables a line-number gutter rendered within the widget, shifting the text right and drawing line numbers aligned with galley rows.
 
 ---
 

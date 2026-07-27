@@ -2,21 +2,34 @@ use std::sync::Arc;
 
 use eframe::egui;
 use egui::{
-    Align, Align2, AtomExt as _, AtomKind, AtomLayout, Atoms, Color32, Context, CursorIcon, Event,
-    EventFilter, FontSelection, Frame, Id, ImeEvent, IntoAtoms, IntoSizedResult, Key,
-    KeyboardShortcut, Margin, Modifiers, NumExt as _, Rect, Response, Sense, SizedAtomKind,
-    TextStyle, TextWrapMode, Ui, Vec2, Widget, WidgetInfo, WidgetWithState,
     emath::TSTransform,
     epaint,
     os::OperatingSystem,
     output::OutputEvent,
-    response, text_selection,
+    pos2, response,
     text::{CCursor, Galley, LayoutJob},
-    text_selection::{CCursorRange, text_cursor_state::cursor_rect, visuals::paint_text_selection},
-    vec2,
+    text_selection,
+    text_selection::{text_cursor_state::cursor_rect, visuals::paint_text_selection, CCursorRange},
+    vec2, Align, Align2, AtomExt as _, AtomKind, AtomLayout, Atoms, Color32, Context, CursorIcon,
+    Event, EventFilter, FontSelection, Frame, Id, ImeEvent, IntoAtoms, IntoSizedResult, Key,
+    KeyboardShortcut, Margin, Modifiers, NumExt as _, Rect, Response, Sense, SizedAtomKind,
+    TextStyle, TextWrapMode, Ui, Vec2, Widget, WidgetInfo, WidgetWithState,
 };
 
-use super::{TextEditOutput, TextEditState, TextBuffer};
+use super::{TextBuffer, TextEditOutput, TextEditState};
+
+#[derive(Clone)]
+pub struct GutterConfig {
+    pub padding_left: f32,
+    pub padding_right: f32,
+    pub digit_width: f32,
+    pub line_number_right_offset: f32,
+    pub current_line_color: egui::Color32,
+    pub muted_color: egui::Color32,
+    pub background_color: egui::Color32,
+    pub font_id: egui::FontId,
+    pub current_line: usize,
+}
 
 use eframe::egui::accesskit;
 
@@ -48,6 +61,7 @@ pub struct TextEdit<'t> {
     char_limit: usize,
     return_key: Option<KeyboardShortcut>,
     background_color: Option<Color32>,
+    gutter_config: Option<GutterConfig>,
 }
 
 impl WidgetWithState for TextEdit<'_> {
@@ -105,6 +119,7 @@ impl<'t> TextEdit<'t> {
             char_limit: usize::MAX,
             return_key: Some(KeyboardShortcut::new(Modifiers::NONE, Key::Enter)),
             background_color: None,
+            gutter_config: None,
         }
     }
 
@@ -266,6 +281,11 @@ impl<'t> TextEdit<'t> {
         self.return_key = return_key.into();
         self
     }
+
+    pub fn show_gutter(mut self, config: GutterConfig) -> Self {
+        self.gutter_config = Some(config);
+        self
+    }
 }
 
 impl Widget for TextEdit<'_> {
@@ -301,7 +321,27 @@ impl TextEdit<'_> {
             char_limit,
             return_key,
             background_color,
+            gutter_config,
         } = self;
+
+        let line_count = if text.as_str().is_empty() {
+            1
+        } else {
+            text.as_str()
+                .as_bytes()
+                .iter()
+                .filter(|&&b| b == b'\n')
+                .count()
+                + 1
+        };
+        let gutter_w = gutter_config.as_ref().map_or(0.0, |g| {
+            let digit_count = if line_count < 10 {
+                1
+            } else {
+                line_count.ilog10() as usize + 1
+            };
+            g.padding_left + digit_count as f32 * g.digit_width + g.padding_right
+        });
 
         let text_color = text_color
             .or_else(|| ui.visuals().override_text_color)
@@ -471,7 +511,13 @@ impl TextEdit<'_> {
             }
 
             let custom_frame = frame.is_some();
-            let frame = frame.unwrap_or_else(|| Frame::new().inner_margin(margin));
+            let mut frame = frame.unwrap_or_else(|| Frame::new().inner_margin(margin));
+            if gutter_w > 0.0 {
+                frame.inner_margin.left = frame
+                    .inner_margin
+                    .left
+                    .saturating_add(gutter_w.round() as i8);
+            }
 
             let min_height = min_inner_height + frame.total_margin().sum().y;
 
@@ -536,7 +582,14 @@ impl TextEdit<'_> {
         let mut galley = get_galley.expect("Galley should be available here");
 
         response.flags -= response::Flags::FAKE_PRIMARY_CLICKED;
-        let text_clip_rect = inner_rect;
+        let text_clip_rect = if gutter_w > 0.0 {
+            Rect::from_min_max(
+                pos2(inner_rect.left() - gutter_w, inner_rect.top()),
+                inner_rect.max,
+            )
+        } else {
+            inner_rect
+        };
         let painter = ui.painter_at(text_clip_rect.expand(1.0));
 
         if interactive {
@@ -546,7 +599,9 @@ impl TextEdit<'_> {
                 }
 
                 let cursor_at_pointer = galley.cursor_from_pos(
-                    pointer_pos - inner_rect.min + state.text_offset + vec2(galley.rect.left(), 0.0),
+                    pointer_pos - inner_rect.min
+                        + state.text_offset
+                        + vec2(galley.rect.left(), 0.0),
                 );
 
                 if ui.visuals().text_cursor.preview
@@ -642,8 +697,9 @@ impl TextEdit<'_> {
 
             if has_focus {
                 if let Some(cursor_range) = state.cursor.range(&galley) {
-                    let primary_cursor_rect = cursor_rect(&galley, &cursor_range.primary, row_height)
-                        .translate(galley_pos.to_vec2() - vec2(galley.rect.left(), 0.0));
+                    let primary_cursor_rect =
+                        cursor_rect(&galley, &cursor_range.primary, row_height)
+                            .translate(galley_pos.to_vec2() - vec2(galley.rect.left(), 0.0));
 
                     if response.changed() || selection_changed {
                         ui.scroll_to_rect(primary_cursor_rect, None);
@@ -678,6 +734,36 @@ impl TextEdit<'_> {
                         });
                     }
                 }
+            }
+        }
+
+        if let Some(ref gutter) = gutter_config {
+            let gutter_rect = Rect::from_min_max(
+                pos2(inner_rect.left() - gutter_w, inner_rect.top()),
+                pos2(
+                    inner_rect.left() - 1.0,
+                    inner_rect.bottom().max(inner_rect.top()),
+                ),
+            );
+            painter.rect_filled(gutter_rect, 0.0, gutter.background_color);
+
+            for (i, row) in galley.rows.iter().enumerate() {
+                let line_num = i + 1;
+                let line_y = galley_pos.y + row.pos.y;
+                let is_current = line_num == gutter.current_line;
+                let color = if is_current {
+                    gutter.current_line_color
+                } else {
+                    gutter.muted_color
+                };
+                let x = inner_rect.left() - gutter.line_number_right_offset;
+                painter.text(
+                    pos2(x, line_y),
+                    Align2::RIGHT_TOP,
+                    line_num.to_string(),
+                    gutter.font_id.clone(),
+                    color,
+                );
             }
         }
 
