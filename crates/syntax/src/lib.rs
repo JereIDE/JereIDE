@@ -10,10 +10,6 @@ use jereide_settings::{
     SYNTAX_NUMBER, SYNTAX_OPERATOR, SYNTAX_STRING, TEXT_DEFAULT,
 };
 
-// ---------------------------------------------------------------------------
-// Flat JSON schema — no $ref, no Lua patterns, just regex
-// ---------------------------------------------------------------------------
-
 #[derive(Debug, Deserialize)]
 struct SyntaxFile {
     syntax: SyntaxDef,
@@ -46,10 +42,6 @@ enum RawPattern {
     },
 }
 
-// ---------------------------------------------------------------------------
-// Compiled syntax definition (regexes compiled at load time)
-// ---------------------------------------------------------------------------
-
 #[derive(Clone)]
 struct CompiledPattern {
     type_: String,
@@ -72,10 +64,6 @@ struct CompiledSyntax {
     symbols: HashMap<String, String>,
     patterns: Vec<CompiledPattern>,
 }
-
-// ---------------------------------------------------------------------------
-// Loading — loads data/{file}.json
-// ---------------------------------------------------------------------------
 
 fn load_syntax(data_dir: &std::path::Path, file: &str) -> Option<CompiledSyntax> {
     let path = data_dir.join(format!("{file}.json"));
@@ -123,10 +111,6 @@ fn compile_pattern(rp: &RawPattern) -> Option<CompiledPattern> {
         }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Tokenizer
-// ---------------------------------------------------------------------------
 
 #[derive(Clone, Debug, PartialEq)]
 enum HlState {
@@ -289,10 +273,6 @@ fn resolve_type(
     pattern_type.to_string()
 }
 
-// ---------------------------------------------------------------------------
-// Token to LayoutJob conversion
-// ---------------------------------------------------------------------------
-
 fn type_to_color(type_: &str) -> Color32 {
     match type_ {
         "keyword" => SYNTAX_KEYWORD,
@@ -339,10 +319,6 @@ fn tokens_to_job(text: &str, tokens: &[Token], font_id: &FontId) -> egui::text::
 
     job
 }
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
 
 pub struct SyntaxHighlighter {
     font_id: FontId,

@@ -8,10 +8,6 @@ use jereide_menu::AppMenu;
 use jereide_settings::{ACCENT, SURFACE_BG};
 use raw_window_handle::HasWindowHandle;
 
-// ---------------------------------------------------------------------------
-// macOS native window helpers
-// ---------------------------------------------------------------------------
-
 #[cfg(target_os = "macos")]
 pub fn set_document_edited(frame: &eframe::Frame, edited: bool) {
     use objc2::msg_send;
@@ -102,10 +98,6 @@ pub fn position_traffic_lights(frame: &eframe::Frame, offset_x: f64, offset_y: f
         }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Main application struct — ties together state, menu, file manager, and UI
-// ---------------------------------------------------------------------------
 
 use jereide_ui::palette::Palette;
 
@@ -517,10 +509,6 @@ impl eframe::App for JereIDEApp {
         jereide_ui::dialog::render_about_dialog(&ctx, &mut self.state.show_about_dialog);
     }
 }
-
-// ---------------------------------------------------------------------------
-// Fullscreen toggling — platform-specific
-// ---------------------------------------------------------------------------
 
 #[cfg_attr(not(target_os = "windows"), allow(unused_variables))]
 fn toggle_fullscreen(ctx: &egui::Context, frame: &mut eframe::Frame) {
