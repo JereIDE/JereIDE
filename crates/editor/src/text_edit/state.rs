@@ -4,8 +4,8 @@ use eframe::egui;
 use egui::mutex::Mutex;
 
 use egui::{
-    Context, Id, Vec2,
     text_selection::{CCursorRange, TextCursorState},
+    Context, Id, Vec2,
 };
 
 pub type TextEditUndoer = egui::util::undoer::Undoer<(CCursorRange, String)>;

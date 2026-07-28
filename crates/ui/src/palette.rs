@@ -33,7 +33,10 @@ impl Palette {
     }
 
     fn filtered_indices(&mut self) -> &[usize] {
-        let filter_changed = self.cached_filter.as_ref().map_or(true, |c| c != &self.filter);
+        let filter_changed = self
+            .cached_filter
+            .as_ref()
+            .map_or(true, |c| c != &self.filter);
         if !filter_changed {
             return &self.cached_indices;
         }

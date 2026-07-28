@@ -68,10 +68,16 @@ fn get_languages() -> &'static [LanguageDef] {
 
 pub fn lookup_language(extension: Option<&str>) -> Option<LanguageInfo> {
     let ext = extension.unwrap_or("");
-    let def = get_languages().iter().find(|lang| lang.extensions.iter().any(|e| e == ext))?;
+    let def = get_languages()
+        .iter()
+        .find(|lang| lang.extensions.iter().any(|e| e == ext))?;
     Some(LanguageInfo {
         name: def.name.clone(),
-        indent_triggers: def.indent_after.iter().filter_map(|s| s.chars().next()).collect(),
+        indent_triggers: def
+            .indent_after
+            .iter()
+            .filter_map(|s| s.chars().next())
+            .collect(),
         syntax_file: def.file.clone(),
     })
 }
