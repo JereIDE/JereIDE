@@ -188,7 +188,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         {
             let indent = {
                 let t = &state.tabs[active_idx].text;
-                compute_indent(t, cursor_idx, extension.as_deref())
+                compute_indent(t, cursor_idx)
             };
             if !indent.is_empty() {
                 state.tabs[active_idx].text.insert_str(cursor_idx, &indent);
@@ -210,26 +210,44 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         if text_len == old_text.len() + 1 && cursor_idx > 0 {
             let bytes = state.tabs[active_idx].text.as_bytes();
             let c = bytes[cursor_idx - 1] as char;
-            let closing = match c {
-                '(' => Some(')'),
-                '[' => Some(']'),
-                '{' => Some('}'),
-                '"' => Some('"'),
-                '\'' => Some('\''),
-                '`' => Some('`'),
-                _ => None,
+            let (pair, is_opening) = match c {
+                '(' => (Some(')'), true),
+                ')' => (Some(')'), false),
+                '[' => (Some(']'), true),
+                ']' => (Some(']'), false),
+                '{' => (Some('}'), true),
+                '}' => (Some('}'), false),
+                '"' => (Some('"'), true),
+                '\'' => (Some('\''), true),
+                '`' => (Some('`'), true),
+                _ => (None, false),
             };
-            if let Some(closing) = closing {
-                state.tabs[active_idx].text.insert(cursor_idx, closing);
-                if let Some(mut edit_state) =
-                    jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
-                {
+            if let Some(pair_char) = pair {
+                let store_cursor = |edit_state: &mut jereide_editor::TextEditState| {
                     edit_state
                         .cursor
                         .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
                             cursor_idx,
                         ))));
-                    edit_state.store(&ctx, text_edit_output.response.id);
+                };
+                if cursor_idx < text_len && bytes[cursor_idx] as char == pair_char {
+                    // Next char is already the closing pair — skip past it
+                    state.tabs[active_idx].text.remove(cursor_idx);
+                    if let Some(mut edit_state) =
+                        jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
+                    {
+                        store_cursor(&mut edit_state);
+                        edit_state.store(&ctx, text_edit_output.response.id);
+                    }
+                } else if is_opening {
+                    // Insert the matching closing bracket
+                    state.tabs[active_idx].text.insert(cursor_idx, pair_char);
+                    if let Some(mut edit_state) =
+                        jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
+                    {
+                        store_cursor(&mut edit_state);
+                        edit_state.store(&ctx, text_edit_output.response.id);
+                    }
                 }
             }
         }
@@ -312,7 +330,7 @@ fn find_match_backward(text: &str, start: usize, open: char, close: char) -> Opt
     None
 }
 
-fn compute_indent(text: &str, cursor_idx: usize, ext: Option<&str>) -> String {
+fn compute_indent(text: &str, cursor_idx: usize) -> String {
     let before = &text[..cursor_idx];
     let prev_start = before[..before.len() - 1]
         .rfind('\n')
@@ -320,22 +338,7 @@ fn compute_indent(text: &str, cursor_idx: usize, ext: Option<&str>) -> String {
         .unwrap_or(0);
     let prev_line = &text[prev_start..cursor_idx - 1];
     let indent_len = prev_line.len() - prev_line.trim_start().len();
-    let indent = &prev_line[..indent_len];
-    let trimmed = prev_line.trim();
-
-    let triggers = jereide_data::lookup_language(ext)
-        .map(|info| info.indent_triggers)
-        .unwrap_or_default();
-
-    let extra = if triggers.is_empty() {
-        ""
-    } else if triggers.iter().any(|c| trimmed.ends_with(*c)) {
-        "\t"
-    } else {
-        ""
-    };
-
-    format!("{}{}", indent, extra)
+    prev_line[..indent_len].to_string()
 }
 
 #[cfg(test)]
