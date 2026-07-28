@@ -131,15 +131,21 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                                 let screen_y = galley_pos.y + placed_row.pos.y;
                                 let w = glyph.advance_width;
                                 let h = placed_row.height();
-                                let painter = ui.painter();
-                                painter.rect_stroke(
+                                let bg_painter = egui::Painter::new(
+                                    ui.ctx().clone(),
+                                    egui::LayerId::new(
+                                        egui::Order::Background,
+                                        egui::Id::new("bracket_highlight"),
+                                    ),
+                                    ui.clip_rect(),
+                                );
+                                bg_painter.rect_filled(
                                     egui::Rect::from_min_size(
                                         egui::pos2(screen_x, screen_y),
                                         egui::vec2(w, h),
                                     ),
-                                    1.0,
-                                    egui::Stroke::new(1.5, BRACKET_MATCH),
-                                    egui::StrokeKind::Outside,
+                                    2.0,
+                                    BRACKET_MATCH.linear_multiply(0.3),
                                 );
                             }
                         }
