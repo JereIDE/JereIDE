@@ -205,6 +205,34 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 }
             }
         }
+
+        // Auto-pair brackets and quotes
+        if text_len == old_text.len() + 1 && cursor_idx > 0 {
+            let bytes = state.tabs[active_idx].text.as_bytes();
+            let c = bytes[cursor_idx - 1] as char;
+            let closing = match c {
+                '(' => Some(')'),
+                '[' => Some(']'),
+                '{' => Some('}'),
+                '"' => Some('"'),
+                '\'' => Some('\''),
+                '`' => Some('`'),
+                _ => None,
+            };
+            if let Some(closing) = closing {
+                state.tabs[active_idx].text.insert(cursor_idx, closing);
+                if let Some(mut edit_state) =
+                    jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
+                {
+                    edit_state
+                        .cursor
+                        .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
+                            cursor_idx,
+                        ))));
+                    edit_state.store(&ctx, text_edit_output.response.id);
+                }
+            }
+        }
     }
 
     if !state.editor_focused {
