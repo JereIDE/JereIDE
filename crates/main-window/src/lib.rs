@@ -228,7 +228,7 @@ impl JereIDEApp {
         }
     }
 
-    fn handle_action(&mut self, action: &str, ctx: &egui::Context) {
+    fn handle_action(&mut self, action: &str, ctx: &egui::Context, frame: &mut eframe::Frame) {
         match action {
             "file: new" => self.handle_new(),
             "file: open" => self.handle_open(),
@@ -251,8 +251,7 @@ impl JereIDEApp {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             }
             "jereide: toggle fullscreen" => {
-                let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
-                ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(!is_fullscreen));
+                toggle_fullscreen(ctx, frame);
             }
             "jereide: star on github" => {
                 ctx.open_url(egui::OpenUrl {
@@ -338,48 +337,56 @@ impl eframe::App for JereIDEApp {
                 want_toggle_sidebar,
             ) = input;
             if want_new {
-                self.handle_action("file: new", &ctx);
+                self.handle_action("file: new", &ctx, frame);
             }
             if want_open {
-                self.handle_action("file: open", &ctx);
+                self.handle_action("file: open", &ctx, frame);
             }
             if want_save {
-                self.handle_action("file: save", &ctx);
+                self.handle_action("file: save", &ctx, frame);
             }
             if want_save_as {
-                self.handle_action("file: save as", &ctx);
+                self.handle_action("file: save as", &ctx, frame);
             }
             if want_quit {
-                self.handle_action("jereide: quit", &ctx);
+                self.handle_action("jereide: quit", &ctx, frame);
             }
             if want_undo {
-                self.handle_action("editor: undo", &ctx);
+                self.handle_action("editor: undo", &ctx, frame);
             }
             if want_redo {
-                self.handle_action("editor: redo", &ctx);
+                self.handle_action("editor: redo", &ctx, frame);
             }
             if want_cut {
-                self.handle_action("editor: cut", &ctx);
+                self.handle_action("editor: cut", &ctx, frame);
             }
             if want_copy {
-                self.handle_action("editor: copy", &ctx);
+                self.handle_action("editor: copy", &ctx, frame);
             }
             if want_paste {
-                self.handle_action("editor: paste", &ctx);
+                self.handle_action("editor: paste", &ctx, frame);
             }
             if want_select_all {
-                self.handle_action("editor: select all", &ctx);
+                self.handle_action("editor: select all", &ctx, frame);
             }
             if want_close_tab {
-                self.handle_action("file: close tab", &ctx);
+                self.handle_action("file: close tab", &ctx, frame);
             }
             if want_toggle_sidebar {
-                self.handle_action("view: toggle sidebar", &ctx);
+                self.handle_action("view: toggle sidebar", &ctx, frame);
             }
             if want_command_palette {
                 self.state.command_palette_open = !self.state.command_palette_open;
                 if self.state.command_palette_open {
                     self.palette = Some(Palette::new(jereide_ui::command_palette::items()));
+                }
+            }
+
+            #[cfg(target_os = "windows")]
+            {
+                let want_fullscreen = ctx.input(|i| i.key_pressed(egui::Key::F11));
+                if want_fullscreen {
+                    self.handle_action("jereide: toggle fullscreen", &ctx, frame);
                 }
             }
         }
@@ -392,7 +399,7 @@ impl eframe::App for JereIDEApp {
                         self.palette = Some(Palette::new(jereide_ui::command_palette::items()));
                     }
                 }
-                other => self.handle_action(other, &ctx),
+                other => self.handle_action(other, &ctx, frame),
             }
         }
 
@@ -500,7 +507,7 @@ impl eframe::App for JereIDEApp {
                 "Command Palette",
                 &mut self.state.command_palette_open,
             ) {
-                self.handle_action(action, &ctx);
+                self.handle_action(action, &ctx, frame);
             }
             if !self.state.command_palette_open {
                 self.palette = None;
@@ -508,5 +515,122 @@ impl eframe::App for JereIDEApp {
         }
 
         jereide_ui::dialog::render_about_dialog(&ctx, &mut self.state.show_about_dialog);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Fullscreen toggling — platform-specific
+// ---------------------------------------------------------------------------
+
+#[cfg_attr(not(target_os = "windows"), allow(unused_variables))]
+fn toggle_fullscreen(ctx: &egui::Context, frame: &mut eframe::Frame) {
+    #[cfg(target_os = "macos")]
+    {
+        let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
+        ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(!is_fullscreen));
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use raw_window_handle::HasWindowHandle;
+        use windows_sys::Win32::{
+            Foundation::{HWND, RECT},
+            Graphics::Gdi::{
+                GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST,
+            },
+            UI::WindowsAndMessaging::{
+                GetWindowLongW, GetWindowRect, SetWindowLongW, SetWindowPos, GWL_STYLE, HWND_TOP,
+                SWP_FRAMECHANGED, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SWP_SHOWWINDOW,
+                WS_OVERLAPPEDWINDOW, WS_POPUP,
+            },
+        };
+
+        use std::sync::OnceLock;
+        static SAVED_PLACEMENT: OnceLock<(i32, i32, i32, i32)> = OnceLock::new();
+        static IS_FULLSCREEN: OnceLock<std::sync::Mutex<bool>> = OnceLock::new();
+        let is_fs = IS_FULLSCREEN.get_or_init(|| std::sync::Mutex::new(false));
+
+        let Ok(handle) = frame.window_handle() else {
+            return;
+        };
+        let raw = handle.as_raw();
+        let raw_window_handle::RawWindowHandle::Win32(win32) = raw else {
+            return;
+        };
+        let hwnd: HWND = win32.hwnd.get();
+
+        let mut fs_guard = is_fs.lock().unwrap();
+        if !*fs_guard {
+            // Enter fullscreen
+            let mut rect: RECT = unsafe { std::mem::zeroed() };
+            if unsafe { GetWindowRect(hwnd, &mut rect as *mut RECT as *mut _) } == 0 {
+                return;
+            }
+            let _ = SAVED_PLACEMENT.set((
+                rect.left,
+                rect.top,
+                rect.right - rect.left,
+                rect.bottom - rect.top,
+            ));
+
+            let style = unsafe { GetWindowLongW(hwnd, GWL_STYLE) };
+            let new_style = (style & !WS_OVERLAPPEDWINDOW) | WS_POPUP;
+            unsafe { SetWindowLongW(hwnd, GWL_STYLE, new_style) };
+
+            let monitor = unsafe { MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST) };
+            let mut mi: MONITORINFO = unsafe { std::mem::zeroed() };
+            mi.cbSize = std::mem::size_of::<MONITORINFO>() as u32;
+            if unsafe { GetMonitorInfoW(monitor, &mut mi as *mut MONITORINFO as *mut _) } == 0 {
+                return;
+            }
+
+            unsafe {
+                SetWindowPos(
+                    hwnd,
+                    HWND_TOP,
+                    mi.rcMonitor.left,
+                    mi.rcMonitor.top,
+                    mi.rcMonitor.right - mi.rcMonitor.left,
+                    mi.rcMonitor.bottom - mi.rcMonitor.top,
+                    SWP_FRAMECHANGED | SWP_NOZORDER | SWP_SHOWWINDOW,
+                );
+            }
+
+            *fs_guard = true;
+        } else {
+            // Exit fullscreen
+            let style = unsafe { GetWindowLongW(hwnd, GWL_STYLE) };
+            let new_style = (style & !WS_POPUP) | WS_OVERLAPPEDWINDOW;
+            unsafe { SetWindowLongW(hwnd, GWL_STYLE, new_style) };
+
+            if let Some(&(x, y, w, h)) = SAVED_PLACEMENT.get() {
+                unsafe {
+                    SetWindowPos(
+                        hwnd,
+                        HWND_TOP,
+                        x,
+                        y,
+                        w,
+                        h,
+                        SWP_FRAMECHANGED | SWP_SHOWWINDOW,
+                    );
+                }
+            }
+
+            *fs_guard = false;
+        }
+
+        // Redraw the window to apply the changed style
+        unsafe {
+            SetWindowPos(
+                hwnd,
+                HWND_TOP,
+                0,
+                0,
+                0,
+                0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED,
+            );
+        }
     }
 }

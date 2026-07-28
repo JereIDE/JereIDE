@@ -279,7 +279,7 @@ Menu structure:
 - **JereIDE** (app menu): About, Star on GitHub, Services, Hide/Show, Quit
 - **File**: New (Cmd+N), Open... (Cmd+O), Save (Cmd+S), Save As… (Cmd+Shift+S)
 - **Edit**: Undo (Cmd+Z), Redo (Cmd+Shift+Z), Cut (Cmd+X), Copy (Cmd+C), Paste (Cmd+V), Select All (Cmd+A)
-- **View**: Fullscreen
+- **View**: Command Palette, Toggle Sidebar, Fullscreen
 
 Key methods:
 
@@ -288,6 +288,14 @@ Key methods:
 - `is_initialized() / set_initialized()`
 
 Menu events are processed in `JereIDEApp::ui()` by matching on event ID strings.
+
+#### Fullscreen (platform-specific)
+
+- **macOS:** `PredefinedMenuItem::fullscreen(None)` connects to the native `toggleFullScreen:` selector
+  (handled directly by macOS).
+- **Windows:** A custom `MenuItem::with_id("jereide: toggle fullscreen")` with `F11` accelerator.
+  The `toggle_fullscreen` free function uses the Win32 API directly (`SetWindowLongW`/`SetWindowPos`)
+  to toggle between `WS_OVERLAPPEDWINDOW` and `WS_POPUP` styles, resizing to cover the monitor.
 
 ---
 
@@ -335,7 +343,7 @@ command_palette: Option<CommandPalette>,
 2. **macOS document-edited dot:** Syncs with `state.document_edited`
 3. **macOS traffic lights:** Repositioned on first show and fullscreen toggle
 4. **Menu initialization:** One-time `init_for_nsapp`/`init_for_hwnd`
-5. **Non-macOS keyboard shortcuts:** Cmd+N/O/S/Shift+S/Q/Shift+P
+5. **Keyboard shortcuts:** Cmd+N/O/S/Shift+S/Q/Shift+P on all platforms; F11 (Windows only) toggles fullscreen
 6. **Menu event polling:** Dispatches `new`, `open`, `save`, `save_as`, `command_palette`, `quit`, `fullscreen`, `githubstar`, and edit actions (`EditAction::from_menu_id`)
 7. **UI rendering:** Status bar → CentralPanel → title bar → tab strip → code view or welcome view
 8. **Compose overlay:** If `current_view == Compose`, renders compose palette overlay
@@ -350,6 +358,21 @@ command_palette: Option<CommandPalette>,
 - `handle_save_as()` — opens save dialog, updates tab file path
 - `save_tab(idx)` — saves a specific tab (used by close-confirm dialog)
 - `handle_command(command, ctx)` — dispatches a `Command` from the command palette
+
+#### Fullscreen toggling
+
+`toggle_fullscreen(ctx, frame)` — platform-specific:
+
+- **macOS:** Calls `ctx.send_viewport_cmd(ViewportCommand::Fullscreen(...))`, which works via egui's native
+  macOS integration.
+- **Windows:** Uses the raw window handle + `windows-sys` to call Win32 API directly:
+  `SetWindowLongW` toggles between `WS_OVERLAPPEDWINDOW` and `WS_POPUP` styles;
+  `SetWindowPos` resizes the window to cover the monitor (enter) or restores the saved
+  placement (exit). Fullscreen state is tracked with a static `OnceLock<Mutex<bool>>`.
+
+#### Dependencies
+
+- **Windows only:** `windows-sys` 0.59 (features: `Win32_Foundation`, `Win32_UI_WindowsAndMessaging`, `Win32_Graphics_Gdi`)
 
 ---
 

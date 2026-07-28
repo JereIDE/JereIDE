@@ -76,7 +76,15 @@ impl AppMenu {
                 &PredefinedMenuItem::separator(),
                 &MenuItem::with_id("view: toggle sidebar", "Toggle Sidebar", true, None),
                 &PredefinedMenuItem::separator(),
+                #[cfg(target_os = "macos")]
                 &PredefinedMenuItem::fullscreen(None),
+                #[cfg(target_os = "windows")]
+                &MenuItem::with_id(
+                    "jereide: toggle fullscreen",
+                    "Toggle Fullscreen",
+                    true,
+                    "F11".parse::<Accelerator>().ok(),
+                ),
             ])
             .ok();
 
