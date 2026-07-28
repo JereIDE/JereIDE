@@ -89,6 +89,8 @@ pub struct AppState {
     pub sidebar_open: bool,
 
     pub show_about_dialog: bool,
+
+    pub pending_open: bool,
 }
 
 /// Another new method.
@@ -108,6 +110,7 @@ impl AppState {
             command_palette_open: false,
             sidebar_open: false,
             show_about_dialog: false,
+            pending_open: false,
         }
     }
 

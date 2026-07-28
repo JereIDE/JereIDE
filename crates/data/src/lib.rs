@@ -19,7 +19,6 @@ struct LanguageDef {
 pub struct LanguageInfo {
     pub name: String,
     pub indent_triggers: Vec<char>,
-    /// Stem of the syntax JSON file in data/ (e.g. "rs" for data/rs.json).
     pub syntax_file: Option<String>,
 }
 

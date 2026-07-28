@@ -220,6 +220,8 @@ impl JereIDEApp {
         }
     }
 
+
+    /// Handles stuff
     fn handle_action(&mut self, action: &str, ctx: &egui::Context, frame: &mut eframe::Frame) {
         match action {
             "file: new" => self.handle_new(),
@@ -372,6 +374,11 @@ impl eframe::App for JereIDEApp {
                 if self.state.command_palette_open {
                     self.palette = Some(Palette::new(jereide_ui::command_palette::items()));
                 }
+            }
+
+            if self.state.pending_open {
+                self.handle_action("file: open", &ctx, frame);
+                self.state.pending_open = false;
             }
 
             #[cfg(target_os = "windows")]

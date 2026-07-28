@@ -60,18 +60,23 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
                     ui.add_space(TITLE_BAR_TRAFFIC_SPACE);
                 }
             }
-            #[cfg(not(target_os = "macos"))]
+
+            // There's no traffic lights, why do that anyways?
+            #[cfg(target_os = "windows")]
             ui.add_space(TITLE_BAR_FULLSCREEN_SPACE);
 
-            let choose_project_resp = ui.button("Choose Project");
-            egui::Popup::menu(&choose_project_resp)
-                .gap(TITLE_BAR_POPUP_GAP)
-                .close_behavior(egui::PopupCloseBehavior::CloseOnClick)
-                .show(|ui| {
-                    ui.vertical(|ui| {
-                        ui.label("Needs Implementation");
-                    });
-                });
+            if ui.button("Open").clicked(){
+                state.pending_open = true
+            }
+
+            // egui::Popup::menu(&choose_project_resp)
+            //     .gap(TITLE_BAR_POPUP_GAP)
+            //     .close_behavior(egui::PopupCloseBehavior::CloseOnClick)
+            //     .show(|ui| {
+            //         ui.vertical(|ui| {
+            //             ui.label("Needs Implementation");
+            //         });
+            //     });
 
             if ui
                 .selectable_label(state.current_view == CurrentView::Code, "Code")
