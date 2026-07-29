@@ -220,7 +220,6 @@ impl JereIDEApp {
         }
     }
 
-
     /// Handles stuff
     fn handle_action(&mut self, action: &str, ctx: &egui::Context, frame: &mut eframe::Frame) {
         match action {
@@ -552,7 +551,7 @@ fn toggle_fullscreen(ctx: &egui::Context, frame: &mut eframe::Frame) {
         let raw_window_handle::RawWindowHandle::Win32(win32) = raw else {
             return;
         };
-        let hwnd: HWND = win32.hwnd.get();
+        let hwnd: HWND = win32.hwnd.get() as *mut _;
 
         let mut fs_guard = is_fs.lock().unwrap();
         if !*fs_guard {
@@ -568,9 +567,9 @@ fn toggle_fullscreen(ctx: &egui::Context, frame: &mut eframe::Frame) {
                 rect.bottom - rect.top,
             ));
 
-            let style = unsafe { GetWindowLongW(hwnd, GWL_STYLE) };
+            let style = unsafe { GetWindowLongW(hwnd, GWL_STYLE) } as u32;
             let new_style = (style & !WS_OVERLAPPEDWINDOW) | WS_POPUP;
-            unsafe { SetWindowLongW(hwnd, GWL_STYLE, new_style) };
+            unsafe { SetWindowLongW(hwnd, GWL_STYLE, new_style as _) };
 
             let monitor = unsafe { MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST) };
             let mut mi: MONITORINFO = unsafe { std::mem::zeroed() };
@@ -594,9 +593,9 @@ fn toggle_fullscreen(ctx: &egui::Context, frame: &mut eframe::Frame) {
             *fs_guard = true;
         } else {
             // Exit fullscreen
-            let style = unsafe { GetWindowLongW(hwnd, GWL_STYLE) };
+            let style = unsafe { GetWindowLongW(hwnd, GWL_STYLE) } as u32;
             let new_style = (style & !WS_POPUP) | WS_OVERLAPPEDWINDOW;
-            unsafe { SetWindowLongW(hwnd, GWL_STYLE, new_style) };
+            unsafe { SetWindowLongW(hwnd, GWL_STYLE, new_style as _) };
 
             if let Some(&(x, y, w, h)) = SAVED_PLACEMENT.get() {
                 unsafe {
