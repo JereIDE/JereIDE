@@ -157,12 +157,63 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
 
             // Fill up the whole Y available space
             let remaining = ui.available_size();
-            if remaining.y > 0.0 {
+            let bg_response = if remaining.y > 0.0 {
                 let (_, bg) = ui.allocate_exact_size(remaining, egui::Sense::click());
+                let bg = bg.on_hover_cursor(egui::CursorIcon::Text);
                 if bg.clicked() {
                     text_response.request_focus();
                 }
-                bg.on_hover_cursor(egui::CursorIcon::Text);
+                Some(bg)
+            } else {
+                None
+            };
+
+            let mut context_action: Option<&'static str> = None;
+            let mut add_context_menu = |menu_ui: &mut egui::Ui| {
+                if menu_ui.button("Undo").clicked() {
+                    context_action = Some("editor: undo");
+                }
+                if menu_ui.button("Redo").clicked() {
+                    context_action = Some("editor: redo");
+                }
+                menu_ui.separator();
+                if menu_ui.button("Cut").clicked() {
+                    context_action = Some("editor: cut");
+                }
+                if menu_ui.button("Copy").clicked() {
+                    context_action = Some("editor: copy");
+                }
+                if menu_ui.button("Paste").clicked() {
+                    context_action = Some("editor: paste");
+                }
+                menu_ui.separator();
+                if menu_ui.button("Select All").clicked() {
+                    context_action = Some("editor: select all");
+                }
+            };
+
+            let tracker_id = egui::Id::new("editor_context_menu");
+            let was_menu_open = ctx
+                .data(|d| d.get_temp::<bool>(tracker_id))
+                .unwrap_or(false);
+
+            text_response.context_menu(&mut add_context_menu);
+            if let Some(bg) = bg_response.as_ref() {
+                bg.context_menu(&mut add_context_menu);
+            }
+
+            let is_menu_open = text_response.context_menu_opened()
+                || bg_response
+                    .as_ref()
+                    .map_or(false, |bg| bg.context_menu_opened());
+
+            if was_menu_open && !is_menu_open {
+                text_response.request_focus();
+            }
+            ctx.data_mut(|d| d.insert_temp(tracker_id, is_menu_open));
+
+            if let Some(action) = context_action {
+                crate::edit::handle_edit_action(state, &ctx, action);
             }
 
             text_output
@@ -342,4 +393,178 @@ fn compute_indent(text: &str, cursor_idx: usize) -> String {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+
+    #[test]
+    fn render_code_view_with_tab_no_panic() {
+        let mut state = AppState::new();
+        state.tabs[0].text = "fn main() {}".to_string();
+        egui::__run_test_ui(|ui| {
+            render_code_view(&mut state, ui);
+        });
+    }
+
+    #[test]
+    fn render_code_view_empty_tabs_no_panic() {
+        let mut state = AppState::new();
+        state.tabs.clear();
+        egui::__run_test_ui(|ui| {
+            render_code_view(&mut state, ui);
+        });
+    }
+
+    #[test]
+    fn context_menu_actions_are_valid_edit_actions() {
+        let actions = [
+            "editor: undo",
+            "editor: redo",
+            "editor: cut",
+            "editor: copy",
+            "editor: paste",
+            "editor: select all",
+        ];
+        let mut state = AppState::new();
+        let ctx = egui::Context::default();
+        for action in &actions {
+            crate::edit::handle_edit_action(&mut state, &ctx, action);
+        }
+    }
+
+    #[test]
+    fn context_menu_tracker_round_trips() {
+        let ctx = egui::Context::default();
+        let id = egui::Id::new("editor_context_menu");
+        assert!(!ctx.data(|d| d.get_temp::<bool>(id)).unwrap_or(false));
+        ctx.data_mut(|d| d.insert_temp(id, true));
+        assert!(ctx.data(|d| d.get_temp::<bool>(id)).unwrap_or(false));
+        ctx.data_mut(|d| d.insert_temp(id, false));
+        assert!(!ctx.data(|d| d.get_temp::<bool>(id)).unwrap_or(false));
+    }
+
+    #[test]
+    fn find_match_forward_basic_parens() {
+        let text = "(a + b)";
+        assert_eq!(find_match_forward(text, 1, '(', ')'), Some(6));
+    }
+
+    #[test]
+    fn find_match_forward_nested() {
+        let text = "(a + (b * c))";
+        assert_eq!(find_match_forward(text, 1, '(', ')'), Some(12));
+    }
+
+    #[test]
+    fn find_match_forward_no_match() {
+        let text = "(a + b";
+        assert_eq!(find_match_forward(text, 1, '(', ')'), None);
+    }
+
+    #[test]
+    fn find_match_forward_at_end() {
+        let text = "(";
+        assert_eq!(find_match_forward(text, 0, '(', ')'), None);
+    }
+
+    #[test]
+    fn find_match_backward_basic_parens() {
+        let text = "(a + b)";
+        assert_eq!(find_match_backward(text, 6, '(', ')'), Some(0));
+    }
+
+    #[test]
+    fn find_match_backward_nested() {
+        let text = "((a + b) * c)";
+        assert_eq!(find_match_backward(text, 7, '(', ')'), Some(1));
+    }
+
+    #[test]
+    fn find_match_backward_no_match() {
+        let text = "a + b)";
+        assert_eq!(find_match_backward(text, 4, '(', ')'), None);
+    }
+
+    #[test]
+    fn find_match_backward_at_start() {
+        let text = ")";
+        assert_eq!(find_match_backward(text, 0, '(', ')'), None);
+    }
+
+    #[test]
+    fn find_matching_bracket_forward_paren() {
+        let text = "(hello)";
+        assert_eq!(find_matching_bracket(text, 0), Some((0, 6)));
+    }
+
+    #[test]
+    fn find_matching_bracket_backward_paren() {
+        let text = "(hello)";
+        assert_eq!(find_matching_bracket(text, 6), Some((0, 6)));
+    }
+
+    #[test]
+    fn find_matching_bracket_curly() {
+        let text = "{ fn main() }";
+        assert_eq!(find_matching_bracket(text, 0), Some((0, 12)));
+    }
+
+    #[test]
+    fn find_matching_bracket_square() {
+        let text = "let v = [1, 2, 3]";
+        assert_eq!(find_matching_bracket(text, 8), Some((8, 16)));
+    }
+
+    #[test]
+    fn find_matching_bracket_no_bracket() {
+        let text = "hello world";
+        assert_eq!(find_matching_bracket(text, 3), None);
+    }
+
+    #[test]
+    fn find_matching_bracket_empty_text() {
+        assert_eq!(find_matching_bracket("", 0), None);
+    }
+
+    #[test]
+    fn find_matching_bracket_unmatched_open() {
+        let text = "(hello";
+        assert_eq!(find_matching_bracket(text, 0), None);
+    }
+
+    #[test]
+    fn find_matching_bracket_checks_char_before_cursor() {
+        let text = "(hello)";
+        // cursor at index 7 (past the closing paren) should check char before
+        assert_eq!(find_matching_bracket(text, 7), Some((0, 6)));
+    }
+
+    #[test]
+    fn compute_indent_basic() {
+        let text = "    hello\n";
+        assert_eq!(compute_indent(text, 10), "    ");
+    }
+
+    #[test]
+    fn compute_indent_two_levels() {
+        let text = "        hello\n";
+        assert_eq!(compute_indent(text, 14), "        ");
+    }
+
+    #[test]
+    fn compute_indent_tabs() {
+        let text = "\t\thello\n";
+        assert_eq!(compute_indent(text, 8), "\t\t");
+    }
+
+    #[test]
+    fn compute_indent_no_indent() {
+        let text = "hello\n";
+        assert_eq!(compute_indent(text, 6), "");
+    }
+
+    #[test]
+    fn compute_indent_mixed() {
+        let text = "  \t  hello\n";
+        assert_eq!(compute_indent(text, 11), "  \t  ");
+    }
+}
