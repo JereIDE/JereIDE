@@ -53,7 +53,7 @@ pub fn render_welcome_view(ui: &mut egui::Ui) {
     ui.painter().text(
         egui::Pos2::new(rect.center().x - 70.0, rect.center().y + 26.0),
         egui::Align2::LEFT_CENTER,
-        "The editor that nobody ever uses",
+        "The ready-to-use editor that nobody ever uses",
         egui::FontId::proportional(EDITOR_FONT_SIZE),
         TEXT_MUTED,
     );

@@ -234,7 +234,7 @@ pub fn render_about_dialog(ctx: &egui::Context, open: &mut bool) {
                 ui.add_space(8.0);
                 ui.colored_label(
                     TEXT_SECONDARY,
-                    egui::RichText::new("The editor that nobody ever uses.").italics(),
+                    egui::RichText::new("The ready-to-use editor that nobody ever uses.").italics(),
                 );
                 ui.add_space(4.0);
                 ui.colored_label(TEXT_MUTED, "Built with egui");
