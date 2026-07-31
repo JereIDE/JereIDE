@@ -17,9 +17,9 @@ body:
       label: Repro Steps
       description: Describe the steps that lead to the bug happening.
       placeholder: |
-      1. Open JereIDE
-      2. Click on ...
-      3. See that ... is broken
+        1. Open JereIDE
+        2. Click on ...
+        3. See that ... is broken
     validations:
       required: true
 
