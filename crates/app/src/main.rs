@@ -6,6 +6,7 @@ fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
             .with_inner_size([WINDOW_WIDTH, WINDOW_HEIGHT])
+            .with_min_inner_size([360.0, 240.0])
             .with_titlebar_shown(false)
             .with_title_shown(false)
             .with_fullsize_content_view(true),
