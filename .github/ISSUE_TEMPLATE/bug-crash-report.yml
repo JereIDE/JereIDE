@@ -4,6 +4,7 @@ title: "[BUG] "
 assignees:
   - Jeremy-Qian
 type: Bug/Crash
+labels: ["Not reviewed (yet)", "Not reproduced (yet)"]
 body:
   - type: markdown
     attributes:
