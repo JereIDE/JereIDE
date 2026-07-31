@@ -38,6 +38,10 @@ pub fn items() -> Vec<PaletteItem> {
         PaletteItem {
             code: "view: toggle sidebar",
         },
+        PaletteItem { code: "view: code" },
+        PaletteItem {
+            code: "view: compose",
+        },
         PaletteItem {
             code: "jereide: toggle fullscreen",
         },
@@ -60,7 +64,7 @@ mod tests {
     #[test]
     fn command_palette_has_17_items() {
         let items = items();
-        assert_eq!(items.len(), 18);
+        assert_eq!(items.len(), 20);
     }
 
     #[test]
@@ -118,6 +122,13 @@ mod tests {
     fn command_palette_has_toggle() {
         let items = items();
         assert!(items.iter().any(|i| i.code == "command palette: toggle"));
+    }
+
+    #[test]
+    fn command_palette_has_view_operations() {
+        let items = items();
+        assert!(items.iter().any(|i| i.code == "view: code"));
+        assert!(items.iter().any(|i| i.code == "view: compose"));
     }
 
     #[test]

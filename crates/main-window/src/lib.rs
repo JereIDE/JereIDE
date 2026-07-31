@@ -247,6 +247,8 @@ impl JereIDEApp {
             "view: toggle sidebar" => {
                 self.state.sidebar_open = !self.state.sidebar_open;
             }
+            "view: code" => self.state.switch_to_view(CurrentView::Code),
+            "view: compose" => self.state.switch_to_view(CurrentView::Compose),
             "jereide: quit" => {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             }
