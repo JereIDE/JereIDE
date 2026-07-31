@@ -10,6 +10,7 @@ body:
       value: |
         Thanks! I really appreciate reports like this-
         Before you continue, make sure your report is a BUG or CRASH in JereIDE.
+        Put in a title above prefixed "[BUG]"
   - type: textarea
     id: repro
     attributes:
