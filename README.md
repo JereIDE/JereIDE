@@ -6,9 +6,12 @@
 
 **The ready-to-use editor that nobody uses.**
 
-![](https://img.shields.io/badge/Built_with-Rust-turquoise?logo=rust&logoColor=white)
-![](https://img.shields.io/badge/Windows-10+-green?logo=quarto&logoColor=white)
-![](https://img.shields.io/badge/macOS-12+-skyblue?logo=apple&logoColor=white)
+![](https://img.shields.io/badge/Built_with-Rust-945919?logo=rust&logoColor=white&style=for-the-badge)
+![](https://img.shields.io/badge/Windows-10+-red?logo=quarto&logoColor=white&style=for-the-badge)
+![](https://img.shields.io/badge/macOS-12+-blue?logo=apple&logoColor=white&style=for-the-badge)
+
+![](https://img.shields.io/github/stars/jereide/jereide?style=for-the-badge&logo=macy's&label=Stars&color=yellow)
+![](https://img.shields.io/github/downloads/jereide/jereide/total?style=for-the-badge&logo=iced&label=Downloads&color=pink)
 
 _JereIDE as an open-source, cross-platform editor built in Rust with requent updates._
 
