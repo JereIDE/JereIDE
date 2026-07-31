@@ -1,0 +1,54 @@
+name: Bug/Crash Report
+description: Create a report about a bug or crash in JereIDE.
+title: "[BUG] "
+assignees:
+  - Jeremy-Qian
+type: Bug/Crash
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! I really appreciate reports like this-
+        Before you continue, make sure your report is a BUG or CRASH in JereIDE.
+  - type: textarea
+    id: repro
+    attributes:
+      label: Repro Steps
+      description: Describe the steps that lead to the bug happening.
+      placeholder: 1. Open JereIDE\n2. Click on ...\n3. See that ... is broken
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-expected
+    attributes:
+      label: Current vs. Expected Behavior
+      description: What did you expect JereIDE to do? What did JereIDE do?
+      placeholder: You could add screenshots here too!
+    validations:
+      required: true
+
+  - type: dropdown
+    id: system
+    attributes:
+      label: System
+      description: What is your system?
+      options:
+        - macOS 12-15 Intel
+        - macOS 26 Intel
+        - macOS 12-26 Apple Silicon
+        - macOS 27
+        - Windows 10
+        - Windows 11
+      default: 3
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version of JereIDE are you running?
+      placeholder: e.g. v0.20.0, v0.25.1
+    validations:
+      required: true
