@@ -65,18 +65,21 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
             #[cfg(target_os = "windows")]
             ui.add_space(TITLE_BAR_FULLSCREEN_SPACE);
 
-            if ui.button("Open").clicked(){
-                state.pending_open = true
-            }
+            let choose_project_resp = ui.button("Open…");
 
-            // egui::Popup::menu(&choose_project_resp)
-            //     .gap(TITLE_BAR_POPUP_GAP)
-            //     .close_behavior(egui::PopupCloseBehavior::CloseOnClick)
-            //     .show(|ui| {
-            //         ui.vertical(|ui| {
-            //             ui.label("Needs Implementation");
-            //         });
-            //     });
+            egui::Popup::menu(&choose_project_resp)
+                .gap(TITLE_BAR_POPUP_GAP)
+                .close_behavior(egui::PopupCloseBehavior::CloseOnClick)
+                .show(|ui| {
+                    ui.vertical(|ui| {
+                        if ui.button("Open File").clicked() {
+                            state.pending_open = true
+                        }
+                        if ui.button("Open Project").clicked() {
+                            state.pending_open_project = true
+                        }
+                    });
+                });
 
             if ui
                 .selectable_label(state.current_view == CurrentView::Code, "Code")

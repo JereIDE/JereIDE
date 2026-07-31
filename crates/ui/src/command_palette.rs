@@ -4,6 +4,9 @@ pub fn items() -> Vec<PaletteItem> {
     vec![
         PaletteItem { code: "file: new" },
         PaletteItem { code: "file: open" },
+        PaletteItem {
+            code: "file: open project",
+        },
         PaletteItem { code: "file: save" },
         PaletteItem {
             code: "file: save as",
@@ -57,7 +60,7 @@ mod tests {
     #[test]
     fn command_palette_has_17_items() {
         let items = items();
-        assert_eq!(items.len(), 17);
+        assert_eq!(items.len(), 18);
     }
 
     #[test]
@@ -88,6 +91,7 @@ mod tests {
         assert!(items.iter().any(|i| i.code == "file: save"));
         assert!(items.iter().any(|i| i.code == "file: save as"));
         assert!(items.iter().any(|i| i.code == "file: close tab"));
+        assert!(items.iter().any(|i| i.code == "file: open project"))
     }
 
     #[test]

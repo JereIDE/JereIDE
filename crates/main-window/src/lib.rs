@@ -3,7 +3,9 @@ use jereide_core::{
     AppState, CurrentView, ITEM_SPACING_Y, MAX_FILE_SIZE, TITLE_BAR_HEIGHT, TRAFFIC_LIGHT_OFFSET_X,
     TRAFFIC_LIGHT_OFFSET_Y, WARN_FILE_SIZE,
 };
-use jereide_fs::FileManager;
+use jereide_fs::{
+    file_size, pick_directory, pick_file, read_file_at, save_as_dialog, save_to_path,
+};
 use jereide_menu::AppMenu;
 use jereide_settings::{ACCENT, SURFACE_BG};
 use raw_window_handle::HasWindowHandle;
@@ -104,7 +106,6 @@ use jereide_ui::palette::Palette;
 pub struct JereIDEApp {
     state: AppState,
     app_menu: AppMenu,
-    file_manager: FileManager,
     visuals_initialized: bool,
     palette: Option<Palette>,
     compose: jereide_compose::compose_view::Compose,
@@ -115,7 +116,6 @@ impl JereIDEApp {
         Self {
             state: AppState::new(),
             app_menu: AppMenu::new(),
-            file_manager: FileManager::new(),
             visuals_initialized: false,
             palette: None,
             compose: jereide_compose::compose_view::Compose::new(),
@@ -127,11 +127,11 @@ impl JereIDEApp {
     }
 
     fn handle_open(&mut self) {
-        let Some(path) = FileManager::pick_file() else {
+        let Some(path) = pick_file() else {
             return;
         };
 
-        let Some(size) = FileManager::file_size(&path) else {
+        let Some(size) = file_size(&path) else {
             return;
         };
 
@@ -145,12 +145,19 @@ impl JereIDEApp {
             return;
         }
 
-        let Some(content) = FileManager::read_file_at(&path) else {
+        let Some(content) = read_file_at(&path) else {
             return;
         };
         let path_str = path.display().to_string();
         self.state.open_file(path_str, content);
-        self.file_manager.current_path = Some(path);
+    }
+
+    fn handle_open_project(&mut self) {
+        // TODO: Handle Open Project
+        let Some(path) = pick_directory() else {
+            return;
+        };
+        self.state.current_project_dir = Some(path.to_string_lossy().into_owned());
     }
 
     fn handle_save(&mut self) {
@@ -160,7 +167,7 @@ impl JereIDEApp {
         let path = self.state.current_tab().file_path.clone();
         match path {
             Some(p) => {
-                if let Err(e) = FileManager::save_to_path(
+                if let Err(e) = save_to_path(
                     &self.state.current_tab().text,
                     &std::path::PathBuf::from(&p),
                 ) {
@@ -177,8 +184,8 @@ impl JereIDEApp {
         if self.state.tabs.is_empty() {
             return;
         }
-        if let Some(path) = FileManager::save_as_dialog() {
-            if let Err(e) = FileManager::save_to_path(&self.state.current_tab().text, &path) {
+        if let Some(path) = save_as_dialog() {
+            if let Err(e) = save_to_path(&self.state.current_tab().text, &path) {
                 eprintln!("Failed to save file: {}", e);
             } else {
                 let path_str = path.display().to_string();
@@ -193,10 +200,9 @@ impl JereIDEApp {
         let path = self.state.tabs[idx].file_path.clone();
         match path {
             Some(p) => {
-                if let Err(e) = FileManager::save_to_path(
-                    &self.state.tabs[idx].text,
-                    &std::path::PathBuf::from(&p),
-                ) {
+                if let Err(e) =
+                    save_to_path(&self.state.tabs[idx].text, &std::path::PathBuf::from(&p))
+                {
                     eprintln!("Failed to save file: {}", e);
                     false
                 } else {
@@ -204,8 +210,8 @@ impl JereIDEApp {
                 }
             }
             None => {
-                if let Some(path) = FileManager::save_as_dialog() {
-                    if let Err(e) = FileManager::save_to_path(&self.state.tabs[idx].text, &path) {
+                if let Some(path) = save_as_dialog() {
+                    if let Err(e) = save_to_path(&self.state.tabs[idx].text, &path) {
                         eprintln!("Failed to save file: {}", e);
                         false
                     } else {
@@ -227,6 +233,7 @@ impl JereIDEApp {
             "file: open" => self.handle_open(),
             "file: save" => self.handle_save(),
             "file: save as" => self.handle_save_as(),
+            "file: open project" => self.handle_open_project(),
             "file: close tab" => {
                 if !self.state.tabs.is_empty() {
                     let idx = self.state.active_tab_index;
@@ -378,6 +385,9 @@ impl eframe::App for JereIDEApp {
             if self.state.pending_open {
                 self.handle_action("file: open", &ctx, frame);
                 self.state.pending_open = false;
+            } else if self.state.pending_open_project {
+                self.handle_action("file: open project", &ctx, frame);
+                self.state.pending_open_project = false;
             }
 
             #[cfg(target_os = "windows")]
@@ -489,9 +499,8 @@ impl eframe::App for JereIDEApp {
                 match lfa {
                     LargeFileAction::OpenAnyway(path_str) => {
                         let pb = std::path::PathBuf::from(&path_str);
-                        if let Some(content) = FileManager::read_file_at(&pb) {
+                        if let Some(content) = read_file_at(&pb) {
                             self.state.open_file(path_str, content);
-                            self.file_manager.current_path = Some(pb);
                         }
                     }
                     LargeFileAction::Cancel => {}

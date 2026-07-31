@@ -71,7 +71,7 @@ impl Tab {
 pub struct AppState {
     /// All open documents.
     pub tabs: Vec<Tab>,
-
+    pub current_project_dir: Option<String>,
     pub active_tab_index: usize,
     pub editor_focused: bool,
     pub editor_id: egui::Id,
@@ -91,6 +91,7 @@ pub struct AppState {
     pub show_about_dialog: bool,
 
     pub pending_open: bool,
+    pub pending_open_project: bool,
 }
 
 /// Another new method.
@@ -98,6 +99,7 @@ impl AppState {
     pub fn new() -> Self {
         Self {
             tabs: vec![Tab::new()],
+            current_project_dir: None,
             active_tab_index: 0,
             editor_focused: false,
             editor_id: egui::Id::new("editor"),
@@ -111,6 +113,7 @@ impl AppState {
             sidebar_open: false,
             show_about_dialog: false,
             pending_open: false,
+            pending_open_project: false,
         }
     }
 

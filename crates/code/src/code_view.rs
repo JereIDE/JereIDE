@@ -282,7 +282,6 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                         ))));
                 };
                 if cursor_idx < text_len && bytes[cursor_idx] as char == pair_char {
-                    // Next char is already the closing pair — skip past it
                     state.tabs[active_idx].text.remove(cursor_idx);
                     if let Some(mut edit_state) =
                         jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
@@ -291,7 +290,6 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                         edit_state.store(&ctx, text_edit_output.response.id);
                     }
                 } else if is_opening {
-                    // Insert the matching closing bracket
                     state.tabs[active_idx].text.insert(cursor_idx, pair_char);
                     if let Some(mut edit_state) =
                         jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
