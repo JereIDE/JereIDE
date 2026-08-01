@@ -54,7 +54,7 @@ struct CompiledPattern {
 
 #[derive(Clone)]
 enum CompiledPatternKind {
-    Line(Regex),
+    Line,
     Block { end_re: Regex, escape: Option<char> },
 }
 
@@ -89,11 +89,10 @@ fn compile_pattern(rp: &RawPattern) -> Option<CompiledPattern> {
     match rp {
         RawPattern::Line { type_, pattern } => {
             let search_re = Regex::new(pattern.strip_prefix('^').unwrap_or(pattern)).ok()?;
-            let re = Regex::new(pattern).ok()?;
             Some(CompiledPattern {
                 type_: type_.clone(),
                 search_re,
-                kind: CompiledPatternKind::Line(re),
+                kind: CompiledPatternKind::Line,
             })
         }
         RawPattern::Block {
@@ -145,7 +144,7 @@ fn apply_match(
     state: &mut HlState,
 ) -> Option<(Token, usize)> {
     match &pattern.kind {
-        CompiledPatternKind::Line(_) => {
+        CompiledPatternKind::Line => {
             let type_ = resolve_type(&pattern.type_, &text[m_start..m_end], symbols);
             Some(((m_start, m_end, type_), m_end))
         }
@@ -182,6 +181,17 @@ fn first_diff(a: &str, b: &str) -> usize {
     let n = ab.len().min(bb.len());
     let mut i = 0;
     while i < n && ab[i] == bb[i] {
+        i += 1;
+    }
+    i
+}
+
+fn common_suffix_len(a: &str, b: &str) -> usize {
+    let ab = a.as_bytes();
+    let bb = b.as_bytes();
+    let n = ab.len().min(bb.len());
+    let mut i = 0;
+    while i < n && ab[ab.len() - 1 - i] == bb[bb.len() - 1 - i] {
         i += 1;
     }
     i
@@ -436,7 +446,23 @@ impl SyntaxHighlighter {
         let mut new_line_states: Vec<HlState> = Vec::with_capacity(new_lines + 1);
 
         for i in 0..first_changed {
-            new_line_tokens.push(self.line_tokens.get(i).cloned().unwrap_or_default());
+            let old_line_start = self.line_starts[i];
+            let new_line_start = new_starts[i];
+            new_line_tokens.push(
+                self.line_tokens
+                    .get(i)
+                    .cloned()
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|(s, e, t)| {
+                        (
+                            new_line_start + (s - old_line_start),
+                            new_line_start + (e - old_line_start),
+                            t,
+                        )
+                    })
+                    .collect(),
+            );
             new_line_states.push(self.line_states.get(i).cloned().unwrap_or(HlState::Normal));
         }
 
@@ -451,28 +477,41 @@ impl SyntaxHighlighter {
         new_line_states.push(state.clone());
 
         let mut stop_at = new_lines;
+        let same_line_count = self.line_starts.len() == new_starts.len();
+        let suffix_start = text.len() - common_suffix_len(text, &self.cached_text);
         for i in first_changed..new_lines {
             let tokens = tokenize_range(text, new_starts[i], new_starts[i + 1], def, &mut state);
             new_line_tokens.push(tokens);
             new_line_states.push(state.clone());
 
             let boundary = i + 1;
-            let boundary_aligns = self
-                .line_starts
-                .get(boundary)
-                .map(|&old_start| {
-                    new_starts[boundary] == old_start
-                        && text[new_starts[boundary]..] == self.cached_text[old_start..]
-                })
-                .unwrap_or(false);
-            if boundary_aligns && self.line_states.get(boundary) == Some(&state) {
+            if same_line_count
+                && self.line_states.get(boundary) == Some(&state)
+                && new_starts[boundary] >= suffix_start
+            {
                 stop_at = boundary;
                 break;
             }
         }
 
         for i in stop_at..new_lines {
-            new_line_tokens.push(self.line_tokens.get(i).cloned().unwrap_or_default());
+            let old_line_start = self.line_starts[i];
+            let new_line_start = new_starts[i];
+            new_line_tokens.push(
+                self.line_tokens
+                    .get(i)
+                    .cloned()
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|(s, e, t)| {
+                        (
+                            new_line_start + (s - old_line_start),
+                            new_line_start + (e - old_line_start),
+                            t,
+                        )
+                    })
+                    .collect(),
+            );
             new_line_states.push(
                 self.line_states
                     .get(i + 1)
@@ -662,6 +701,16 @@ mod tests {
         assert_same(
             &mut hl,
             "# H1\nSome *it* **b** text\n```rust\nlet x = 2;\n```\n# H2\nlast **bold**\n",
+        );
+        // Delete a character from the middle line (same line count; tests negative shift).
+        assert_same(
+            &mut hl,
+            "# H1\nSome *it* **b** tex\n```rust\nlet x = 2;\n```\n# H2\nlast **bold**\n",
+        );
+        // Insert a character near the start of the first line.
+        assert_same(
+            &mut hl,
+            "# H1X\nSome *it* **b** tex\n```rust\nlet x = 2;\n```\n# H2\nlast **bold**\n",
         );
     }
 }

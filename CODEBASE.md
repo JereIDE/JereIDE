@@ -228,7 +228,9 @@ for multi-line block matches (with optional `"escape"` for escape characters).
 
 #### Key components
 
-- **Tokenizer** (`tokenize`) — scans text left-to-right applying ordered patterns.
+- **Tokenizer** (`tokenize_range`) — scans a text range left-to-right applying ordered patterns.
+  Precomputes each pattern's matches over the range (via a `^`-stripped search regex) and walks
+  them with O(1) cursor lookups, so highlighting is O(n) instead of O(n²).
   Supports single-line patterns (regex) and block patterns (multi-line ranges with escapes).
   Maintains `HlState` for tracking open blocks across lines.
 
@@ -236,7 +238,10 @@ for multi-line block matches (with optional `"escape"` for escape characters).
 
 - `new(font_size, extension)` — loads syntax definition from `data/<extension>.json`,
   falls back to plain text if no definition found.
-- `highlight(text) -> &LayoutJob` — caches by full text; re-highlights only on change.
+- `highlight(text) -> &LayoutJob` — **incremental**: caches per-line tokens and the tokenizer
+  state at each line boundary. On change it only re-tokenizes from the first changed line until
+  the state stabilizes (reusing unchanged prefix/suffix lines with adjusted offsets), so typing
+  is fast even on large files.
   Returns a reference to the cached job (caller clones if ownership needed).
 
 #### Color mapping (`jereide_settings`)
