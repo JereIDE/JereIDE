@@ -38,6 +38,21 @@ fn syntax_highlighter_cache_invalidated_on_change() {
 }
 
 #[test]
+fn syntax_highlighter_html_tags() {
+    let mut hl = SyntaxHighlighter::new(14.0, Some("html"));
+    let job = hl.highlight("<div class=\"note\">hi</div>").clone();
+    assert_eq!(job.text, "<div class=\"note\">hi</div>");
+    assert!(job.sections.len() > 1);
+}
+
+#[test]
+fn syntax_highlighter_html_comment() {
+    let mut hl = SyntaxHighlighter::new(14.0, Some("html"));
+    let job = hl.highlight("<!-- a comment --><p>x</p>").clone();
+    assert_eq!(job.text, "<!-- a comment --><p>x</p>");
+}
+
+#[test]
 fn syntax_highlighter_switching_extension() {
     let mut hl = SyntaxHighlighter::new(14.0, Some("rs"));
     let job_rs = hl.highlight("fn main() {}").clone();

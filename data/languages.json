@@ -34,7 +34,7 @@
       "extensions": ["html"],
       "name": "HTML",
       "indent_after": [],
-      "file": null
+      "file": "html"
     },
     {
       "extensions": ["css"],
