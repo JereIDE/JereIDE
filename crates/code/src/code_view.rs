@@ -348,9 +348,9 @@ fn paint_find_highlights(
             continue;
         }
         let color = if i == current {
-            FIND_HIGHLIGHT_CURRENT
+            FIND_HIGHLIGHT_CURRENT.linear_multiply(0.4)
         } else {
-            FIND_HIGHLIGHT
+            FIND_HIGHLIGHT.linear_multiply(0.25)
         };
         let Some((start_row, start_x)) = char_row_x(galley, s) else {
             continue;
