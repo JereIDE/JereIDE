@@ -72,6 +72,8 @@ pub struct AppState {
     /// All open documents.
     pub tabs: Vec<Tab>,
     pub current_project_dir: Option<String>,
+    pub selected_text: Option<String>,
+    pub find_highlight: Option<FindHighlight>,
     pub active_tab_index: usize,
     pub editor_focused: bool,
     pub editor_id: egui::Id,
@@ -94,12 +96,23 @@ pub struct AppState {
     pub pending_open_project: bool,
 }
 
+#[derive(Clone)]
+pub struct FindHighlight {
+    pub query: String,
+    pub match_case: bool,
+    pub whole_word: bool,
+    pub current_match: usize,
+    pub scroll_to: Option<usize>,
+}
+
 /// Another new method.
 impl AppState {
     pub fn new() -> Self {
         Self {
             tabs: vec![],
             current_project_dir: None,
+            selected_text: None,
+            find_highlight: None,
             active_tab_index: 0,
             editor_focused: false,
             editor_id: egui::Id::new("editor"),

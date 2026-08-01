@@ -65,6 +65,13 @@ impl AppMenu {
                 &MenuItem::with_id("editor: copy", "Copy", true, None),
                 &MenuItem::with_id("editor: paste", "Paste", true, None),
                 &PredefinedMenuItem::separator(),
+                &MenuItem::with_id(
+                    "editor: find replace",
+                    "Find / Replace…",
+                    true,
+                    "CmdOrCtrl+F".parse::<Accelerator>().ok(),
+                ),
+                &PredefinedMenuItem::separator(),
                 &MenuItem::with_id("editor: select all", "Select All", true, None),
             ])
             .ok();

@@ -9,9 +9,10 @@ use jereide_core::constants::{
 };
 use jereide_core::AppState;
 use jereide_settings::{
-    BRACKET_MATCH, EDITOR_FONT_SIZE, SURFACE_BG, TEXT_CURRENT_LINE, TEXT_MUTED,
+    BRACKET_MATCH, EDITOR_FONT_SIZE, FIND_HIGHLIGHT, FIND_HIGHLIGHT_CURRENT, SURFACE_BG,
+    TEXT_CURRENT_LINE, TEXT_MUTED,
 };
-use jereide_text::char_index_to_line_col;
+use jereide_text::{char_index_to_line_col, char_range_substring, find_matches};
 
 use jereide_syntax::SyntaxHighlighter;
 use std::collections::HashMap;
@@ -114,6 +115,17 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
             let text_response = &text_output.response;
             let galley = text_output.galley.clone();
             let galley_pos = text_output.galley_pos;
+
+            if let Some(hl) = state.find_highlight.clone() {
+                if !hl.query.is_empty() {
+                    let tab_text = &state.tabs[active_idx].text;
+                    let matches = find_matches(tab_text, &hl.query, hl.match_case, hl.whole_word);
+                    paint_find_highlights(ui, &galley, galley_pos, &matches, hl.current_match);
+                    if let Some(target) = hl.scroll_to {
+                        scroll_to_char(ui, &galley, galley_pos, target);
+                    }
+                }
+            }
 
             if let Some(cursor_range) = text_output.cursor_range {
                 let tab_text = &state.tabs[active_idx].text;
@@ -220,6 +232,23 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         })
         .inner;
     state.editor_id = text_edit_output.response.id;
+    state.selected_text = text_edit_output
+        .state
+        .cursor
+        .char_range()
+        .and_then(|range| {
+            let start = range.primary.index.min(range.secondary.index);
+            let end = range.primary.index.max(range.secondary.index);
+            if end > start {
+                Some(char_range_substring(
+                    &state.tabs[active_idx].text,
+                    start,
+                    end,
+                ))
+            } else {
+                None
+            }
+        });
 
     if let Some(cursor_range) = text_edit_output.cursor_range {
         let cursor_idx = cursor_range.primary.index;
@@ -305,6 +334,107 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
     if !state.editor_focused {
         state.editor_focused = true;
         text_edit_output.response.request_focus();
+    }
+}
+
+fn char_row_x(galley: &egui::Galley, char_index: usize) -> Option<(usize, f32)> {
+    let lc = galley.layout_from_cursor(CCursor::new(char_index));
+    let row = galley.rows.get(lc.row)?;
+    let x = if lc.column < row.glyphs.len() {
+        row.pos.x + row.glyphs[lc.column].pos.x
+    } else {
+        row.pos.x + row.size.x
+    };
+    Some((lc.row, x))
+}
+
+fn paint_find_highlights(
+    ui: &egui::Ui,
+    galley: &egui::Galley,
+    galley_pos: egui::Pos2,
+    matches: &[(usize, usize)],
+    current: usize,
+) {
+    let painter = egui::Painter::new(
+        ui.ctx().clone(),
+        egui::LayerId::new(egui::Order::Background, egui::Id::new("find_highlight")),
+        ui.clip_rect(),
+    );
+    for (i, &(s, e)) in matches.iter().enumerate() {
+        if s >= e {
+            continue;
+        }
+        let color = if i == current {
+            FIND_HIGHLIGHT_CURRENT.linear_multiply(0.4)
+        } else {
+            FIND_HIGHLIGHT.linear_multiply(0.25)
+        };
+        let Some((start_row, start_x)) = char_row_x(galley, s) else {
+            continue;
+        };
+        let Some((end_row, end_x)) = char_row_x(galley, e) else {
+            continue;
+        };
+        if start_row > end_row {
+            continue;
+        }
+        if start_row == end_row {
+            if let Some(row) = galley.rows.get(start_row) {
+                let rect = egui::Rect::from_min_max(
+                    egui::pos2(galley_pos.x + start_x, galley_pos.y + row.pos.y),
+                    egui::pos2(
+                        galley_pos.x + end_x,
+                        galley_pos.y + row.pos.y + row.height(),
+                    ),
+                );
+                painter.rect_filled(rect, 2.0, color);
+            }
+        } else {
+            if let Some(row) = galley.rows.get(start_row) {
+                let rect = egui::Rect::from_min_max(
+                    egui::pos2(galley_pos.x + start_x, galley_pos.y + row.pos.y),
+                    egui::pos2(
+                        galley_pos.x + row.pos.x + row.size.x,
+                        galley_pos.y + row.pos.y + row.height(),
+                    ),
+                );
+                painter.rect_filled(rect, 2.0, color);
+            }
+            for r in (start_row + 1)..end_row {
+                if let Some(row) = galley.rows.get(r) {
+                    let rect = egui::Rect::from_min_max(
+                        egui::pos2(galley_pos.x + row.pos.x, galley_pos.y + row.pos.y),
+                        egui::pos2(
+                            galley_pos.x + row.pos.x + row.size.x,
+                            galley_pos.y + row.pos.y + row.height(),
+                        ),
+                    );
+                    painter.rect_filled(rect, 2.0, color);
+                }
+            }
+            if let Some(row) = galley.rows.get(end_row) {
+                let rect = egui::Rect::from_min_max(
+                    egui::pos2(galley_pos.x + row.pos.x, galley_pos.y + row.pos.y),
+                    egui::pos2(
+                        galley_pos.x + end_x,
+                        galley_pos.y + row.pos.y + row.height(),
+                    ),
+                );
+                painter.rect_filled(rect, 2.0, color);
+            }
+        }
+    }
+}
+
+fn scroll_to_char(ui: &egui::Ui, galley: &egui::Galley, galley_pos: egui::Pos2, char_index: usize) {
+    if let Some((row_idx, x)) = char_row_x(galley, char_index) {
+        if let Some(row) = galley.rows.get(row_idx) {
+            let rect = egui::Rect::from_min_size(
+                egui::pos2(galley_pos.x + x, galley_pos.y + row.pos.y),
+                egui::vec2(1.0, row.height()),
+            );
+            ui.scroll_to_rect(rect, Some(egui::Align::TOP));
+        }
     }
 }
 
