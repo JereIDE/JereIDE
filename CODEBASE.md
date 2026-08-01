@@ -264,6 +264,8 @@ of where the binary is executed from.
 - `data/rs.json` — Rust language (`.rs` files)
 - `data/py.json` — Python language (`.py` files)
 - `data/html.json` — HTML language (`.html` files)
+- `data/md.json` — Markdown (`.md` files): headings, blockquotes, horizontal rules, inline code,
+  fenced code blocks, links, bold/italic/strikethrough, and list markers
 
 ---
 
@@ -612,9 +614,7 @@ Run with: `cargo test`
 
 ## TODO / Stubbed Areas
 
-- **Compose palette** (`crates/compose/compose_view.rs`) — "Needs implementation"
-- **"Choose Project"** title bar button — "Needs Implementation"
+- **Compose view** (`crates/compose/compose_view.rs`) — "Needs implementation"
 - **Settings persistence** — colors/dimensions are hardcoded in `settings/src/lib.rs` with TODO to load from a JSON file
 - **Error handling** — `FileManager::save_to_path` has a TODO for proper error handling
-- **Help menu** — commented out in menu construction
 - **Linux** — build and test CI jobs are commented out (not a planned target)

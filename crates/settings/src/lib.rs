@@ -27,6 +27,10 @@ pub const SYNTAX_NUMBER: Color32 = Color32::from_rgb(128, 0, 128); // purple
 pub const SYNTAX_OPERATOR: Color32 = Color32::from_rgb(100, 100, 100);
 pub const SYNTAX_FUNCTION: Color32 = Color32::from_rgb(0, 100, 200); // blue
 pub const SYNTAX_LITERAL: Color32 = Color32::from_rgb(200, 100, 0); // orange
+pub const SYNTAX_HEADING: Color32 = Color32::from_rgb(0, 90, 180); // blue
+pub const SYNTAX_CODE: Color32 = Color32::from_rgb(90, 120, 90); // muted green
+pub const SYNTAX_EMPHASIS: Color32 = Color32::from_rgb(160, 80, 160); // magenta
+pub const SYNTAX_LINK: Color32 = Color32::from_rgb(0, 100, 200); // blue
 
 pub const ACCENT: Color32 = Color32::from_rgb(28, 225, 210);
 pub const DESTRUCTIVE: Color32 = Color32::from_rgb(220, 50, 50);

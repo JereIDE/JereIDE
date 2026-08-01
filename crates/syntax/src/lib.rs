@@ -6,8 +6,9 @@ use regex::Regex;
 use serde::Deserialize;
 
 use jereide_settings::{
-    SYNTAX_COMMENT, SYNTAX_FUNCTION, SYNTAX_KEYWORD, SYNTAX_KEYWORD2, SYNTAX_LITERAL,
-    SYNTAX_NUMBER, SYNTAX_OPERATOR, SYNTAX_STRING, TEXT_DEFAULT,
+    SYNTAX_CODE, SYNTAX_COMMENT, SYNTAX_EMPHASIS, SYNTAX_FUNCTION, SYNTAX_HEADING, SYNTAX_KEYWORD,
+    SYNTAX_KEYWORD2, SYNTAX_LINK, SYNTAX_LITERAL, SYNTAX_NUMBER, SYNTAX_OPERATOR, SYNTAX_STRING,
+    TEXT_DEFAULT,
 };
 
 #[derive(Debug, Deserialize)]
@@ -120,6 +121,13 @@ enum HlState {
 
 type Token = (usize, usize, String);
 
+fn next_char_boundary(text: &str, from: usize) -> usize {
+    match text[from..].chars().next() {
+        Some(c) => from + c.len_utf8(),
+        None => from,
+    }
+}
+
 fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
     let bytes = text.as_bytes();
@@ -176,7 +184,7 @@ fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token>
 
                 if !matched {
                     let start = pos;
-                    pos += 1;
+                    pos = next_char_boundary(text, pos);
                     while pos < len {
                         let mut any_match = false;
                         for pattern in &def.patterns {
@@ -202,7 +210,7 @@ fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token>
                         if any_match {
                             break;
                         }
-                        pos += 1;
+                        pos = next_char_boundary(text, pos);
                     }
                     tokens.push((start, pos, "plain".to_string()));
                 }
@@ -222,12 +230,12 @@ fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token>
                         if let Some(esc) = escape {
                             if !*escaped && bytes_rest[search_pos] == *esc as u8 {
                                 *escaped = true;
-                                search_pos += 1;
+                                search_pos = next_char_boundary(rest, search_pos);
                                 continue;
                             }
                             if *escaped {
                                 *escaped = false;
-                                search_pos += 1;
+                                search_pos = next_char_boundary(rest, search_pos);
                                 continue;
                             }
                         }
@@ -243,7 +251,7 @@ fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token>
                             }
                         }
 
-                        search_pos += 1;
+                        search_pos = next_char_boundary(rest, search_pos);
                     }
 
                     if !found {
@@ -283,6 +291,10 @@ fn type_to_color(type_: &str) -> Color32 {
         "operator" => SYNTAX_OPERATOR,
         "function" => SYNTAX_FUNCTION,
         "literal" => SYNTAX_LITERAL,
+        "heading" => SYNTAX_HEADING,
+        "code" => SYNTAX_CODE,
+        "emphasis" => SYNTAX_EMPHASIS,
+        "link" => SYNTAX_LINK,
         _ => TEXT_DEFAULT,
     }
 }
@@ -383,5 +395,83 @@ impl SyntaxHighlighter {
 
         self.cached_job = job;
         &self.cached_job
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn section_colors(text: &str) -> Vec<(usize, usize, Color32)> {
+        let mut hl = SyntaxHighlighter::new(14.0, Some("md"));
+        let job = hl.highlight(text);
+        job.sections
+            .iter()
+            .map(|s| (s.byte_range.start, s.byte_range.end, s.format.color))
+            .collect()
+    }
+
+    #[test]
+    fn markdown_loads_and_highlights_heading() {
+        let colors = section_colors("# Hello\n");
+        assert!(
+            colors.iter().any(|&(_, _, c)| c == SYNTAX_HEADING),
+            "expected a heading-colored section, got {:?}",
+            colors
+        );
+    }
+
+    #[test]
+    fn markdown_highlights_inline_code() {
+        let colors = section_colors("Use `x` here\n");
+        assert!(
+            colors.iter().any(|&(_, _, c)| c == SYNTAX_CODE),
+            "expected a code-colored section, got {:?}",
+            colors
+        );
+    }
+
+    #[test]
+    fn markdown_highlights_bold() {
+        let colors = section_colors("some **bold** text\n");
+        assert!(
+            colors.iter().any(|&(_, _, c)| c == SYNTAX_EMPHASIS),
+            "expected an emphasis-colored section, got {:?}",
+            colors
+        );
+    }
+
+    #[test]
+    fn markdown_highlights_fenced_code_block() {
+        let text = "```rust\nlet x = 1;\n```\n";
+        let colors = section_colors(text);
+        assert!(
+            colors.iter().any(|&(_, _, c)| c == SYNTAX_CODE),
+            "expected a code-colored section for the fenced block, got {:?}",
+            colors
+        );
+    }
+
+    #[test]
+    fn markdown_fenced_block_terminates_at_closing_fence() {
+        let text = "```rust\nlet x = 1;\n```\n# After\n";
+        let colors = section_colors(text);
+        assert!(
+            colors.iter().any(|&(_, _, c)| c == SYNTAX_HEADING),
+            "expected content after the closing fence to be highlighted (not swallowed by the \
+             code block), got {:?}",
+            colors
+        );
+    }
+
+    #[test]
+    fn markdown_multibyte_utf8_does_not_panic() {
+        let text = "Hello × world\n```rust\nlet s = \"×\";\n```\n# × Heading\n";
+        let colors = section_colors(text);
+        assert!(
+            colors.iter().any(|&(_, _, c)| c == SYNTAX_HEADING),
+            "expected a heading-colored section, got {:?}",
+            colors
+        );
     }
 }

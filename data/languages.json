@@ -46,7 +46,7 @@
       "extensions": ["md"],
       "name": "Markdown",
       "indent_after": [],
-      "file": null
+      "file": "md"
     },
     {
       "extensions": ["toml"],

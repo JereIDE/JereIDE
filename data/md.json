@@ -1,0 +1,22 @@
+{
+  "syntax": {
+    "name": "Markdown",
+    "files": ["\\.md$"],
+    "symbols": {},
+    "patterns": [
+      { "type": "heading", "pattern": "^#{1,6}[^\\n]*" },
+      { "type": "comment", "pattern": "^>+[^\\n]*" },
+      { "type": "comment", "pattern": "^(\\*{3,}|-{3,}|_{3,})[^\\n]*" },
+      { "type": "code", "pattern": "`[^`\\n]+`" },
+      { "type": "link", "pattern": "\\[[^\\]\\n]+\\]\\([^)\\]\\n]+\\)" },
+      { "type": "emphasis", "pattern": "\\*\\*[^*\\n]+\\*\\*" },
+      { "type": "emphasis", "pattern": "\\*[^*\\n]+\\*" },
+      { "type": "emphasis", "pattern": "__[^_\\n]+__" },
+      { "type": "emphasis", "pattern": "_[^_\\n]+_" },
+      { "type": "emphasis", "pattern": "~~[^~\\n]+~~" },
+      { "type": "literal", "pattern": "^\\s*[-+*]\\s+" },
+      { "type": "number", "pattern": "^\\s*\\d+\\.\\s+" },
+      { "type": "code", "start": "^```", "end": "```" }
+    ]
+  }
+}
