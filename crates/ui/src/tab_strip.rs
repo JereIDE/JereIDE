@@ -23,16 +23,13 @@ struct TabLayout {
 
 pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
     let sidebar_open = state.sidebar_open;
-    let available = ui.available_size();
-    let (strip_rect, strip_resp) =
-        ui.allocate_exact_size(Vec2::new(available.x, TAB_STRIP_HEIGHT), Sense::click());
-    let tab_bottom = strip_rect.bottom();
-    let tab_top = strip_rect.top();
+    let available_w = ui.available_width();
 
     let font_id = FontId::monospace(TAB_FONT_SIZE);
 
+    // Layout tabs in content coordinates (starting from x = 0).
     let mut layouts: Vec<TabLayout> = Vec::with_capacity(state.tabs.len());
-    let mut cursor_x = strip_rect.left();
+    let mut cursor_x = 0.0;
 
     for idx in 0..state.tabs.len() {
         let tab = &state.tabs[idx];
@@ -60,10 +57,8 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
         let side = left_extra.max(right_extra);
         let tab_w = side + text_w + side;
 
-        let tab_rect = Rect::from_min_size(
-            Pos2::new(cursor_x, tab_top),
-            Vec2::new(tab_w, TAB_STRIP_HEIGHT),
-        );
+        let tab_rect =
+            Rect::from_min_size(Pos2::new(cursor_x, 0.0), Vec2::new(tab_w, TAB_STRIP_HEIGHT));
 
         let text_pos = Pos2::new(
             tab_rect.center().x - text_w / 2.0,
@@ -90,123 +85,141 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
         });
         cursor_x = tab_rect.right();
     }
+    let total_w = cursor_x;
 
     let mut click_tab: Option<usize> = None;
     let mut close_tab: Option<usize> = None;
-    let mut hovered: Vec<(bool, bool)> = Vec::with_capacity(state.tabs.len());
+    let mut new_tab = false;
 
-    for idx in 0..state.tabs.len() {
-        let tab_id = egui::Id::new(("tab", idx));
-        let close_id = egui::Id::new(("close", idx));
+    egui::ScrollArea::horizontal()
+        .id_salt("tab_strip_scroll")
+        .max_height(TAB_STRIP_HEIGHT)
+        .auto_shrink([false, false])
+        .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
+        .show(ui, |ui| {
+            let origin = ui.cursor().min;
+            let content_w = total_w.max(available_w);
+            let content_rect = Rect::from_min_size(origin, Vec2::new(content_w, TAB_STRIP_HEIGHT));
+            let (_, content_resp) = ui.allocate_exact_size(content_rect.size(), Sense::click());
 
-        let tab_resp = ui
-            .interact(layouts[idx].rect, tab_id, Sense::click())
-            .on_hover_cursor(egui::CursorIcon::PointingHand);
-        let close_resp = ui
-            .interact(layouts[idx].close_rect, close_id, Sense::click())
-            .on_hover_cursor(egui::CursorIcon::PointingHand);
+            let painter = ui.painter();
+            painter.rect_filled(content_rect, 0.0, ELEVATED_BG);
 
-        let close_h = close_resp.hovered();
-        let tab_h = tab_resp.hovered() || close_h;
-        hovered.push((tab_h, close_h));
+            for idx in 0..state.tabs.len() {
+                let l = &layouts[idx];
+                let rect = Rect::from_min_size(origin + l.rect.min.to_vec2(), l.rect.size());
+                let close_rect =
+                    Rect::from_min_size(origin + l.close_rect.min.to_vec2(), l.close_rect.size());
+                let text_pos = origin + l.text_pos.to_vec2();
+                let dot_pos = origin + l.dot_pos.to_vec2();
 
-        if close_resp.clicked() {
-            close_tab = Some(idx);
-        } else if tab_resp.clicked() {
-            click_tab = Some(idx);
-        }
-    }
+                let is_active = idx == state.active_tab_index;
+                let bg = if is_active { SURFACE_BG } else { ELEVATED_BG };
 
-    let painter = ui.painter();
+                painter.rect_filled(rect, 0.0, bg);
 
-    painter.rect_filled(strip_rect, 0.0, ELEVATED_BG);
+                let text_color = if is_active {
+                    TEXT_PRIMARY
+                } else {
+                    TEXT_SECONDARY
+                };
+                painter.galley_with_override_text_color(text_pos, l.galley.clone(), text_color);
 
-    for idx in 0..state.tabs.len() {
-        let layout = &layouts[idx];
-        let is_active = idx == state.active_tab_index;
-        let bg = if is_active { SURFACE_BG } else { ELEVATED_BG };
-        let (tab_hovered, close_hovered) = hovered[idx];
+                if l.has_dot {
+                    painter.circle_filled(dot_pos, TAB_MODIFIED_DOT_RADIUS, ACCENT);
+                }
 
-        painter.rect_filled(layout.rect, 0.0, bg);
+                let tab_resp = ui
+                    .interact(rect, egui::Id::new(("tab", idx)), Sense::click())
+                    .on_hover_cursor(egui::CursorIcon::PointingHand);
+                let close_resp = ui
+                    .interact(close_rect, egui::Id::new(("close", idx)), Sense::click())
+                    .on_hover_cursor(egui::CursorIcon::PointingHand);
 
-        let text_color = if is_active {
-            TEXT_PRIMARY
-        } else {
-            TEXT_SECONDARY
-        };
-        painter.galley_with_override_text_color(layout.text_pos, layout.galley.clone(), text_color);
+                let close_h = close_resp.hovered();
+                let tab_h = tab_resp.hovered() || close_h;
 
-        if layout.has_dot {
-            painter.circle_filled(layout.dot_pos, TAB_MODIFIED_DOT_RADIUS, ACCENT);
-        }
+                if close_resp.clicked() {
+                    close_tab = Some(idx);
+                } else if tab_resp.clicked() {
+                    click_tab = Some(idx);
+                }
 
-        if tab_hovered {
-            if close_hovered {
-                painter.rect_filled(layout.close_rect, TAB_CLOSE_BTN_RADIUS, HOVER_BG);
+                if tab_h {
+                    if close_h {
+                        painter.rect_filled(close_rect, TAB_CLOSE_BTN_RADIUS, HOVER_BG);
+                    }
+                    let icon_color = if close_h { TEXT_DEFAULT } else { TEXT_PRIMARY };
+                    let cx = close_rect.center().x;
+                    let cy = close_rect.center().y;
+                    painter.line_segment(
+                        [
+                            Pos2::new(cx - TAB_CLOSE_ICON_HALF, cy - TAB_CLOSE_ICON_HALF),
+                            Pos2::new(cx + TAB_CLOSE_ICON_HALF, cy + TAB_CLOSE_ICON_HALF),
+                        ],
+                        Stroke::new(TAB_CLOSE_STROKE, icon_color),
+                    );
+                    painter.line_segment(
+                        [
+                            Pos2::new(cx + TAB_CLOSE_ICON_HALF, cy - TAB_CLOSE_ICON_HALF),
+                            Pos2::new(cx - TAB_CLOSE_ICON_HALF, cy + TAB_CLOSE_ICON_HALF),
+                        ],
+                        Stroke::new(TAB_CLOSE_STROKE, icon_color),
+                    );
+                }
             }
-            let icon_color = if close_hovered {
-                TEXT_DEFAULT
-            } else {
-                TEXT_PRIMARY
-            };
-            let cx = layout.close_rect.center().x;
-            let cy = layout.close_rect.center().y;
-            painter.line_segment(
-                [
-                    Pos2::new(cx - TAB_CLOSE_ICON_HALF, cy - TAB_CLOSE_ICON_HALF),
-                    Pos2::new(cx + TAB_CLOSE_ICON_HALF, cy + TAB_CLOSE_ICON_HALF),
-                ],
-                Stroke::new(TAB_CLOSE_STROKE, icon_color),
+
+            for idx in 0..state.tabs.len() {
+                if idx == 0 && sidebar_open {
+                    continue;
+                }
+                painter.vline(
+                    origin.x + layouts[idx].rect.left(),
+                    egui::Rangef::new(origin.y, origin.y + TAB_STRIP_HEIGHT),
+                    Stroke::new(TAB_BORDER_WIDTH, BORDER),
+                );
+            }
+            if let Some(last) = layouts.last() {
+                painter.vline(
+                    origin.x + last.rect.right(),
+                    egui::Rangef::new(origin.y, origin.y + TAB_STRIP_HEIGHT),
+                    Stroke::new(TAB_BORDER_WIDTH, BORDER),
+                );
+            }
+
+            // Bottom border across the whole content.
+            painter.rect_filled(
+                Rect::from_min_size(
+                    Pos2::new(
+                        content_rect.left(),
+                        content_rect.bottom() - TAB_BORDER_WIDTH,
+                    ),
+                    Vec2::new(content_rect.width(), TAB_BORDER_WIDTH),
+                ),
+                0.0,
+                BORDER,
             );
-            painter.line_segment(
-                [
-                    Pos2::new(cx + TAB_CLOSE_ICON_HALF, cy - TAB_CLOSE_ICON_HALF),
-                    Pos2::new(cx - TAB_CLOSE_ICON_HALF, cy + TAB_CLOSE_ICON_HALF),
-                ],
-                Stroke::new(TAB_CLOSE_STROKE, icon_color),
-            );
-        }
-    }
 
-    painter.rect_filled(
-        Rect::from_min_size(
-            Pos2::new(strip_rect.left(), tab_bottom - TAB_BORDER_WIDTH),
-            Vec2::new(strip_rect.width(), TAB_BORDER_WIDTH),
-        ),
-        0.0,
-        BORDER,
-    );
+            // Active tab breaks the bottom border.
+            if let Some(active) = layouts.get(state.active_tab_index) {
+                let active_rect =
+                    Rect::from_min_size(origin + active.rect.min.to_vec2(), active.rect.size());
+                painter.rect_filled(
+                    Rect::from_min_size(
+                        Pos2::new(active_rect.left(), active_rect.bottom() - TAB_BORDER_WIDTH),
+                        Vec2::new(active_rect.width(), TAB_BORDER_WIDTH),
+                    ),
+                    0.0,
+                    SURFACE_BG,
+                );
+            }
 
-    if let Some(active) = layouts.get(state.active_tab_index) {
-        painter.rect_filled(
-            Rect::from_min_size(
-                Pos2::new(active.rect.left(), tab_bottom - TAB_BORDER_WIDTH),
-                Vec2::new(active.rect.width(), TAB_BORDER_WIDTH),
-            ),
-            0.0,
-            SURFACE_BG,
-        );
-    }
+            if content_resp.double_clicked() {
+                new_tab = true;
+            }
+        });
 
-    for idx in 0..state.tabs.len() {
-        if idx == 0 && sidebar_open {
-            continue;
-        }
-        painter.vline(
-            layouts[idx].rect.left(),
-            layouts[idx].rect.y_range(),
-            Stroke::new(TAB_BORDER_WIDTH, BORDER),
-        );
-    }
-    if let Some(last) = layouts.last() {
-        painter.vline(
-            last.rect.right(),
-            last.rect.y_range(),
-            Stroke::new(TAB_BORDER_WIDTH, BORDER),
-        );
-    }
-
-    if strip_resp.double_clicked() {
+    if new_tab {
         state.new_tab();
     }
     if let Some(idx) = close_tab {
