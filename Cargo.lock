@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "JereIDE"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "eframe",
  "egui_extras",
@@ -2050,7 +2050,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "jereide-code"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "eframe",
  "jereide-core",
@@ -2063,7 +2063,7 @@ dependencies = [
 
 [[package]]
 name = "jereide-compose"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "eframe",
  "jereide-settings",
@@ -2071,14 +2071,14 @@ dependencies = [
 
 [[package]]
 name = "jereide-core"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "eframe",
 ]
 
 [[package]]
 name = "jereide-data"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -2086,21 +2086,21 @@ dependencies = [
 
 [[package]]
 name = "jereide-editor"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "eframe",
 ]
 
 [[package]]
 name = "jereide-fs"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "rfd",
 ]
 
 [[package]]
 name = "jereide-main-window"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "eframe",
  "jereide-code",
@@ -2118,7 +2118,7 @@ dependencies = [
 
 [[package]]
 name = "jereide-menu"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "crossbeam-channel",
  "muda",
@@ -2127,14 +2127,14 @@ dependencies = [
 
 [[package]]
 name = "jereide-settings"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "eframe",
 ]
 
 [[package]]
 name = "jereide-syntax"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "eframe",
  "jereide-data",
@@ -2146,11 +2146,11 @@ dependencies = [
 
 [[package]]
 name = "jereide-text"
-version = "0.25.1"
+version = "0.26.0"
 
 [[package]]
 name = "jereide-ui"
-version = "0.25.1"
+version = "0.26.0"
 dependencies = [
  "eframe",
  "jereide-core",

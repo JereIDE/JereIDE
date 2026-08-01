@@ -7,7 +7,7 @@ edition = "2021"
 eframe = "0.34"
 jereide-core = { path = "../core" }
 jereide-editor = { path = "../editor" }
-jereide-data = { path = "../data" }
+jereide-data = { path = "../datadir" }
 jereide-settings = { path = "../settings" }
 jereide-text = { path = "../text" }
 jereide-syntax = { path = "../syntax" }
