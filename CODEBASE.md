@@ -294,9 +294,8 @@ Menu events are processed in `JereIDEApp::ui()` by matching on event ID strings.
 
 - **macOS:** `PredefinedMenuItem::fullscreen(None)` connects to the native `toggleFullScreen:` selector
   (handled directly by macOS).
-- **Windows:** A custom `MenuItem::with_id("jereide: toggle fullscreen")` with `F11` accelerator.
-  The `toggle_fullscreen` free function uses the Win32 API directly (`SetWindowLongW`/`SetWindowPos`)
-  to toggle between `WS_OVERLAPPEDWINDOW` and `WS_POPUP` styles, resizing to cover the monitor.
+- **Windows:** A custom `MenuItem::with_id("jereide: toggle fullscreen")` with `F11` accelerator. It routes to
+  `toggle_fullscreen`, which uses the native OS maximize command (keeps the title bar).
 
 ---
 
@@ -362,18 +361,20 @@ command_palette: Option<CommandPalette>,
 
 #### Fullscreen toggling
 
-`toggle_fullscreen(ctx, frame)` — platform-specific:
+`toggle_fullscreen(ctx, frame)` — platform-specific, always uses the OS-native fullscreen
+(the same behavior as the window's middle/traffic-light button, which keeps the title bar):
 
-- **macOS:** Calls `ctx.send_viewport_cmd(ViewportCommand::Fullscreen(...))`, which works via egui's native
-  macOS integration.
-- **Windows:** Uses the raw window handle + `windows-sys` to call Win32 API directly:
-  `SetWindowLongW` toggles between `WS_OVERLAPPEDWINDOW` and `WS_POPUP` styles;
-  `SetWindowPos` resizes the window to cover the monitor (enter) or restores the saved
-  placement (exit). Fullscreen state is tracked with a static `OnceLock<Mutex<bool>>`.
+- **macOS:** Calls `ctx.send_viewport_cmd(ViewportCommand::Fullscreen(...))` — egui's native macOS
+  integration.
+- **Windows:** Calls `ctx.send_viewport_cmd(ViewportCommand::Maximized(...))` — the native OS maximize
+  (keeps the title bar), matching the middle window button. (An older Win32 `WS_POPUP`/`SetWindowPos`
+  implementation that hid the title bar was removed.)
+
+All trigger paths — F11, the View menu item, and the command palette — route through `toggle_fullscreen`.
 
 #### Dependencies
 
-- **Windows only:** `windows-sys` 0.59 (features: `Win32_Foundation`, `Win32_UI_WindowsAndMessaging`, `Win32_Graphics_Gdi`)
+- **Windows only:** none (no `windows-sys` needed).
 
 ---
 

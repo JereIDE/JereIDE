@@ -654,8 +654,7 @@ impl eframe::App for JereIDEApp {
     }
 }
 
-#[cfg_attr(not(target_os = "windows"), allow(unused_variables))]
-fn toggle_fullscreen(ctx: &egui::Context, frame: &mut eframe::Frame) {
+fn toggle_fullscreen(ctx: &egui::Context, _frame: &mut eframe::Frame) {
     #[cfg(target_os = "macos")]
     {
         let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
@@ -664,105 +663,7 @@ fn toggle_fullscreen(ctx: &egui::Context, frame: &mut eframe::Frame) {
 
     #[cfg(target_os = "windows")]
     {
-        use raw_window_handle::HasWindowHandle;
-        use windows_sys::Win32::{
-            Foundation::{HWND, RECT},
-            Graphics::Gdi::{
-                GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST,
-            },
-            UI::WindowsAndMessaging::{
-                GetWindowLongW, GetWindowRect, SetWindowLongW, SetWindowPos, GWL_STYLE, HWND_TOP,
-                SWP_FRAMECHANGED, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SWP_SHOWWINDOW,
-                WS_OVERLAPPEDWINDOW, WS_POPUP,
-            },
-        };
-
-        use std::sync::OnceLock;
-        static SAVED_PLACEMENT: OnceLock<(i32, i32, i32, i32)> = OnceLock::new();
-        static IS_FULLSCREEN: OnceLock<std::sync::Mutex<bool>> = OnceLock::new();
-        let is_fs = IS_FULLSCREEN.get_or_init(|| std::sync::Mutex::new(false));
-
-        let Ok(handle) = frame.window_handle() else {
-            return;
-        };
-        let raw = handle.as_raw();
-        let raw_window_handle::RawWindowHandle::Win32(win32) = raw else {
-            return;
-        };
-        let hwnd: HWND = win32.hwnd.get() as *mut _;
-
-        let mut fs_guard = is_fs.lock().unwrap();
-        if !*fs_guard {
-            // Enter fullscreen
-            let mut rect: RECT = unsafe { std::mem::zeroed() };
-            if unsafe { GetWindowRect(hwnd, &mut rect as *mut RECT as *mut _) } == 0 {
-                return;
-            }
-            let _ = SAVED_PLACEMENT.set((
-                rect.left,
-                rect.top,
-                rect.right - rect.left,
-                rect.bottom - rect.top,
-            ));
-
-            let style = unsafe { GetWindowLongW(hwnd, GWL_STYLE) } as u32;
-            let new_style = (style & !WS_OVERLAPPEDWINDOW) | WS_POPUP;
-            unsafe { SetWindowLongW(hwnd, GWL_STYLE, new_style as _) };
-
-            let monitor = unsafe { MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST) };
-            let mut mi: MONITORINFO = unsafe { std::mem::zeroed() };
-            mi.cbSize = std::mem::size_of::<MONITORINFO>() as u32;
-            if unsafe { GetMonitorInfoW(monitor, &mut mi as *mut MONITORINFO as *mut _) } == 0 {
-                return;
-            }
-
-            unsafe {
-                SetWindowPos(
-                    hwnd,
-                    HWND_TOP,
-                    mi.rcMonitor.left,
-                    mi.rcMonitor.top,
-                    mi.rcMonitor.right - mi.rcMonitor.left,
-                    mi.rcMonitor.bottom - mi.rcMonitor.top,
-                    SWP_FRAMECHANGED | SWP_NOZORDER | SWP_SHOWWINDOW,
-                );
-            }
-
-            *fs_guard = true;
-        } else {
-            // Exit fullscreen
-            let style = unsafe { GetWindowLongW(hwnd, GWL_STYLE) } as u32;
-            let new_style = (style & !WS_POPUP) | WS_OVERLAPPEDWINDOW;
-            unsafe { SetWindowLongW(hwnd, GWL_STYLE, new_style as _) };
-
-            if let Some(&(x, y, w, h)) = SAVED_PLACEMENT.get() {
-                unsafe {
-                    SetWindowPos(
-                        hwnd,
-                        HWND_TOP,
-                        x,
-                        y,
-                        w,
-                        h,
-                        SWP_FRAMECHANGED | SWP_SHOWWINDOW,
-                    );
-                }
-            }
-
-            *fs_guard = false;
-        }
-
-        // Redraw the window to apply the changed style
-        unsafe {
-            SetWindowPos(
-                hwnd,
-                HWND_TOP,
-                0,
-                0,
-                0,
-                0,
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED,
-            );
-        }
+        let is_maximized = ctx.input(|i| i.viewport().maximized.unwrap_or(false));
+        ctx.send_viewport_cmd(egui::ViewportCommand::Maximized(!is_maximized));
     }
 }
