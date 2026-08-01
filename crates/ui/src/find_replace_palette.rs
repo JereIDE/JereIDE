@@ -1,9 +1,32 @@
+use std::sync::OnceLock;
+
 use eframe::egui;
+use jereide_data::data_dir;
 use jereide_settings::DIALOG_WIDTH;
 use jereide_text::find_matches;
 
 const FIND_ID: &str = "find_replace_palette_find";
 const REPLACE_ID: &str = "find_replace_palette_replace";
+
+fn prev_arrow_image() -> egui::Image<'static> {
+    static BYTES: OnceLock<Vec<u8>> = OnceLock::new();
+    let bytes = BYTES.get_or_init(|| {
+        data_dir()
+            .map(|dir| std::fs::read(dir.join("arrow-left.png")).unwrap_or_default())
+            .unwrap_or_default()
+    });
+    egui::Image::from_bytes("arrow-left.png", bytes.clone()).max_height(10.0)
+}
+
+fn next_arrow_image() -> egui::Image<'static> {
+    static BYTES: OnceLock<Vec<u8>> = OnceLock::new();
+    let bytes = BYTES.get_or_init(|| {
+        data_dir()
+            .map(|dir| std::fs::read(dir.join("arrow-right.png")).unwrap_or_default())
+            .unwrap_or_default()
+    });
+    egui::Image::from_bytes("arrow-right.png", bytes.clone()).max_height(10.0)
+}
 
 pub enum FindReplaceAction {
     Select(usize, usize),
@@ -169,7 +192,7 @@ impl FindReplacePalette {
                         format!("{}/{}", self.current_match + 1, match_count)
                     };
                     ui.label(label);
-                    if ui.button("◀").clicked() {
+                    if ui.add(egui::Button::new(prev_arrow_image())).clicked() {
                         if match_count > 0 {
                             self.current_match =
                                 (self.current_match + match_count - 1) % match_count;
@@ -177,7 +200,7 @@ impl FindReplacePalette {
                             action = Some(FindReplaceAction::Select(s, e));
                         }
                     }
-                    if ui.button("▶").clicked() {
+                    if ui.add(egui::Button::new(next_arrow_image())).clicked() {
                         if match_count > 0 {
                             self.current_match = (self.current_match + 1) % match_count;
                             let (s, e) = self.matches[self.current_match];
