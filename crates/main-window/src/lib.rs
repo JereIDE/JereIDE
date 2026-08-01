@@ -343,7 +343,7 @@ impl eframe::App for JereIDEApp {
                     cmd && i.key_pressed(egui::Key::A),
                     cmd && i.key_pressed(egui::Key::W),
                     cmd && i.modifiers.shift && i.key_pressed(egui::Key::P),
-                    cmd && i.key_pressed(egui::Key::W),
+                    cmd && i.key_pressed(egui::Key::B),
                     cmd && i.modifiers.shift && i.key_pressed(egui::Key::W),
                     cmd && i.key_pressed(egui::Key::F),
                 )
