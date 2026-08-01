@@ -8,6 +8,7 @@ use jereide_fs::{
 };
 use jereide_menu::AppMenu;
 use jereide_settings::{ACCENT, SURFACE_BG};
+use jereide_ui::find_replace_palette::{FindReplaceAction, FindReplacePalette};
 use jereide_ui::widget_palette::WidgetPalette;
 use raw_window_handle::HasWindowHandle;
 
@@ -112,6 +113,8 @@ pub struct JereIDEApp {
     compose: jereide_compose::compose_view::Compose,
     widget_palette: WidgetPalette,
     widget_palette_open: bool,
+    find_palette: FindReplacePalette,
+    find_palette_open: bool,
 }
 
 impl JereIDEApp {
@@ -124,6 +127,8 @@ impl JereIDEApp {
             compose: jereide_compose::compose_view::Compose::new(),
             widget_palette: WidgetPalette::new(),
             widget_palette_open: false,
+            find_palette: FindReplacePalette::new(),
+            find_palette_open: false,
         }
     }
 
@@ -269,6 +274,9 @@ impl JereIDEApp {
             "jereide: about" => {
                 self.state.show_about_dialog = true;
             }
+            "editor: find replace" => {
+                self.find_palette_open = !self.find_palette_open;
+            }
             _ => {
                 jereide_code::edit::handle_edit_action(&mut self.state, ctx, action);
             }
@@ -324,8 +332,9 @@ impl eframe::App for JereIDEApp {
                     cmd && i.key_pressed(egui::Key::A),
                     cmd && i.key_pressed(egui::Key::W),
                     cmd && i.modifiers.shift && i.key_pressed(egui::Key::P),
-                    cmd && i.key_pressed(egui::Key::B),
+                    cmd && i.key_pressed(egui::Key::W),
                     cmd && i.modifiers.shift && i.key_pressed(egui::Key::W),
+                    cmd && i.key_pressed(egui::Key::F),
                 )
             });
             let (
@@ -344,6 +353,7 @@ impl eframe::App for JereIDEApp {
                 want_command_palette,
                 want_toggle_sidebar,
                 want_widget_palette,
+                want_find_replace,
             ) = input;
             if want_new {
                 self.handle_action("file: new", &ctx, frame);
@@ -386,6 +396,9 @@ impl eframe::App for JereIDEApp {
             }
             if want_widget_palette {
                 self.widget_palette_open = !self.widget_palette_open;
+            }
+            if want_find_replace {
+                self.find_palette_open = !self.find_palette_open;
             }
             if want_command_palette {
                 self.state.command_palette_open = !self.state.command_palette_open;
@@ -582,6 +595,48 @@ impl eframe::App for JereIDEApp {
                     ui.label(format!("You searched: {}", filter));
                 },
             );
+        }
+
+        if self.find_palette_open && !self.state.tabs.is_empty() {
+            let idx = self.state.active_tab_index;
+            let text = self.state.tabs[idx].text.clone();
+            let action = self
+                .find_palette
+                .render(&ctx, &text, &mut self.find_palette_open);
+            let mut scroll_to: Option<usize> = None;
+            if let Some(action) = action {
+                let state = &mut self.state;
+                match action {
+                    FindReplaceAction::Select(s, e) => {
+                        jereide_code::find_replace::select_match(state, &ctx, s, e);
+                        scroll_to = Some(s);
+                    }
+                    FindReplaceAction::Replace(s, e) => {
+                        let replacement = self.find_palette.replace_text();
+                        jereide_code::find_replace::replace_range(state, &ctx, s, e, replacement);
+                        scroll_to = Some(s + replacement.chars().count());
+                    }
+                    FindReplaceAction::ReplaceAll => {
+                        let find = self.find_palette.find_text().to_string();
+                        let replace = self.find_palette.replace_text().to_string();
+                        let match_case = self.find_palette.match_case();
+                        let whole_word = self.find_palette.whole_word();
+                        jereide_code::find_replace::replace_all(
+                            state, &ctx, &find, &replace, match_case, whole_word,
+                        );
+                        scroll_to = Some(0);
+                    }
+                }
+            }
+            self.state.find_highlight = Some(jereide_core::FindHighlight {
+                query: self.find_palette.find_text().to_string(),
+                match_case: self.find_palette.match_case(),
+                whole_word: self.find_palette.whole_word(),
+                current_match: self.find_palette.current_match(),
+                scroll_to,
+            });
+        } else {
+            self.state.find_highlight = None;
         }
 
         jereide_ui::dialog::render_about_dialog(&ctx, &mut self.state.show_about_dialog);

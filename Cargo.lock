@@ -2156,6 +2156,7 @@ dependencies = [
  "jereide-core",
  "jereide-data",
  "jereide-settings",
+ "jereide-text",
 ]
 
 [[package]]

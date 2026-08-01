@@ -33,6 +33,9 @@ pub const DESTRUCTIVE: Color32 = Color32::from_rgb(220, 50, 50);
 
 pub const BRACKET_MATCH: Color32 = Color32::from_rgb(255, 220, 80);
 
+pub const FIND_HIGHLIGHT: Color32 = Color32::from_rgb(255, 235, 130);
+pub const FIND_HIGHLIGHT_CURRENT: Color32 = Color32::from_rgb(255, 170, 40);
+
 pub const TITLE_BAR_FONT_SIZE: f32 = 12.0;
 pub const TAB_FONT_SIZE: f32 = 12.0;
 pub const EDITOR_FONT_SIZE: f32 = 14.0;

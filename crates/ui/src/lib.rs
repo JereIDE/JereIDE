@@ -1,5 +1,6 @@
 pub mod command_palette;
 pub mod dialog;
+pub mod find_replace_palette;
 pub mod palette;
 pub mod sidebar;
 pub mod status_bar;
