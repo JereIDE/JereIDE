@@ -72,9 +72,9 @@ fn tab_file_name_various_paths() {
 }
 
 #[test]
-fn app_state_new_has_one_tab() {
+fn app_state_new_has_no_tabs() {
     let state = AppState::new();
-    assert_eq!(state.tabs.len(), 1);
+    assert_eq!(state.tabs.len(), 0);
     assert_eq!(state.active_tab_index, 0);
     assert_eq!(state.current_view, CurrentView::Code);
 }
@@ -83,16 +83,16 @@ fn app_state_new_has_one_tab() {
 fn app_state_new_tab_creates_and_activates() {
     let mut state = AppState::new();
     let idx = state.new_tab();
-    assert_eq!(idx, 1);
-    assert_eq!(state.tabs.len(), 2);
-    assert_eq!(state.active_tab_index, 1);
+    assert_eq!(idx, 0);
+    assert_eq!(state.tabs.len(), 1);
+    assert_eq!(state.active_tab_index, 0);
 }
 
 #[test]
 fn app_state_new_tab_creates_with_defaults() {
     let mut state = AppState::new();
     state.new_tab();
-    assert_eq!(state.tabs.len(), 2);
+    assert_eq!(state.tabs.len(), 1);
     assert!(state.current_tab().text.is_empty());
     assert!(state.current_tab().file_path.is_none());
 }
@@ -101,7 +101,7 @@ fn app_state_new_tab_creates_with_defaults() {
 fn app_state_current_tab_returns_active() {
     let mut state = AppState::new();
     state.new_tab();
-    state.active_tab_index = 1;
+    state.active_tab_index = 0;
     let tab = state.current_tab();
     assert_eq!(tab.text, "");
 }
@@ -109,6 +109,7 @@ fn app_state_current_tab_returns_active() {
 #[test]
 fn app_state_current_tab_mut_modifies_active() {
     let mut state = AppState::new();
+    state.new_tab();
     state.current_tab_mut().text = "hello".to_string();
     assert_eq!(state.tabs[0].text, "hello");
 }
@@ -117,9 +118,9 @@ fn app_state_current_tab_mut_modifies_active() {
 fn app_state_open_file_new() {
     let mut state = AppState::new();
     let idx = state.open_file("/path/to/test.rs".into(), "content".into());
-    assert_eq!(idx, 1);
-    assert_eq!(state.tabs.len(), 2);
-    assert_eq!(state.active_tab_index, 1);
+    assert_eq!(idx, 0);
+    assert_eq!(state.tabs.len(), 1);
+    assert_eq!(state.active_tab_index, 0);
     assert_eq!(state.current_tab().text, "content");
     assert_eq!(
         state.current_tab().file_path,
@@ -133,7 +134,7 @@ fn app_state_open_file_already_open_switches_tab() {
     let idx1 = state.open_file("/path/to/test.rs".into(), "content".into());
     let idx2 = state.open_file("/path/to/test.rs".into(), "content".into());
     assert_eq!(idx1, idx2);
-    assert_eq!(state.tabs.len(), 2);
+    assert_eq!(state.tabs.len(), 1);
 }
 
 #[test]
@@ -141,9 +142,9 @@ fn app_state_open_file_returns_correct_index() {
     let mut state = AppState::new();
     let idx1 = state.open_file("/a.rs".into(), "// a".into());
     let idx2 = state.open_file("/b.rs".into(), "// b".into());
-    assert_eq!(idx1, 1);
-    assert_eq!(idx2, 2);
-    assert_eq!(state.active_tab_index, 2);
+    assert_eq!(idx1, 0);
+    assert_eq!(idx2, 1);
+    assert_eq!(state.active_tab_index, 1);
 }
 
 #[test]
@@ -152,8 +153,8 @@ fn app_state_open_file_switches_to_existing() {
     state.open_file("/common.rs".into(), "code".into());
     state.open_file("/other.rs".into(), "other".into());
     let idx = state.open_file("/common.rs".into(), "code".into());
-    assert_eq!(idx, 1);
-    assert_eq!(state.active_tab_index, 1);
+    assert_eq!(idx, 0);
+    assert_eq!(state.active_tab_index, 0);
 }
 
 #[test]
@@ -161,14 +162,15 @@ fn app_state_close_tab_removes() {
     let mut state = AppState::new();
     state.new_tab();
     state.new_tab();
-    assert_eq!(state.tabs.len(), 3);
-    state.close_tab(1);
     assert_eq!(state.tabs.len(), 2);
+    state.close_tab(1);
+    assert_eq!(state.tabs.len(), 1);
 }
 
 #[test]
 fn app_state_close_last_tab_closes() {
     let mut state = AppState::new();
+    state.new_tab();
     state.close_tab(0);
     assert_eq!(state.tabs.len(), 0);
 }
@@ -176,6 +178,7 @@ fn app_state_close_last_tab_closes() {
 #[test]
 fn app_state_close_all_tabs_empties() {
     let mut state = AppState::new();
+    state.new_tab();
     state.close_tab(0);
     assert!(state.tabs.is_empty());
     assert_eq!(state.active_tab_index, 0);
@@ -197,9 +200,9 @@ fn app_state_close_tab_clamps_active_index() {
     let mut state = AppState::new();
     state.new_tab();
     state.new_tab();
-    state.active_tab_index = 2;
-    state.close_tab(2);
-    assert_eq!(state.active_tab_index, 1);
+    state.active_tab_index = 1;
+    state.close_tab(1);
+    assert_eq!(state.active_tab_index, 0);
 }
 
 #[test]
@@ -207,9 +210,9 @@ fn app_state_close_tab_decrements_active_index() {
     let mut state = AppState::new();
     state.new_tab();
     state.new_tab();
-    assert_eq!(state.active_tab_index, 2);
-    state.close_tab(1);
     assert_eq!(state.active_tab_index, 1);
+    state.close_tab(1);
+    assert_eq!(state.active_tab_index, 0);
 }
 
 #[test]
@@ -218,7 +221,7 @@ fn app_state_close_tab_above_active_no_change() {
     state.new_tab();
     state.new_tab();
     state.active_tab_index = 0;
-    state.close_tab(2);
+    state.close_tab(1);
     assert_eq!(state.active_tab_index, 0);
 }
 
@@ -240,6 +243,7 @@ fn app_state_switch_to_view_same_is_noop() {
 #[test]
 fn app_state_is_modified_delegates_to_tab() {
     let mut state = AppState::new();
+    state.new_tab();
     assert!(!state.is_modified());
     state.current_tab_mut().text = "changed".to_string();
     assert!(state.is_modified());
@@ -248,6 +252,7 @@ fn app_state_is_modified_delegates_to_tab() {
 #[test]
 fn app_state_mark_saved_delegates_to_tab() {
     let mut state = AppState::new();
+    state.new_tab();
     state.current_tab_mut().text = "changed".to_string();
     assert!(state.is_modified());
     state.mark_saved();

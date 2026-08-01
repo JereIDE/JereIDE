@@ -98,7 +98,7 @@ pub struct AppState {
 impl AppState {
     pub fn new() -> Self {
         Self {
-            tabs: vec![Tab::new()],
+            tabs: vec![],
             current_project_dir: None,
             active_tab_index: 0,
             editor_focused: false,

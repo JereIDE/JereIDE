@@ -397,6 +397,7 @@ mod tests {
     #[test]
     fn render_code_view_with_tab_no_panic() {
         let mut state = AppState::new();
+        state.new_tab();
         state.tabs[0].text = "fn main() {}".to_string();
         egui::__run_test_ui(|ui| {
             render_code_view(&mut state, ui);
