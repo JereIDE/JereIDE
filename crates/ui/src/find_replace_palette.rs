@@ -82,6 +82,7 @@ impl FindReplacePalette {
         if !self.search_focused {
             self.previous_focus = ctx.memory(|m| m.focused());
         }
+        let focus_before = ctx.memory(|m| m.focused());
 
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             *open = false;
@@ -123,9 +124,10 @@ impl FindReplacePalette {
         }
 
         let mut action = None;
+        let mut find_id = egui::Id::NULL;
+        let mut replace_id = egui::Id::NULL;
         let window_width = DIALOG_WIDTH + 120.0;
         let enter_pressed = ctx.input(|i| i.key_pressed(egui::Key::Enter));
-        let focused_id = ctx.memory(|m| m.focused());
 
         egui::Window::new("Find / Replace")
             .title_bar(false)
@@ -142,6 +144,7 @@ impl FindReplacePalette {
                         .hint_text("Find")
                         .desired_width(f32::INFINITY),
                 );
+                find_id = find_resp.id;
                 if !self.search_focused {
                     find_resp.request_focus();
                     self.search_focused = true;
@@ -179,12 +182,13 @@ impl FindReplacePalette {
                 });
 
                 ui.add_space(6.0);
-                ui.add(
+                let replace_resp = ui.add(
                     egui::TextEdit::singleline(&mut self.replace)
                         .id_source(REPLACE_ID)
                         .hint_text("Replace with")
                         .desired_width(f32::INFINITY),
                 );
+                replace_id = replace_resp.id;
 
                 ui.add_space(6.0);
                 ui.horizontal(|ui| {
@@ -201,11 +205,11 @@ impl FindReplacePalette {
             });
 
         if enter_pressed {
-            if focused_id == Some(egui::Id::new(FIND_ID)) && !self.matches.is_empty() {
+            if focus_before == Some(find_id) && !self.matches.is_empty() {
                 self.current_match = (self.current_match + 1) % self.matches.len();
                 let (s, e) = self.matches[self.current_match];
                 action = Some(FindReplaceAction::Select(s, e));
-            } else if focused_id == Some(egui::Id::new(REPLACE_ID)) && !self.matches.is_empty() {
+            } else if focus_before == Some(replace_id) && !self.matches.is_empty() {
                 let (s, e) = self.matches[self.current_match];
                 action = Some(FindReplaceAction::Replace(s, e));
             }
