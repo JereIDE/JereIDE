@@ -46,6 +46,7 @@ enum RawPattern {
 #[derive(Clone)]
 struct CompiledPattern {
     type_: String,
+    anchored: bool,
     kind: CompiledPatternKind,
 }
 
@@ -90,6 +91,7 @@ fn compile_pattern(rp: &RawPattern) -> Option<CompiledPattern> {
     match rp {
         RawPattern::Line { type_, pattern } => Regex::new(pattern).ok().map(|re| CompiledPattern {
             type_: type_.clone(),
+            anchored: pattern.starts_with('^'),
             kind: CompiledPatternKind::Line(re),
         }),
         RawPattern::Block {
@@ -103,6 +105,7 @@ fn compile_pattern(rp: &RawPattern) -> Option<CompiledPattern> {
             let esc = escape.as_ref().and_then(|s| s.chars().next());
             Some(CompiledPattern {
                 type_: type_.clone(),
+                anchored: start.starts_with('^'),
                 kind: CompiledPatternKind::Block {
                     start_re,
                     end_re,
@@ -128,11 +131,78 @@ fn next_char_boundary(text: &str, from: usize) -> usize {
     }
 }
 
+/// Applies a pattern that is known to start at `pos`. Returns the token to
+/// emit and the next position to continue from.
+fn apply_match(
+    pattern: &CompiledPattern,
+    text: &str,
+    pattern_idx: usize,
+    pos: usize,
+    len: usize,
+    symbols: &HashMap<String, String>,
+    state: &mut HlState,
+) -> Option<(Token, usize)> {
+    match &pattern.kind {
+        CompiledPatternKind::Line(re) => {
+            let m = re.find(&text[pos..])?;
+            let end = pos + m.end();
+            let type_ = resolve_type(&pattern.type_, &text[pos..end], symbols);
+            Some(((pos, end, type_), end))
+        }
+        CompiledPatternKind::Block {
+            start_re, end_re, ..
+        } => {
+            let m = start_re.find(&text[pos..])?;
+            let m_end = pos + m.end();
+            let rest = &text[m_end..];
+            if let Some(end_m) = end_re.find(rest) {
+                let end = m_end + end_m.end();
+                Some(((pos, end, pattern.type_.clone()), end))
+            } else {
+                *state = HlState::InBlock {
+                    pattern_idx,
+                    escaped: false,
+                };
+                Some(((pos, len, pattern.type_.clone()), len))
+            }
+        }
+    }
+}
+
 fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
-    let bytes = text.as_bytes();
-    let len = bytes.len();
+    let len = text.len();
     let mut pos = 0;
+
+    // Precompute the matches of every non-anchored pattern over the whole text so
+    // they can be looked up in O(1) instead of re-scanning the remaining text at
+    // every position. Anchored (`^`) patterns are checked cheaply on the fly.
+    let mut scans: Vec<(Vec<(usize, usize)>, usize)> = def
+        .patterns
+        .iter()
+        .map(|p| {
+            let matches = if p.anchored {
+                Vec::new()
+            } else {
+                match &p.kind {
+                    CompiledPatternKind::Line(re) => {
+                        re.find_iter(text).map(|m| (m.start(), m.end())).collect()
+                    }
+                    CompiledPatternKind::Block { start_re, .. } => start_re
+                        .find_iter(text)
+                        .map(|m| (m.start(), m.end()))
+                        .collect(),
+                }
+            };
+            (matches, 0)
+        })
+        .collect();
+
+    let advance = |scans: &mut Vec<(Vec<(usize, usize)>, usize)>, idx: usize, to: usize| {
+        while scans[idx].1 < scans[idx].0.len() && scans[idx].0[scans[idx].1].0 < to {
+            scans[idx].1 += 1;
+        }
+    };
 
     while pos < len {
         match state {
@@ -140,40 +210,34 @@ fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token>
                 let mut matched = false;
 
                 for (idx, pattern) in def.patterns.iter().enumerate() {
-                    match &pattern.kind {
-                        CompiledPatternKind::Line(re) => {
-                            if let Some(m) = re.find(&text[pos..]) {
-                                if m.start() == 0 {
-                                    let end = pos + m.end();
-                                    let type_ =
-                                        resolve_type(&pattern.type_, &text[pos..end], &def.symbols);
-                                    tokens.push((pos, end, type_));
-                                    pos = end;
+                    if pattern.anchored {
+                        let m = match &pattern.kind {
+                            CompiledPatternKind::Line(re) => re.find(&text[pos..]),
+                            CompiledPatternKind::Block { start_re, .. } => {
+                                start_re.find(&text[pos..])
+                            }
+                        };
+                        if let Some(m) = m {
+                            if m.start() == 0 {
+                                if let Some((token, next)) =
+                                    apply_match(pattern, text, idx, pos, len, &def.symbols, state)
+                                {
+                                    tokens.push(token);
+                                    pos = next;
                                     matched = true;
                                     break;
                                 }
                             }
                         }
-                        CompiledPatternKind::Block {
-                            start_re,
-                            end_re,
-                            escape: _,
-                        } => {
-                            if let Some(m) = start_re.find(&text[pos..]) {
-                                if m.start() == 0 {
-                                    let rest = &text[pos + m.end()..];
-                                    if let Some(end_m) = end_re.find(rest) {
-                                        let end = pos + m.end() + end_m.end();
-                                        tokens.push((pos, end, pattern.type_.clone()));
-                                        pos = end;
-                                    } else {
-                                        tokens.push((pos, len, pattern.type_.clone()));
-                                        *state = HlState::InBlock {
-                                            pattern_idx: idx,
-                                            escaped: false,
-                                        };
-                                        pos = len;
-                                    }
+                    } else {
+                        advance(&mut scans, idx, pos);
+                        if let Some(&(m_start, _)) = scans[idx].0.get(scans[idx].1) {
+                            if m_start == pos {
+                                if let Some((token, next)) =
+                                    apply_match(pattern, text, idx, pos, len, &def.symbols, state)
+                                {
+                                    tokens.push(token);
+                                    pos = next;
                                     matched = true;
                                     break;
                                 }
@@ -184,35 +248,54 @@ fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token>
 
                 if !matched {
                     let start = pos;
-                    pos = next_char_boundary(text, pos);
-                    while pos < len {
-                        let mut any_match = false;
-                        for pattern in &def.patterns {
-                            match &pattern.kind {
-                                CompiledPatternKind::Line(re) => {
-                                    if let Some(m) = re.find(&text[pos..]) {
-                                        if m.start() == 0 {
-                                            any_match = true;
-                                            break;
-                                        }
-                                    }
+                    let mut next = len;
+
+                    for (idx, pattern) in def.patterns.iter().enumerate() {
+                        if pattern.anchored {
+                            continue;
+                        }
+                        advance(&mut scans, idx, pos);
+                        if let Some(&(m_start, _)) = scans[idx].0.get(scans[idx].1) {
+                            if m_start < next {
+                                next = m_start;
+                            }
+                        }
+                    }
+
+                    if def.patterns.iter().any(|p| p.anchored) {
+                        let mut p = start;
+                        while p < next {
+                            let mut hit = false;
+                            for pattern in &def.patterns {
+                                if !pattern.anchored {
+                                    continue;
                                 }
-                                CompiledPatternKind::Block { start_re, .. } => {
-                                    if let Some(m) = start_re.find(&text[pos..]) {
-                                        if m.start() == 0 {
-                                            any_match = true;
-                                            break;
-                                        }
+                                let m = match &pattern.kind {
+                                    CompiledPatternKind::Line(re) => re.find(&text[p..]),
+                                    CompiledPatternKind::Block { start_re, .. } => {
+                                        start_re.find(&text[p..])
+                                    }
+                                };
+                                if let Some(m) = m {
+                                    if m.start() == 0 {
+                                        hit = true;
+                                        break;
                                     }
                                 }
                             }
+                            if hit {
+                                next = p;
+                                break;
+                            }
+                            p = next_char_boundary(text, p);
                         }
-                        if any_match {
-                            break;
-                        }
-                        pos = next_char_boundary(text, pos);
                     }
-                    tokens.push((start, pos, "plain".to_string()));
+
+                    if next <= start {
+                        next = next_char_boundary(text, start);
+                    }
+                    tokens.push((start, next, "plain".to_string()));
+                    pos = next;
                 }
             }
             HlState::InBlock {
@@ -472,6 +555,25 @@ mod tests {
             colors.iter().any(|&(_, _, c)| c == SYNTAX_HEADING),
             "expected a heading-colored section, got {:?}",
             colors
+        );
+    }
+
+    #[test]
+    fn markdown_large_file_highlights_quickly() {
+        let mut text = String::new();
+        for i in 0..2000 {
+            text.push_str(&format!(
+                "# Heading {i}\nSome prose *emphasized* and **bold** here.\n\n"
+            ));
+        }
+        let colors = section_colors(&text);
+        assert!(
+            colors.iter().any(|&(_, _, c)| c == SYNTAX_HEADING),
+            "expected headings to be highlighted in a large file"
+        );
+        assert!(
+            colors.iter().any(|&(_, _, c)| c == SYNTAX_EMPHASIS),
+            "expected emphasis to be highlighted in a large file"
         );
     }
 }
