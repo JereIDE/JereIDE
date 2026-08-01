@@ -65,7 +65,7 @@ jobs:
             vcpkg install sdl3:x64-windows freetype:x64-windows pcre2:x64-windows
             if ($LASTEXITCODE -eq 0) { break }
             if ($i -lt $maxRetries) {
-              Write-Host "vcpkg install attempt $i failed, retrying in 15s..."
+              Write-Host "vcpkg install attempt $i failed, retrying in 15s…"
               Start-Sleep -Seconds 15
             } else {
               throw "vcpkg install failed after $maxRetries attempts"

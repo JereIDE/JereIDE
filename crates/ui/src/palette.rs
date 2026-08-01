@@ -118,7 +118,7 @@ impl Palette {
                 let resp = ui.add_sized(
                     egui::vec2(ui.available_width(), 0.0),
                     egui::TextEdit::singleline(&mut self.filter)
-                        .hint_text("Execute a command...")
+                        .hint_text("Execute a command…")
                         .desired_width(f32::INFINITY)
                         .return_key(None),
                 );

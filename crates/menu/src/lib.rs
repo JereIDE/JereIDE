@@ -45,7 +45,7 @@ impl AppMenu {
         file_menu
             .append_items(&[
                 &MenuItem::with_id("file: new", "New", true, None),
-                &MenuItem::with_id("file: open", "Open File...", true, None),
+                &MenuItem::with_id("file: open", "Open File…", true, None),
                 &MenuItem::with_id("file: open project", "Open Project…", true, None),
                 &MenuItem::with_id("file: save", "Save", true, None),
                 &MenuItem::with_id("file: save as", "Save As…", true, None),
