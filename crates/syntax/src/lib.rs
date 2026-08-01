@@ -46,18 +46,16 @@ enum RawPattern {
 #[derive(Clone)]
 struct CompiledPattern {
     type_: String,
-    anchored: bool,
+    /// Regex used to find candidate match positions (leading `^` stripped, since
+    /// this tokenizer anchors to the current position anyway).
+    search_re: Regex,
     kind: CompiledPatternKind,
 }
 
 #[derive(Clone)]
 enum CompiledPatternKind {
     Line(Regex),
-    Block {
-        start_re: Regex,
-        end_re: Regex,
-        escape: Option<char>,
-    },
+    Block { end_re: Regex, escape: Option<char> },
 }
 
 #[derive(Clone)]
@@ -89,25 +87,28 @@ fn load_syntax(data_dir: &std::path::Path, file: &str) -> Option<CompiledSyntax>
 
 fn compile_pattern(rp: &RawPattern) -> Option<CompiledPattern> {
     match rp {
-        RawPattern::Line { type_, pattern } => Regex::new(pattern).ok().map(|re| CompiledPattern {
-            type_: type_.clone(),
-            anchored: pattern.starts_with('^'),
-            kind: CompiledPatternKind::Line(re),
-        }),
+        RawPattern::Line { type_, pattern } => {
+            let search_re = Regex::new(pattern.strip_prefix('^').unwrap_or(pattern)).ok()?;
+            let re = Regex::new(pattern).ok()?;
+            Some(CompiledPattern {
+                type_: type_.clone(),
+                search_re,
+                kind: CompiledPatternKind::Line(re),
+            })
+        }
         RawPattern::Block {
             type_,
             start,
             end,
             escape,
         } => {
-            let start_re = Regex::new(start).ok()?;
+            let search_re = Regex::new(start.strip_prefix('^').unwrap_or(start)).ok()?;
             let end_re = Regex::new(end).ok()?;
             let esc = escape.as_ref().and_then(|s| s.chars().next());
             Some(CompiledPattern {
                 type_: type_.clone(),
-                anchored: start.starts_with('^'),
+                search_re,
                 kind: CompiledPatternKind::Block {
-                    start_re,
                     end_re,
                     escape: esc,
                 },
@@ -131,69 +132,85 @@ fn next_char_boundary(text: &str, from: usize) -> usize {
     }
 }
 
-/// Applies a pattern that is known to start at `pos`. Returns the token to
-/// emit and the next position to continue from.
+/// Applies a pattern that is known to start at `m_start` (with a match ending
+/// at `m_end`). Returns the token to emit and the next position to continue from.
 fn apply_match(
     pattern: &CompiledPattern,
     text: &str,
     pattern_idx: usize,
-    pos: usize,
+    m_start: usize,
+    m_end: usize,
     len: usize,
     symbols: &HashMap<String, String>,
     state: &mut HlState,
 ) -> Option<(Token, usize)> {
     match &pattern.kind {
-        CompiledPatternKind::Line(re) => {
-            let m = re.find(&text[pos..])?;
-            let end = pos + m.end();
-            let type_ = resolve_type(&pattern.type_, &text[pos..end], symbols);
-            Some(((pos, end, type_), end))
+        CompiledPatternKind::Line(_) => {
+            let type_ = resolve_type(&pattern.type_, &text[m_start..m_end], symbols);
+            Some(((m_start, m_end, type_), m_end))
         }
-        CompiledPatternKind::Block {
-            start_re, end_re, ..
-        } => {
-            let m = start_re.find(&text[pos..])?;
-            let m_end = pos + m.end();
-            let rest = &text[m_end..];
+        CompiledPatternKind::Block { end_re, .. } => {
+            let rest = &text[m_end..len];
             if let Some(end_m) = end_re.find(rest) {
                 let end = m_end + end_m.end();
-                Some(((pos, end, pattern.type_.clone()), end))
+                Some(((m_start, end, pattern.type_.clone()), end))
             } else {
                 *state = HlState::InBlock {
                     pattern_idx,
                     escaped: false,
                 };
-                Some(((pos, len, pattern.type_.clone()), len))
+                Some(((m_start, len, pattern.type_.clone()), len))
             }
         }
     }
 }
 
-fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token> {
-    let mut tokens: Vec<Token> = Vec::new();
-    let len = text.len();
-    let mut pos = 0;
+fn line_starts(text: &str) -> Vec<usize> {
+    let mut starts = vec![0];
+    for (i, b) in text.bytes().enumerate() {
+        if b == b'\n' {
+            starts.push(i + 1);
+        }
+    }
+    starts.push(text.len());
+    starts
+}
 
-    // Precompute the matches of every non-anchored pattern over the whole text so
-    // they can be looked up in O(1) instead of re-scanning the remaining text at
-    // every position. Anchored (`^`) patterns are checked cheaply on the fly.
+fn first_diff(a: &str, b: &str) -> usize {
+    let ab = a.as_bytes();
+    let bb = b.as_bytes();
+    let n = ab.len().min(bb.len());
+    let mut i = 0;
+    while i < n && ab[i] == bb[i] {
+        i += 1;
+    }
+    i
+}
+
+fn tokenize_range(
+    text: &str,
+    start: usize,
+    end: usize,
+    def: &CompiledSyntax,
+    state: &mut HlState,
+) -> Vec<Token> {
+    let mut tokens: Vec<Token> = Vec::new();
+    let mut pos = start;
+    let slice = &text[start..end];
+
+    // Precompute the matches of every pattern over the tokenized range so they
+    // can be looked up in O(1) instead of re-scanning at every position.
+    // Anchored (`^`) patterns use a `^`-stripped search regex, which matches the
+    // tokenizer's "anchor at current position" behavior.
     let mut scans: Vec<(Vec<(usize, usize)>, usize)> = def
         .patterns
         .iter()
         .map(|p| {
-            let matches = if p.anchored {
-                Vec::new()
-            } else {
-                match &p.kind {
-                    CompiledPatternKind::Line(re) => {
-                        re.find_iter(text).map(|m| (m.start(), m.end())).collect()
-                    }
-                    CompiledPatternKind::Block { start_re, .. } => start_re
-                        .find_iter(text)
-                        .map(|m| (m.start(), m.end()))
-                        .collect(),
-                }
-            };
+            let matches = p
+                .search_re
+                .find_iter(slice)
+                .map(|m| (start + m.start(), start + m.end()))
+                .collect();
             (matches, 0)
         })
         .collect();
@@ -204,56 +221,39 @@ fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token>
         }
     };
 
-    while pos < len {
+    while pos < end {
         match state {
             HlState::Normal => {
                 let mut matched = false;
 
                 for (idx, pattern) in def.patterns.iter().enumerate() {
-                    if pattern.anchored {
-                        let m = match &pattern.kind {
-                            CompiledPatternKind::Line(re) => re.find(&text[pos..]),
-                            CompiledPatternKind::Block { start_re, .. } => {
-                                start_re.find(&text[pos..])
-                            }
-                        };
-                        if let Some(m) = m {
-                            if m.start() == 0 {
-                                if let Some((token, next)) =
-                                    apply_match(pattern, text, idx, pos, len, &def.symbols, state)
-                                {
-                                    tokens.push(token);
-                                    pos = next;
-                                    matched = true;
-                                    break;
-                                }
-                            }
-                        }
-                    } else {
-                        advance(&mut scans, idx, pos);
-                        if let Some(&(m_start, _)) = scans[idx].0.get(scans[idx].1) {
-                            if m_start == pos {
-                                if let Some((token, next)) =
-                                    apply_match(pattern, text, idx, pos, len, &def.symbols, state)
-                                {
-                                    tokens.push(token);
-                                    pos = next;
-                                    matched = true;
-                                    break;
-                                }
+                    advance(&mut scans, idx, pos);
+                    if let Some(&(m_start, m_end)) = scans[idx].0.get(scans[idx].1) {
+                        if m_start == pos {
+                            if let Some((token, next)) = apply_match(
+                                pattern,
+                                text,
+                                idx,
+                                m_start,
+                                m_end,
+                                end,
+                                &def.symbols,
+                                state,
+                            ) {
+                                tokens.push(token);
+                                pos = next;
+                                matched = true;
+                                break;
                             }
                         }
                     }
                 }
 
                 if !matched {
-                    let start = pos;
-                    let mut next = len;
+                    let s = pos;
+                    let mut next = end;
 
-                    for (idx, pattern) in def.patterns.iter().enumerate() {
-                        if pattern.anchored {
-                            continue;
-                        }
+                    for (idx, _) in def.patterns.iter().enumerate() {
                         advance(&mut scans, idx, pos);
                         if let Some(&(m_start, _)) = scans[idx].0.get(scans[idx].1) {
                             if m_start < next {
@@ -262,39 +262,10 @@ fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token>
                         }
                     }
 
-                    if def.patterns.iter().any(|p| p.anchored) {
-                        let mut p = start;
-                        while p < next {
-                            let mut hit = false;
-                            for pattern in &def.patterns {
-                                if !pattern.anchored {
-                                    continue;
-                                }
-                                let m = match &pattern.kind {
-                                    CompiledPatternKind::Line(re) => re.find(&text[p..]),
-                                    CompiledPatternKind::Block { start_re, .. } => {
-                                        start_re.find(&text[p..])
-                                    }
-                                };
-                                if let Some(m) = m {
-                                    if m.start() == 0 {
-                                        hit = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if hit {
-                                next = p;
-                                break;
-                            }
-                            p = next_char_boundary(text, p);
-                        }
+                    if next <= s {
+                        next = next_char_boundary(text, s);
                     }
-
-                    if next <= start {
-                        next = next_char_boundary(text, start);
-                    }
-                    tokens.push((start, next, "plain".to_string()));
+                    tokens.push((s, next, "plain".to_string()));
                     pos = next;
                 }
             }
@@ -304,7 +275,7 @@ fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token>
             } => {
                 let pattern = &def.patterns[*pattern_idx];
                 if let CompiledPatternKind::Block { end_re, escape, .. } = &pattern.kind {
-                    let rest = &text[pos..];
+                    let rest = &text[pos..end];
                     let mut search_pos = 0;
                     let mut found = false;
                     let bytes_rest = rest.as_bytes();
@@ -325,9 +296,9 @@ fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token>
 
                         if let Some(end_m) = end_re.find(&rest[search_pos..]) {
                             if end_m.start() == 0 {
-                                let end = pos + search_pos + end_m.end();
-                                tokens.push((pos, end, pattern.type_.clone()));
-                                pos = end;
+                                let e = pos + search_pos + end_m.end();
+                                tokens.push((pos, e, pattern.type_.clone()));
+                                pos = e;
                                 *state = HlState::Normal;
                                 found = true;
                                 break;
@@ -338,8 +309,8 @@ fn tokenize(text: &str, def: &CompiledSyntax, state: &mut HlState) -> Vec<Token>
                     }
 
                     if !found {
-                        tokens.push((pos, len, pattern.type_.clone()));
-                        pos = len;
+                        tokens.push((pos, end, pattern.type_.clone()));
+                        pos = end;
                     }
                 } else {
                     *state = HlState::Normal;
@@ -382,45 +353,14 @@ fn type_to_color(type_: &str) -> Color32 {
     }
 }
 
-fn tokens_to_job(text: &str, tokens: &[Token], font_id: &FontId) -> egui::text::LayoutJob {
-    let mut job = egui::text::LayoutJob {
-        text: text.to_string(),
-        wrap: egui::text::TextWrapping {
-            max_width: f32::INFINITY,
-            ..Default::default()
-        },
-        ..Default::default()
-    };
-
-    if tokens.is_empty() {
-        if !text.is_empty() {
-            job.sections.push(egui::text::LayoutSection {
-                leading_space: 0.0,
-                byte_range: 0..text.len(),
-                format: TextFormat::simple(font_id.clone(), TEXT_DEFAULT),
-            });
-        }
-        return job;
-    }
-
-    for (start, end, type_) in tokens {
-        let color = type_to_color(type_);
-        job.sections.push(egui::text::LayoutSection {
-            leading_space: 0.0,
-            byte_range: *start..*end,
-            format: TextFormat::simple(font_id.clone(), color),
-        });
-    }
-
-    job
-}
-
 pub struct SyntaxHighlighter {
     font_id: FontId,
     syntax_def: Option<CompiledSyntax>,
     cached_text: String,
     cached_job: egui::text::LayoutJob,
-    state: HlState,
+    line_starts: Vec<usize>,
+    line_states: Vec<HlState>,
+    line_tokens: Vec<Vec<(usize, usize, String)>>,
 }
 
 impl SyntaxHighlighter {
@@ -436,7 +376,9 @@ impl SyntaxHighlighter {
             syntax_def,
             cached_text: String::new(),
             cached_job: egui::text::LayoutJob::default(),
-            state: HlState::Normal,
+            line_starts: vec![0],
+            line_states: vec![HlState::Normal],
+            line_tokens: vec![vec![]],
         }
     }
 
@@ -445,19 +387,7 @@ impl SyntaxHighlighter {
             return &self.cached_job;
         }
 
-        self.cached_text = text.to_string();
-
-        let job = if let Some(ref def) = self.syntax_def {
-            if text.is_empty() {
-                let mut j = egui::text::LayoutJob::default();
-                j.text = String::new();
-                j
-            } else {
-                self.state = HlState::Normal;
-                let tokens = tokenize(text, def, &mut self.state);
-                tokens_to_job(text, &tokens, &self.font_id)
-            }
-        } else {
+        let Some(def) = &self.syntax_def else {
             let mut job = egui::text::LayoutJob {
                 text: text.to_string(),
                 wrap: egui::text::TextWrapping {
@@ -473,9 +403,114 @@ impl SyntaxHighlighter {
                     format: TextFormat::simple(self.font_id.clone(), TEXT_DEFAULT),
                 });
             }
-            job
+            self.cached_text = text.to_string();
+            self.cached_job = job;
+            return &self.cached_job;
         };
 
+        if text.is_empty() {
+            self.cached_text = String::new();
+            self.line_starts = vec![0];
+            self.line_states = vec![HlState::Normal];
+            self.line_tokens = vec![vec![]];
+            let mut j = egui::text::LayoutJob::default();
+            j.text = String::new();
+            self.cached_job = j;
+            return &self.cached_job;
+        }
+
+        let new_starts = line_starts(text);
+        let new_lines = new_starts.len() - 1;
+
+        // First line whose content changed; everything before it is reusable.
+        let first_changed = if self.cached_text.is_empty() {
+            0
+        } else {
+            let diff = first_diff(text, &self.cached_text);
+            let mut l = new_starts.iter().filter(|&&s| s <= diff).count();
+            l = l.saturating_sub(1);
+            l.min(new_lines.saturating_sub(1))
+        };
+
+        let mut new_line_tokens: Vec<Vec<(usize, usize, String)>> = Vec::with_capacity(new_lines);
+        let mut new_line_states: Vec<HlState> = Vec::with_capacity(new_lines + 1);
+
+        for i in 0..first_changed {
+            new_line_tokens.push(self.line_tokens.get(i).cloned().unwrap_or_default());
+            new_line_states.push(self.line_states.get(i).cloned().unwrap_or(HlState::Normal));
+        }
+
+        let mut state = if first_changed == 0 {
+            HlState::Normal
+        } else {
+            self.line_states
+                .get(first_changed)
+                .cloned()
+                .unwrap_or(HlState::Normal)
+        };
+        new_line_states.push(state.clone());
+
+        let mut stop_at = new_lines;
+        for i in first_changed..new_lines {
+            let tokens = tokenize_range(text, new_starts[i], new_starts[i + 1], def, &mut state);
+            new_line_tokens.push(tokens);
+            new_line_states.push(state.clone());
+
+            let boundary = i + 1;
+            let boundary_aligns = self
+                .line_starts
+                .get(boundary)
+                .map(|&old_start| {
+                    new_starts[boundary] == old_start
+                        && text[new_starts[boundary]..] == self.cached_text[old_start..]
+                })
+                .unwrap_or(false);
+            if boundary_aligns && self.line_states.get(boundary) == Some(&state) {
+                stop_at = boundary;
+                break;
+            }
+        }
+
+        for i in stop_at..new_lines {
+            new_line_tokens.push(self.line_tokens.get(i).cloned().unwrap_or_default());
+            new_line_states.push(
+                self.line_states
+                    .get(i + 1)
+                    .cloned()
+                    .unwrap_or(HlState::Normal),
+            );
+        }
+
+        let mut job = egui::text::LayoutJob {
+            text: text.to_string(),
+            wrap: egui::text::TextWrapping {
+                max_width: f32::INFINITY,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        for line in &new_line_tokens {
+            for &(s, e, ref t) in line {
+                let color = type_to_color(t);
+                job.sections.push(egui::text::LayoutSection {
+                    leading_space: 0.0,
+                    byte_range: s..e,
+                    format: TextFormat::simple(self.font_id.clone(), color),
+                });
+            }
+        }
+        if job.sections.is_empty() && !text.is_empty() {
+            job.sections.push(egui::text::LayoutSection {
+                leading_space: 0.0,
+                byte_range: 0..text.len(),
+                format: TextFormat::simple(self.font_id.clone(), TEXT_DEFAULT),
+            });
+        }
+
+        self.cached_text = text.to_string();
+        self.line_starts = new_starts;
+        self.line_states = new_line_states;
+        self.line_tokens = new_line_tokens;
         self.cached_job = job;
         &self.cached_job
     }
@@ -574,6 +609,59 @@ mod tests {
         assert!(
             colors.iter().any(|&(_, _, c)| c == SYNTAX_EMPHASIS),
             "expected emphasis to be highlighted in a large file"
+        );
+    }
+
+    fn assert_same(hl: &mut SyntaxHighlighter, text: &str) {
+        let job = hl.highlight(text).clone();
+        let mut fresh = SyntaxHighlighter::new(14.0, Some("md"));
+        let full = fresh.highlight(text);
+        assert_eq!(
+            job.sections.len(),
+            full.sections.len(),
+            "section count mismatch for {:?}",
+            text
+        );
+        for (a, b) in job.sections.iter().zip(full.sections.iter()) {
+            assert_eq!(a.byte_range, b.byte_range, "range mismatch for {:?}", text);
+            assert_eq!(
+                a.format.color, b.format.color,
+                "color mismatch for {:?}",
+                text
+            );
+        }
+    }
+
+    #[test]
+    fn incremental_typing_matches_full_highlight() {
+        let mut hl = SyntaxHighlighter::new(14.0, Some("md"));
+        let base = "# H1\nSome *it* text\n```rust\nlet x = 1;\n```\n# H2\nlast line\n";
+        hl.highlight(base);
+
+        // Insert a bold word in the middle of line 1.
+        assert_same(
+            &mut hl,
+            "# H1\nSome *it* **b** text\n```rust\nlet x = 1;\n```\n# H2\nlast line\n",
+        );
+        // Edit inside a code block.
+        assert_same(
+            &mut hl,
+            "# H1\nSome *it* **b** text\n```rust\nlet x = 2;\n```\n# H2\nlast line\n",
+        );
+        // Insert a new line.
+        assert_same(
+            &mut hl,
+            "# H1\nSome *it* **b** text\n\n```rust\nlet x = 2;\n```\n# H2\nlast line\n",
+        );
+        // Delete a line.
+        assert_same(
+            &mut hl,
+            "# H1\nSome *it* **b** text\n```rust\nlet x = 2;\n```\nlast line\n",
+        );
+        // Edit the last line.
+        assert_same(
+            &mut hl,
+            "# H1\nSome *it* **b** text\n```rust\nlet x = 2;\n```\n# H2\nlast **bold**\n",
         );
     }
 }
