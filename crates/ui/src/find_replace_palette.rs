@@ -62,6 +62,11 @@ impl FindReplacePalette {
         self.current_match
     }
 
+    pub fn set_find(&mut self, text: &str) {
+        self.find = text.to_string();
+        self.current_match = 0;
+    }
+
     pub fn render(
         &mut self,
         ctx: &egui::Context,

@@ -12,7 +12,7 @@ use jereide_settings::{
     BRACKET_MATCH, EDITOR_FONT_SIZE, FIND_HIGHLIGHT, FIND_HIGHLIGHT_CURRENT, SURFACE_BG,
     TEXT_CURRENT_LINE, TEXT_MUTED,
 };
-use jereide_text::{char_index_to_line_col, find_matches};
+use jereide_text::{char_index_to_line_col, char_range_substring, find_matches};
 
 use jereide_syntax::SyntaxHighlighter;
 use std::collections::HashMap;
@@ -232,6 +232,23 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         })
         .inner;
     state.editor_id = text_edit_output.response.id;
+    state.selected_text = text_edit_output
+        .state
+        .cursor
+        .char_range()
+        .and_then(|range| {
+            let start = range.primary.index.min(range.secondary.index);
+            let end = range.primary.index.max(range.secondary.index);
+            if end > start {
+                Some(char_range_substring(
+                    &state.tabs[active_idx].text,
+                    start,
+                    end,
+                ))
+            } else {
+                None
+            }
+        });
 
     if let Some(cursor_range) = text_edit_output.cursor_range {
         let cursor_idx = cursor_range.primary.index;

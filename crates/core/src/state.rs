@@ -72,6 +72,7 @@ pub struct AppState {
     /// All open documents.
     pub tabs: Vec<Tab>,
     pub current_project_dir: Option<String>,
+    pub selected_text: Option<String>,
     pub find_highlight: Option<FindHighlight>,
     pub active_tab_index: usize,
     pub editor_focused: bool,
@@ -110,6 +111,7 @@ impl AppState {
         Self {
             tabs: vec![],
             current_project_dir: None,
+            selected_text: None,
             find_highlight: None,
             active_tab_index: 0,
             editor_focused: false,

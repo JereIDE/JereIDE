@@ -136,6 +136,17 @@ impl JereIDEApp {
         self.state.new_tab();
     }
 
+    fn toggle_find_palette(&mut self) {
+        self.find_palette_open = !self.find_palette_open;
+        if self.find_palette_open {
+            if let Some(sel) = &self.state.selected_text {
+                if !sel.is_empty() {
+                    self.find_palette.set_find(sel);
+                }
+            }
+        }
+    }
+
     fn handle_open(&mut self) {
         let Some(path) = pick_file() else {
             return;
@@ -275,7 +286,7 @@ impl JereIDEApp {
                 self.state.show_about_dialog = true;
             }
             "editor: find replace" => {
-                self.find_palette_open = !self.find_palette_open;
+                self.toggle_find_palette();
             }
             _ => {
                 jereide_code::edit::handle_edit_action(&mut self.state, ctx, action);
@@ -398,7 +409,7 @@ impl eframe::App for JereIDEApp {
                 self.widget_palette_open = !self.widget_palette_open;
             }
             if want_find_replace {
-                self.find_palette_open = !self.find_palette_open;
+                self.toggle_find_palette();
             }
             if want_command_palette {
                 self.state.command_palette_open = !self.state.command_palette_open;
