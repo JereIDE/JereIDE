@@ -45,7 +45,8 @@ impl AppMenu {
         file_menu
             .append_items(&[
                 &MenuItem::with_id("file: new", "New", true, None),
-                &MenuItem::with_id("file: open", "Open...", true, None),
+                &MenuItem::with_id("file: open", "Open File...", true, None),
+                &MenuItem::with_id("file: open project", "Open Project…", true, None),
                 &MenuItem::with_id("file: save", "Save", true, None),
                 &MenuItem::with_id("file: save as", "Save As…", true, None),
                 &PredefinedMenuItem::separator(),
@@ -72,7 +73,7 @@ impl AppMenu {
         let view_menu = Submenu::with_id("view", "View", true);
         view_menu
             .append_items(&[
-                &MenuItem::with_id("command palette: toggle", "Command Palette", true, None),
+                &MenuItem::with_id("command palette: toggle", "Command Palette…", true, None),
                 &PredefinedMenuItem::separator(),
                 &MenuItem::with_id("view: toggle sidebar", "Toggle Sidebar", true, None),
                 &PredefinedMenuItem::separator(),
