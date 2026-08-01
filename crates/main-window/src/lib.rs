@@ -8,6 +8,7 @@ use jereide_fs::{
 };
 use jereide_menu::AppMenu;
 use jereide_settings::{ACCENT, SURFACE_BG};
+use jereide_ui::widget_palette::WidgetPalette;
 use raw_window_handle::HasWindowHandle;
 
 #[cfg(target_os = "macos")]
@@ -109,6 +110,8 @@ pub struct JereIDEApp {
     visuals_initialized: bool,
     palette: Option<Palette>,
     compose: jereide_compose::compose_view::Compose,
+    widget_palette: WidgetPalette,
+    widget_palette_open: bool,
 }
 
 impl JereIDEApp {
@@ -119,6 +122,8 @@ impl JereIDEApp {
             visuals_initialized: false,
             palette: None,
             compose: jereide_compose::compose_view::Compose::new(),
+            widget_palette: WidgetPalette::new(),
+            widget_palette_open: false,
         }
     }
 
@@ -320,6 +325,7 @@ impl eframe::App for JereIDEApp {
                     cmd && i.key_pressed(egui::Key::W),
                     cmd && i.modifiers.shift && i.key_pressed(egui::Key::P),
                     cmd && i.key_pressed(egui::Key::B),
+                    cmd && i.modifiers.shift && i.key_pressed(egui::Key::W),
                 )
             });
             let (
@@ -337,6 +343,7 @@ impl eframe::App for JereIDEApp {
                 want_close_tab,
                 want_command_palette,
                 want_toggle_sidebar,
+                want_widget_palette,
             ) = input;
             if want_new {
                 self.handle_action("file: new", &ctx, frame);
@@ -376,6 +383,9 @@ impl eframe::App for JereIDEApp {
             }
             if want_toggle_sidebar {
                 self.handle_action("view: toggle sidebar", &ctx, frame);
+            }
+            if want_widget_palette {
+                self.widget_palette_open = !self.widget_palette_open;
             }
             if want_command_palette {
                 self.state.command_palette_open = !self.state.command_palette_open;
@@ -521,6 +531,57 @@ impl eframe::App for JereIDEApp {
             if !self.state.command_palette_open {
                 self.palette = None;
             }
+        }
+
+        if self.widget_palette_open {
+            self.widget_palette.render(
+                &ctx,
+                "Widget Palette",
+                &mut self.widget_palette_open,
+                |ui, filter| {
+                    ui.heading("Widget Palette");
+                    ui.add_space(4.0);
+                    ui.label("A label and some buttons:");
+                    ui.horizontal(|ui| {
+                        if ui.button("Button A").clicked() {
+                            eprintln!("Clicked Button A");
+                        }
+                        if ui.button("Button B").clicked() {
+                            eprintln!("Clicked Button B");
+                        }
+                        if ui.button("Button C").clicked() {
+                            eprintln!("Clicked Button C");
+                        }
+                    });
+                    ui.add_space(8.0);
+                    ui.separator();
+                    ui.label("Checkboxes:");
+                    let mut a = false;
+                    let mut b = true;
+                    let mut c = false;
+                    ui.checkbox(&mut a, "Option A");
+                    ui.checkbox(&mut b, "Option B");
+                    ui.checkbox(&mut c, "Option C");
+                    ui.add_space(8.0);
+                    ui.separator();
+                    ui.label("A slider and a progress bar:");
+                    let mut value = 0.5;
+                    ui.add(egui::Slider::new(&mut value, 0.0..=1.0).text("value"));
+                    ui.add(egui::ProgressBar::new(value).show_percentage());
+                    ui.add_space(8.0);
+                    ui.separator();
+                    let mut text = String::new();
+                    ui.add(
+                        egui::TextEdit::multiline(&mut text)
+                            .hint_text("Multiline text input…")
+                            .desired_rows(2)
+                            .desired_width(f32::INFINITY),
+                    );
+                    ui.add_space(8.0);
+                    ui.separator();
+                    ui.label(format!("You searched: {}", filter));
+                },
+            );
         }
 
         jereide_ui::dialog::render_about_dialog(&ctx, &mut self.state.show_about_dialog);
