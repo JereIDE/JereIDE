@@ -30,12 +30,24 @@ jobs:
           mkdir -p deploy/docs
           mv docs/book/* deploy/docs/
 
-      - name: Deploy to jereide.github.io/docs
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          personal_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
-          publish_dir: deploy/docs
-          destination_dir: docs
-          external_repository: JereIDE/jereide.github.io
-          publish_branch: main
-          enable_jekyll: false
+      - name: Publish docs to jereide.github.io/docs
+        env:
+          DEPLOY_TOKEN: ${{ secrets.PAGES_DEPLOY_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch main \
+            "https://x-access-token:${DEPLOY_TOKEN}@github.com/JereIDE/jereide.github.io.git" \
+            /tmp/site
+          rm -rf /tmp/site/docs
+          cp -r deploy/docs /tmp/site/docs
+          cd /tmp/site
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # /docs/ is gitignored in the user-site repo; force-add to bypass it.
+          git add -f docs
+          if git diff --cached --quiet; then
+            echo "No docs changes; nothing to push."
+          else
+            git commit -m "deploy docs: ${GITHUB_REPOSITORY}@${GITHUB_SHA}"
+            git push origin main
+          fi
