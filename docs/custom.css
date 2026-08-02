@@ -1,0 +1,513 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap");
+
+@font-face {
+    font-family: "iA Writer Quattro V";
+    src: url("../assets/iAWriterQuattroV.ttf") format("truetype");
+    font-style: normal;
+    font-weight: 100 900;
+}
+
+/* Light themes -> white/black */
+html.light,
+html.rust {
+    --bg: #ffffff;
+    --fg: #000000;
+    --menu-bar-bg: rgba(255, 255, 255, 0.55);
+    --sidebar-bg: #f7f7f7;
+    --sidebar-fg: #000000;
+    --sidebar-active: #000000;
+    --sidebar-active-bg: #e0e0e0;
+    --sidebar-non-existant: #aaaaaa;
+    --sidebar-spacer: #cccccc;
+    --scrollbar: #cccccc;
+    --icons: #000000;
+    --icons-hover: #000000;
+    --links: #000000;
+    --links-hover: #555555;
+    --link-line-decoration: #000000;
+    --link-line-decoration-hover: #000000;
+    --inline-code-color: #000000;
+    --theme-popup-bg: #ffffff;
+    --theme-popup-border: #cccccc;
+    --theme-hover: #eeeeee;
+    --quote-bg: #f2f2f2;
+    --quote-border: #cccccc;
+    --table-border-color: #cccccc;
+    --headings-border-color: #e0e0e0;
+    --table-header-bg: #f2f2f2;
+    --table-alternate-bg: #fafafa;
+    --searchbar-border-color: #cccccc;
+    --searchbar-bg: #fafafa;
+    --searchbar-fg: #000000;
+    --searchbar-shadow-color: transparent;
+    --searchresults-header-fg: #666666;
+    --searchresults-border-color: #cccccc;
+    --searchresults-li-bg: #fafafa;
+    --search-mark-bg: #eeeeee;
+    --chapter-hover-bg: #eeeeee;
+    --chapter-active-fg: #000000;
+    --chapter-active-border-color: #000000;
+}
+
+/* Dark themes -> black/white */
+html.coal,
+html.navy,
+html.ayu {
+    --bg: #000000;
+    --fg: #ffffff;
+    --menu-bar-bg: rgba(58, 58, 58, 0.2);
+    --sidebar-bg: #2b2b2b;
+    --sidebar-fg: #ffffff;
+    --sidebar-active: #ffffff;
+    --sidebar-active-bg: #454545;
+    --sidebar-non-existant: #666666;
+    --sidebar-spacer: #454545;
+    --scrollbar: #454545;
+    --icons: #ffffff;
+    --icons-hover: #ffffff;
+    --links: #ffffff;
+    --links-hover: #cccccc;
+    --link-line-decoration: #ffffff;
+    --link-line-decoration-hover: #ffffff;
+    --inline-code-color: #ffffff;
+    --theme-popup-bg: #2b2b2b;
+    --theme-popup-border: #555555;
+    --theme-hover: #383838;
+    --quote-bg: #2b2b2b;
+    --quote-border: #555555;
+    --table-border-color: #454545;
+    --headings-border-color: #383838;
+    --table-header-bg: #2b2b2b;
+    --table-alternate-bg: #1e1e1e;
+    --searchbar-border-color: #555555;
+    --searchbar-bg: #1f1f1f;
+    --searchbar-fg: #ffffff;
+    --searchbar-shadow-color: transparent;
+    --searchresults-header-fg: #bbbbbb;
+    --searchresults-border-color: #555555;
+    --searchresults-li-bg: #1f1f1f;
+    --search-mark-bg: #454545;
+    --chapter-hover-bg: #383838;
+    --chapter-active-fg: #ffffff;
+    --chapter-active-border-color: #ffffff;
+}
+
+html,
+body,
+.sidebar,
+main,
+pre,
+code,
+.hljs,
+.menu-title {
+    font-family:
+        "iA Writer Quattro V",
+        -apple-system,
+        "Segoe UI",
+        sans-serif;
+}
+
+body {
+    font-weight: 300;
+}
+
+strong,
+b {
+    font-weight: 700;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: 400;
+}
+.menu-title,
+.nav-chapters,
+#sidebar-toggle {
+    font-weight: 700;
+}
+
+/* Headings in the content use IBM Plex Serif (the sidebar stays on iA Writer) */
+.content h1,
+.content h2,
+.content h3,
+.content h4,
+.content h5,
+.content h6 {
+    font-family: "IBM Plex Serif", serif;
+}
+
+/* Links are always underlined */
+.content a {
+    text-decoration: underline;
+}
+
+/* Chapter titles in the sidebar are bold */
+.chapter > li > .chapter-link-wrapper > a {
+    font-weight: 700;
+}
+
+/* Chapter content (sub-chapter) titles in the sidebar are not bold */
+.chapter > li > ul.subchapter > li > .chapter-link-wrapper > a {
+    font-weight: 400;
+}
+
+/* All sidebar items: uniform indent and full-width layout */
+.chapter li a {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    padding-inline: 16px;
+}
+
+/* Current selected item: gray background spanning the width, with edge margins */
+.chapter li a.active {
+    position: relative;
+    isolation: isolate;
+}
+.chapter li a.active::before {
+    content: "";
+    position: absolute;
+    inset: 0 8px;
+    background: var(--sidebar-active-bg);
+    border-radius: 0;
+    z-index: -1;
+}
+
+.chapter li a.current-header {
+    background: var(--sidebar-active-bg);
+}
+
+/* Hide the chapter numbers in the sidebar */
+.chapter strong[aria-hidden="true"] {
+    display: none;
+}
+
+/* Hide the per-page heading sub-content ("On this page") in the sidebar */
+.on-this-page {
+    display: none;
+}
+
+/* Hide the print button in the menu bar */
+a[href="print.html"] {
+    display: none;
+}
+
+/* Title bar spans the full width, with the sidebar below it */
+#mdbook-menu-bar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    height: var(--menu-bar-height);
+    z-index: 102;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    padding: 0 15px;
+    gap: 12px;
+    box-sizing: border-box;
+    background-color: var(--menu-bar-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-block-end: 1px solid var(--sidebar-spacer);
+}
+html.coal #mdbook-menu-bar,
+html.navy #mdbook-menu-bar,
+html.ayu #mdbook-menu-bar {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+/* Hide the default title immediately (no flash); it is replaced by the search bar */
+.menu-title {
+    display: none !important;
+}
+#mdbook-menu-bar .left-buttons {
+    grid-column: 1;
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+#mdbook-menu-bar .right-buttons {
+    grid-column: 3;
+    display: flex;
+    align-items: center;
+}
+
+/* JereIDE home icon */
+#mdbook-menu-bar .home-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin: 0 8px 0 4px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+#mdbook-menu-bar .home-link img {
+    width: 26px;
+    height: 26px;
+}
+
+/* Hide the toggle buttons (sidebar & search) since they are not used */
+#mdbook-sidebar-toggle,
+#mdbook-search-toggle {
+    display: none !important;
+}
+
+/* Replace the theme dropdown with a flat Auto/Dark/Light slider */
+#mdbook-theme-toggle,
+#mdbook-theme-list {
+    display: none !important;
+}
+.theme-slider {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    width: 216px;
+    height: 26px;
+    margin: 0 8px;
+    border: 1px solid var(--theme-popup-border);
+    border-radius: 0;
+    background-color: var(--theme-hover);
+}
+.theme-slider-thumb {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc(33.333% - 8px);
+    background-color: var(--fg);
+    transition: transform 0.25s ease;
+}
+.theme-slider[data-theme="dark"] .theme-slider-thumb {
+    transform: translateX(calc(100% + 8px));
+}
+.theme-slider[data-theme="light"] .theme-slider-thumb {
+    transform: translateX(calc(200% + 16px));
+}
+.theme-slider-opt {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: none;
+    padding: 0;
+    font-family: "iA Writer Quattro V", sans-serif;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--fg);
+    cursor: pointer;
+}
+.theme-slider-opt[data-active="true"] {
+    color: var(--bg);
+}
+
+/* Search bar centered over the title bar (positioned by CSS so it appears with the page) */
+#mdbook-search-wrapper {
+    display: block !important;
+    position: fixed;
+    top: calc((var(--menu-bar-height) - 36px) / 2);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(460px, calc(100vw - 260px));
+    z-index: 105;
+}
+.searchbar-outer {
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 0;
+}
+.search-wrapper {
+    display: flex;
+    align-items: center;
+}
+#mdbook-searchbar {
+    width: 100%;
+    margin: 0;
+    padding: 7px 12px 7px 32px;
+    border: 1px solid var(--searchbar-border-color);
+    border-radius: 0;
+    background-color: var(--searchbar-bg);
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23666' d='M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    background-size: 14px 14px;
+    color: var(--searchbar-fg);
+    font-family: "iA Writer Quattro V", sans-serif;
+    font-size: 14px;
+    outline: none;
+    box-shadow: none;
+}
+#mdbook-searchbar:focus,
+#mdbook-searchbar.active {
+    box-shadow: none;
+    border-color: var(--searchbar-border-color);
+}
+
+/* Search results popup (moved to <body> by custom.js, positioned fixed so it can't be clipped) */
+.searchresults-outer {
+    position: fixed !important;
+    top: calc(var(--menu-bar-height) + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(520px, calc(100vw - 40px));
+    max-height: 70vh;
+    overflow-y: auto;
+    margin: 0;
+    background-color: var(--bg);
+    border: 1px solid var(--searchbar-border-color);
+    border-radius: 0;
+    box-shadow: none;
+    padding: 6px 12px 12px;
+    z-index: 300;
+}
+.searchresults-header {
+    padding-block-start: 10px;
+    padding-inline-end: 30px;
+    padding-block-end: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--searchresults-header-fg);
+    border-block-end: 1px solid var(--headings-border-color);
+}
+.searchresults-outer ul#mdbook-searchresults {
+    padding-inline-start: 0;
+}
+.searchresults-outer ul#mdbook-searchresults li {
+    margin: 0;
+    padding: 10px 8px;
+    border-radius: 0;
+    border-block-end: 1px solid var(--headings-border-color);
+}
+.searchresults-outer ul#mdbook-searchresults li:last-child {
+    border-block-end: none;
+}
+.searchresults-outer ul#mdbook-searchresults li.focus {
+    background-color: var(--theme-hover);
+}
+.searchresults-outer ul#mdbook-searchresults a {
+    color: var(--links);
+    text-decoration: none;
+}
+.searchresults-outer ul#mdbook-searchresults a:hover {
+    color: var(--links-hover);
+}
+.searchresults-outer ul#mdbook-searchresults span.teaser {
+    color: var(--searchresults-header-fg);
+    margin-inline-start: 0;
+}
+.searchresults-close {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--icons);
+    padding: 4px;
+}
+.searchresults-close:hover {
+    color: var(--icons-hover);
+}
+
+.sidebar {
+    top: var(--menu-bar-height);
+    bottom: 0;
+}
+
+/* Keep content clear of the fixed title bar */
+#mdbook-menu-bar-hover-placeholder {
+    display: none;
+}
+
+/* Target multiple elements with high specificity to ensure padding is applied */
+html body .page-wrapper > .page > .content,
+html body .page-wrapper > .page,
+.content {
+    padding-top: 15px !important;
+    margin-top: 0 !important;
+}
+
+/* Fallback for page-wrapper itself */
+.page-wrapper {
+    padding-top: 15px !important;
+}
+
+/* Keep anchored headings from hiding under the fixed title bar */
+html,
+body {
+    scroll-padding-top: 15px !important;
+}
+
+code,
+pre {
+    font-size: 1em;
+}
+
+/* Hide mdBook's native alert blockquote until JS converts it to the site style */
+.content blockquote.blockquote-tag {
+    display: none;
+}
+
+/* Markdown alerts, rendered the same way as the releases page */
+.markdown-alert {
+    border-left: 4px solid var(--quote-border);
+    padding: 12px 16px;
+    margin: 16px 0;
+    background: var(--quote-bg);
+}
+.markdown-alert-title {
+    font-weight: bold;
+    margin: 0 0 4px 0;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.markdown-alert :first-child {
+    margin-top: 0;
+}
+.markdown-alert :last-child {
+    margin-bottom: 0;
+}
+.markdown-alert-note {
+    border-left-color: #0969da;
+}
+.markdown-alert-note .markdown-alert-title {
+    color: #0969da;
+}
+.markdown-alert-tip {
+    border-left-color: #1a7f37;
+}
+.markdown-alert-tip .markdown-alert-title {
+    color: #1a7f37;
+}
+.markdown-alert-important {
+    border-left-color: #8250df;
+}
+.markdown-alert-important .markdown-alert-title {
+    color: #8250df;
+}
+.markdown-alert-warning {
+    border-left-color: #bf8700;
+}
+.markdown-alert-warning .markdown-alert-title {
+    color: #bf8700;
+}
+.markdown-alert-caution {
+    border-left-color: #cf222e;
+}
+.markdown-alert-caution .markdown-alert-title {
+    color: #cf222e;
+}
