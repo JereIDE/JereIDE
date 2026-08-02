@@ -23,12 +23,12 @@ function modifyMenuBar() {
   if (leftButtons && !leftButtons.querySelector(".home-link")) {
     const homeLink = document.createElement("a");
     homeLink.className = "home-link";
-    homeLink.href = "../";
+    homeLink.href = "/";
     homeLink.title = "JereIDE Home";
     homeLink.setAttribute("aria-label", "JereIDE Home");
 
     const iconImg = document.createElement("img");
-    iconImg.src = "../assets/AppIcon.png";
+    iconImg.src = "/assets/AppIcon.png";
     iconImg.alt = "JereIDE";
     iconImg.width = 24;
     iconImg.height = 24;
