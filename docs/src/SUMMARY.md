@@ -9,3 +9,4 @@
   - [Syntax Highlighting](./features-of-jereide/syntax-highlighting.md)
   - [Auto Indent, Bracket Pair Highlighting, and Auto Bracket Pairing]()
 - [Bonus](./bonus.md)
+- [Contact](./contact.md)
