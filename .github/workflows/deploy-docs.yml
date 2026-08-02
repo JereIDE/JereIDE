@@ -38,9 +38,7 @@ jobs:
 
       - name: Build wiki
         run: |
-          mdbook build docs --dest-dir ../deploy
-          mkdir -p deploy/docs
-          mv deploy/* deploy/docs/
+          mdbook build docs --dest-dir ../deploy/docs
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
