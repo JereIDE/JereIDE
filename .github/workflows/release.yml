@@ -15,6 +15,7 @@ on:
 jobs:
   parse-commit:
     name: Parse commit for release
+    if: github.event_name != 'push' || github.event.head_commit.message != 'Update docs'
     runs-on: ubuntu-latest
     permissions:
       contents: write

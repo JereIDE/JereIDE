@@ -48,6 +48,7 @@ jobs:
 
   test-windows:
     name: Windows Tests
+    if: github.event_name != 'push' || github.event.head_commit.message != 'Update docs'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
@@ -99,6 +100,7 @@ jobs:
 
   test-macos:
     name: macOS Tests
+    if: github.event_name != 'push' || github.event.head_commit.message != 'Update docs'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
