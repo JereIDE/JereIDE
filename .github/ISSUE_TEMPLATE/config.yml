@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: The JereIDE Docs
+    url: https://jereide.github.io/docs
+    about: Perhaps that might help you.
+  - name: Email Developer
+    url: mailto:jeremytheking2013@gmail.com
+    about: If you think your issue is super-duper-ultra-important, but didn't even get reviewed. As long as there's no spam, you're welcome to do this!
