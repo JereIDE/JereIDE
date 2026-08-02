@@ -4,7 +4,7 @@ When you open JereIDE, a welcome page would show with the version, the logo, and
 
 ## Get to Know the Command Palette
 
-JereIDE has a useful Command Palette so you can search and run the commands you need. Press `Cmd/Ctrl+Shift+P` to open it. Press `Esc`, click outside, or execute a command to close it. You can select commands with top/down arrows or your mouse. You can run them with `Enter` or `Return`.
+JereIDE has a useful Command Palette so you can search and run the commands you need. Press `Cmd/Ctrl+Shift+P` to open it. Press `Esc`, click outside, or run a command to close it. You can select commands with top/down arrows or your mouse. You can run them with `Enter` or `Return`.
 
 ## Creating, Writing, and Saving Tabs in JereIDE
 
