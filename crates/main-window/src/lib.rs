@@ -137,6 +137,9 @@ impl JereIDEApp {
     }
 
     fn toggle_find_palette(&mut self) {
+        if self.state.tabs.is_empty() {
+            return;
+        }
         self.find_palette_open = !self.find_palette_open;
         if self.find_palette_open {
             if let Some(sel) = &self.state.selected_text {
@@ -648,6 +651,7 @@ impl eframe::App for JereIDEApp {
             });
         } else {
             self.state.find_highlight = None;
+            self.find_palette_open = false;
         }
 
         jereide_ui::dialog::render_about_dialog(&ctx, &mut self.state.show_about_dialog);
