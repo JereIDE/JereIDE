@@ -8,4 +8,4 @@ Press `Command/Ctrl+Shift+W` to open the Widget Palette. It was the foundation o
 
 ## The Sidebar
 
-Quite a hidden feature, there is no prominent button in the UI for toggling it on. You can toggle it by pressing `Command/Ctrl+B` or selecting a command in the command palette. It just shows the current project/directory, which is another experimental feature.
+Quite a hidden feature, there is no prominent button in the UI for toggling it on. You can toggle it by pressing `Command/Ctrl+B` or selecting `view: toggle sidebar` in the command palette. It just shows the current project/directory, which is another experimental feature.
