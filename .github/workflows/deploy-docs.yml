@@ -20,22 +20,29 @@ jobs:
     outputs:
       should_build: ${{ steps.check.outputs.should_build }}
     steps:
+      - uses: actions/checkout@v4
       - name: Check
         id: check
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-          COMMITS_JSON: ${{ toJSON(github.event.commits) }}
         run: |
-          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "should_build=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [[ "$COMMIT_MSG" == "Update docs" ]]; then
+          if [[ "${{ github.event.head_commit.message }}" == "Update docs" ]]; then
             echo "should_build=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          CHANGED=$(echo "$COMMITS_JSON" | jq '[.[].added[], .[].modified[], .[].removed[]] | map(select(startswith("docs/"))) | length')
+          BASE="${{ github.event.before }}"
+          if [[ "$BASE" == "0000000000000000000000000000000000000000" ]]; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch --depth=1 origin "$BASE" 2>/dev/null || true
+          if ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BASE".."$GITHUB_SHA" | grep -c '^docs/' || true)
           if [[ "$CHANGED" -gt 0 ]]; then
             echo "should_build=true" >> "$GITHUB_OUTPUT"
           else

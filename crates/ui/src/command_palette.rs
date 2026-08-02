@@ -33,6 +33,9 @@ pub fn items() -> Vec<PaletteItem> {
             code: "editor: select all",
         },
         PaletteItem {
+            code: "editor: find replace",
+        },
+        PaletteItem {
             code: "command palette: toggle",
         },
         PaletteItem {
@@ -64,7 +67,7 @@ mod tests {
     #[test]
     fn command_palette_has_17_items() {
         let items = items();
-        assert_eq!(items.len(), 20);
+        assert_eq!(items.len(), 21);
     }
 
     #[test]
@@ -107,6 +110,7 @@ mod tests {
         assert!(items.iter().any(|i| i.code == "editor: copy"));
         assert!(items.iter().any(|i| i.code == "editor: paste"));
         assert!(items.iter().any(|i| i.code == "editor: select all"));
+        assert!(items.iter().any(|i| i.code == "editor: find replace"));
     }
 
     #[test]

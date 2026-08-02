@@ -2,6 +2,8 @@
 
 Press `Command/Ctrl+F` or select Find and Replace from the edit menu to open the find/replace palette. It shows as a floating palette, but don't worry, the results will always be visible.
 
+Find and Replace is accessible from the command palette as `editor: find replace`.
+
 If you have text selected in the editor when you trigger the palette, that selection is pre-filled into the Find field.
 
 ## Searching
@@ -26,5 +28,4 @@ Both actions are recorded in the editor's undo history, so you can undo them lik
 
 ## Future
 
-Triggering find&replace from the command palette will be supported soon.
 Global project search is coming later.
