@@ -336,7 +336,8 @@ impl eframe::App for JereIDEApp {
                 let cmd = i.modifiers.command;
                 (
                     cmd && i.key_pressed(egui::Key::N),
-                    cmd && i.key_pressed(egui::Key::O),
+                    cmd && i.key_pressed(egui::Key::O) && !i.modifiers.shift,
+                    cmd && i.modifiers.shift && i.key_pressed(egui::Key::O),
                     cmd && i.key_pressed(egui::Key::S) && !i.modifiers.shift,
                     cmd && i.modifiers.shift && i.key_pressed(egui::Key::S),
                     cmd && i.key_pressed(egui::Key::Q),
@@ -356,6 +357,7 @@ impl eframe::App for JereIDEApp {
             let (
                 want_new,
                 want_open,
+                want_open_project,
                 want_save,
                 want_save_as,
                 want_quit,
@@ -376,6 +378,9 @@ impl eframe::App for JereIDEApp {
             }
             if want_open {
                 self.handle_action("file: open", &ctx, frame);
+            }
+            if want_open_project {
+                self.handle_action("file: open project", &ctx, frame);
             }
             if want_save {
                 self.handle_action("file: save", &ctx, frame);
