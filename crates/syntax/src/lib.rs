@@ -46,8 +46,6 @@ enum RawPattern {
 #[derive(Clone)]
 struct CompiledPattern {
     type_: String,
-    /// Regex used to find candidate match positions (leading `^` stripped, since
-    /// this tokenizer anchors to the current position anyway).
     search_re: Regex,
     kind: CompiledPatternKind,
 }
@@ -131,8 +129,6 @@ fn next_char_boundary(text: &str, from: usize) -> usize {
     }
 }
 
-/// Applies a pattern that is known to start at `m_start` (with a match ending
-/// at `m_end`). Returns the token to emit and the next position to continue from.
 fn apply_match(
     pattern: &CompiledPattern,
     text: &str,
@@ -208,10 +204,6 @@ fn tokenize_range(
     let mut pos = start;
     let slice = &text[start..end];
 
-    // Precompute the matches of every pattern over the tokenized range so they
-    // can be looked up in O(1) instead of re-scanning at every position.
-    // Anchored (`^`) patterns use a `^`-stripped search regex, which matches the
-    // tokenizer's "anchor at current position" behavior.
     let mut scans: Vec<(Vec<(usize, usize)>, usize)> = def
         .patterns
         .iter()
@@ -432,7 +424,6 @@ impl SyntaxHighlighter {
         let new_starts = line_starts(text);
         let new_lines = new_starts.len() - 1;
 
-        // First line whose content changed; everything before it is reusable.
         let first_changed = if self.cached_text.is_empty() {
             0
         } else {
