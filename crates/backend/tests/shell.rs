@@ -18,7 +18,7 @@ fn unique_temp_dir(tag: &str) -> PathBuf {
 
 #[test]
 fn run_command_echo_success() {
-    let out = run_command("echo hello from shell", None).unwrap();
+    let out = run_command("echo \"hello from shell\"", None).unwrap();
     assert_eq!(out.exit_code, 0);
     assert_eq!(out.stdout.trim(), "hello from shell");
     assert_eq!(out.stderr, "");
@@ -101,15 +101,14 @@ fn list_directory_includes_hidden_files() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+#[cfg(unix)]
 #[test]
 fn list_directory_marks_symlinks() {
     let dir = unique_temp_dir("symlink");
     std::fs::File::create(dir.join("target.txt")).unwrap();
-    #[cfg(unix)]
     std::os::unix::fs::symlink(dir.join("target.txt"), dir.join("link.txt")).unwrap();
 
     let entries = list_directory(&dir).unwrap();
-    #[cfg(unix)]
     assert!(entries.iter().any(|e| e.name == "link.txt" && e.is_symlink));
     let _ = std::fs::remove_dir_all(&dir);
 }

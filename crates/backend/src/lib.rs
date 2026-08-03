@@ -81,10 +81,12 @@ fn parse_powershell_line(line: &str) -> Option<DirectoryEntry> {
     })
 }
 
+#[cfg_attr(windows, allow(dead_code))]
 fn parse_ls_output(stdout: &str) -> Vec<DirectoryEntry> {
     stdout.lines().filter_map(parse_ls_line).collect()
 }
 
+#[cfg_attr(windows, allow(dead_code))]
 fn parse_ls_line(line: &str) -> Option<DirectoryEntry> {
     let line = line.trim();
     if line.is_empty() || line.starts_with("total ") {
