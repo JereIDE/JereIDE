@@ -10,6 +10,7 @@ members = [
     "crates/ui",
     "crates/code",
     "crates/compose",
+    "crates/widgets",
     "crates/fs",
     "crates/datadir",
     "crates/editor",

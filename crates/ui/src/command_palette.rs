@@ -1,4 +1,4 @@
-use super::palette::PaletteItem;
+use jereide_widgets::palette::PaletteItem;
 
 pub fn items() -> Vec<PaletteItem> {
     vec![

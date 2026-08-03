@@ -9,7 +9,7 @@ use jereide_fs::{
 use jereide_menu::AppMenu;
 use jereide_settings::{ACCENT, SURFACE_BG};
 use jereide_ui::find_replace_palette::{FindReplaceAction, FindReplacePalette};
-use jereide_ui::widget_palette::WidgetPalette;
+use jereide_widgets::widget_palette::WidgetPalette;
 use raw_window_handle::HasWindowHandle;
 
 #[cfg(target_os = "macos")]
@@ -103,7 +103,7 @@ pub fn position_traffic_lights(frame: &eframe::Frame, offset_x: f64, offset_y: f
     }
 }
 
-use jereide_ui::palette::Palette;
+use jereide_widgets::palette::Palette;
 
 pub struct JereIDEApp {
     state: AppState,
@@ -560,6 +560,8 @@ impl eframe::App for JereIDEApp {
             }
         }
 
+        // Seriously, this isn't supposed to be here now that the palette is done
+        // but I just really like fresh widgets.
         if self.widget_palette_open {
             self.widget_palette.render(
                 &ctx,

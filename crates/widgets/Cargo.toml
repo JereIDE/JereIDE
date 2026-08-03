@@ -1,0 +1,8 @@
+[package]
+name = "jereide-widgets"
+version.workspace = true
+edition = "2021"
+
+[dependencies]
+eframe = "0.34"
+jereide-settings = { path = "../settings" }
