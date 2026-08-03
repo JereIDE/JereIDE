@@ -37,6 +37,26 @@ function modifyMenuBar() {
     leftButtons.prepend(homeLink);
   }
 
+  // 3b. Add a Home / Releases / Docs page switcher to the right of the GitHub button
+  const rightButtons = menuBar.querySelector(".right-buttons");
+  if (rightButtons && !rightButtons.querySelector(".page-switcher")) {
+    const switcher = document.createElement("div");
+    switcher.className = "page-switcher";
+    const pages = [
+      { label: "Home", href: "/" },
+      { label: "Releases", href: "/releases/" },
+      { label: "Docs", href: "/docs/", active: true },
+    ];
+    pages.forEach(function (page) {
+      const link = document.createElement("a");
+      link.className = "page-switch" + (page.active ? " active" : "");
+      link.href = page.href;
+      link.textContent = page.label;
+      switcher.appendChild(link);
+    });
+    rightButtons.appendChild(switcher);
+  }
+
   // 4. Add the Auto/Dark/Light theme slider
   if (leftButtons && !leftButtons.querySelector(".theme-slider")) {
     const themeToggle = menuBar.querySelector("#mdbook-theme-toggle");

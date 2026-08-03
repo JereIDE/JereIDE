@@ -192,7 +192,7 @@ h6 {
 }
 
 /* Hide the print button in the menu bar */
-a[href="print.html"] {
+a[href$="print.html"] {
     display: none;
 }
 
@@ -252,6 +252,42 @@ html.ayu #mdbook-menu-bar {
 #mdbook-menu-bar .home-link img {
     width: 26px;
     height: 26px;
+}
+
+/* Home / Releases / Docs page switcher */
+#mdbook-menu-bar .page-switcher {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-left: 20px;
+}
+#mdbook-menu-bar .page-switcher a {
+    color: #666;
+    text-decoration: none;
+    font-size: 1.5rem;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+}
+#mdbook-menu-bar .page-switcher a:hover {
+    color: #222;
+}
+#mdbook-menu-bar .page-switcher a.active {
+    color: #000;
+}
+html.coal #mdbook-menu-bar .page-switcher a,
+html.navy #mdbook-menu-bar .page-switcher a,
+html.ayu #mdbook-menu-bar .page-switcher a {
+    color: #9a9a9a;
+}
+html.coal #mdbook-menu-bar .page-switcher a:hover,
+html.navy #mdbook-menu-bar .page-switcher a:hover,
+html.ayu #mdbook-menu-bar .page-switcher a:hover {
+    color: #cccccc;
+}
+html.coal #mdbook-menu-bar .page-switcher a.active,
+html.navy #mdbook-menu-bar .page-switcher a.active,
+html.ayu #mdbook-menu-bar .page-switcher a.active {
+    color: #ffffff;
 }
 
 /* Hide the toggle buttons (sidebar & search) since they are not used */

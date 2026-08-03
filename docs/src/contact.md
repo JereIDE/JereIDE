@@ -5,7 +5,7 @@ Feel free to contact me any time about JereIDE, or about my other projects.
 
 If you think your GitHub issue is super-duper-ultra-important, but it didn't even get reviewed, then you're welcome to reach out here!
 
-Github: [Jeremy-Qian](https://github.com/Jeremy-Qian)
+Github: [Jeremy-Qian](https://github.com/Jeremy-Qian)  
 GitHub Org: [JereIDE](https://github.com/jereide)
 
 ## Credits
