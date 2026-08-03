@@ -5,9 +5,9 @@ edition = "2021"
 
 [dependencies]
 eframe = "0.34"
-jereide-backend = { path = "../backend" }
 jereide-core = { path = "../core" }
 jereide-data = { path = "../datadir" }
+jereide-fs = { path = "../fs" }
 jereide-settings = { path = "../settings" }
 jereide-text = { path = "../text" }
 jereide-widgets = { path = "../widgets" }

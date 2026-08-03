@@ -2157,9 +2157,9 @@ name = "jereide-ui"
 version = "0.26.0"
 dependencies = [
  "eframe",
- "jereide-backend",
  "jereide-core",
  "jereide-data",
+ "jereide-fs",
  "jereide-settings",
  "jereide-text",
  "jereide-widgets",

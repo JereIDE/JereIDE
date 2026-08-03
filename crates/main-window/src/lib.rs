@@ -9,6 +9,7 @@ use jereide_fs::{
 use jereide_menu::AppMenu;
 use jereide_settings::{ACCENT, SURFACE_BG};
 use jereide_ui::find_replace_palette::{FindReplaceAction, FindReplacePalette};
+use jereide_ui::sidebar::clear_ls_cache;
 use jereide_widgets::widget_palette::WidgetPalette;
 use raw_window_handle::HasWindowHandle;
 
@@ -182,6 +183,7 @@ impl JereIDEApp {
             return;
         };
         self.state.current_project_dir = Some(path.to_string_lossy().into_owned());
+        clear_ls_cache();
     }
 
     fn handle_save(&mut self) {
