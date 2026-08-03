@@ -13,7 +13,12 @@
 ![](https://img.shields.io/github/stars/jereide/jereide?style=for-the-badge&logo=macy's&label=Stars&color=yellow)
 ![](https://img.shields.io/github/downloads/jereide/jereide/total?style=for-the-badge&logo=iced&label=Downloads&color=pink)
 
-_JereIDE as an open-source, cross-platform editor built in Rust with requent updates._
+_JereIDE as an open-source, cross-platform editor built in Rust with frequent updates._
+
+[Website](https://jereide.github.io) ·
+[Docs](https://jereide.github.io/docs) ·
+[Download(GitHub Releases)](https://github.com/jereide/jereide/releases) ·
+[Download(Website Releases)](https://jereide.github.io/releases)
 
 ---
 
