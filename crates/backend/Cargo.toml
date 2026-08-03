@@ -1,0 +1,4 @@
+[package]
+name = "jereide-backend"
+version.workspace = true
+edition = "2021"
