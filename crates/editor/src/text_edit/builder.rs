@@ -683,10 +683,8 @@ impl TextEdit<'_> {
         if ui.is_rect_visible(inner_rect) {
             let has_focus = ui.memory(|mem| mem.has_focus(id));
 
-            if has_focus {
-                if let Some(cursor_range) = state.cursor.range(&galley) {
-                    paint_text_selection(&mut galley, ui.visuals(), &cursor_range, None);
-                }
+            if let Some(cursor_range) = state.cursor.range(&galley) {
+                paint_text_selection(&mut galley, ui.visuals(), &cursor_range, None);
             }
 
             painter.galley(
