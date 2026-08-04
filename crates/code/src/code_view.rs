@@ -134,6 +134,11 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 }
             }
 
+            if let Some(target) = state.go_to_line_scroll_to {
+                scroll_to_char(ui, &galley, galley_pos, target);
+                state.go_to_line_scroll_to = None;
+            }
+
             if let Some(cursor_range) = text_output.cursor_range {
                 let tab_text = &state.tabs[active_idx].text;
                 if let Some((open_idx, close_idx)) =

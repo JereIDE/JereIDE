@@ -13,6 +13,7 @@ jereide-ui = { path = "../ui" }
 jereide-code = { path = "../code" }
 jereide-compose = { path = "../compose" }
 jereide-widgets = { path = "../widgets" }
+jereide-text = { path = "../text" }
 raw-window-handle = "0.6"
 
 [target.'cfg(target_os = "macos")'.dependencies]

@@ -76,6 +76,17 @@ impl AppMenu {
             ])
             .ok();
 
+        // The go menu
+        let go_menu = Submenu::with_id("go", "Go", true);
+        go_menu
+            .append_items(&[&MenuItem::with_id(
+                "editor: go to line",
+                "Go to Line…",
+                true,
+                "CmdOrCtrl+G".parse::<Accelerator>().ok(),
+            )])
+            .ok();
+
         // The view menu
         let view_menu = Submenu::with_id("view", "View", true);
         view_menu
@@ -111,6 +122,7 @@ impl AppMenu {
         menu.append(&app_menu).ok();
         menu.append(&file_menu).ok();
         menu.append(&edit_menu).ok();
+        menu.append(&go_menu).ok();
         menu.append(&view_menu).ok();
         menu.append(&help_menu).ok();
 

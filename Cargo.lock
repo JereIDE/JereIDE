@@ -2067,6 +2067,7 @@ dependencies = [
  "jereide-fs",
  "jereide-menu",
  "jereide-settings",
+ "jereide-text",
  "jereide-ui",
  "jereide-widgets",
  "objc2 0.5.2",

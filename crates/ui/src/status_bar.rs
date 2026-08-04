@@ -3,9 +3,11 @@ use jereide_core::constants::STATUS_BAR_MARGIN;
 use jereide_core::{AppState, CurrentView};
 use jereide_settings::{COMPOSE_BG, SURFACE_BG, TEXT_SECONDARY};
 
-pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) {
+pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) -> bool {
     let in_compose = state.current_view == CurrentView::Compose;
     let bg = if in_compose { COMPOSE_BG } else { SURFACE_BG };
+
+    let mut go_to_line_clicked = false;
 
     egui::Panel::bottom("status_bar")
         .frame(egui::Frame::NONE.fill(bg).inner_margin(STATUS_BAR_MARGIN))
@@ -34,9 +36,18 @@ pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if !state.tabs.is_empty() {
                         let tab = state.current_tab();
-                        ui.label(format!("{}:{}", tab.cursor_line, tab.cursor_col));
+                        let resp = ui.add(
+                            egui::Label::new(format!("{}:{}", tab.cursor_line, tab.cursor_col))
+                                .sense(egui::Sense::click()),
+                        );
+                        if resp.clicked() {
+                            go_to_line_clicked = true;
+                        }
+                        resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                     }
                 });
             });
         });
+
+    go_to_line_clicked
 }

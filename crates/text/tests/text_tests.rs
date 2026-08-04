@@ -1,5 +1,6 @@
 use jereide_text::{
-    char_index_to_line_col, char_range_substring, delete_char_range, insert_at_char_index,
+    char_index_to_line_col, char_range_substring, count_lines, delete_char_range,
+    insert_at_char_index, line_start_char_index,
 };
 
 #[test]
@@ -193,4 +194,40 @@ fn insert_at_char_index_with_unicode() {
 #[test]
 fn char_index_to_line_col_trailing_newline() {
     assert_eq!(char_index_to_line_col("line1\n", 6), (2, 1));
+}
+
+#[test]
+fn count_lines_empty() {
+    assert_eq!(count_lines(""), 1);
+}
+
+#[test]
+fn count_lines_single() {
+    assert_eq!(count_lines("hello"), 1);
+}
+
+#[test]
+fn count_lines_multiple() {
+    assert_eq!(count_lines("a\nb\nc"), 3);
+    assert_eq!(count_lines("a\nb\n"), 3);
+}
+
+#[test]
+fn line_start_char_index_first_line() {
+    assert_eq!(line_start_char_index("a\nb\nc", 1), 0);
+}
+
+#[test]
+fn line_start_char_index_second_line() {
+    assert_eq!(line_start_char_index("a\nb\nc", 2), 2);
+}
+
+#[test]
+fn line_start_char_index_beyond_end() {
+    assert_eq!(line_start_char_index("a\nb", 99), 3);
+}
+
+#[test]
+fn line_start_char_index_unicode() {
+    assert_eq!(line_start_char_index("😀\n🙂", 2), 2);
 }

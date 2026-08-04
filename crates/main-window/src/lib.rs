@@ -9,6 +9,7 @@ use jereide_fs::{
 use jereide_menu::AppMenu;
 use jereide_settings::{ACCENT, SURFACE_BG};
 use jereide_ui::find_replace_palette::{FindReplaceAction, FindReplacePalette};
+use jereide_ui::go_to_line_palette::GoToLinePalette;
 use jereide_ui::sidebar::clear_ls_cache;
 use jereide_widgets::widget_palette::WidgetPalette;
 use raw_window_handle::HasWindowHandle;
@@ -116,6 +117,8 @@ pub struct JereIDEApp {
     widget_palette_open: bool,
     find_palette: FindReplacePalette,
     find_palette_open: bool,
+    go_to_line_palette: Option<GoToLinePalette>,
+    go_to_line_open: bool,
 }
 
 impl JereIDEApp {
@@ -130,6 +133,8 @@ impl JereIDEApp {
             widget_palette_open: false,
             find_palette: FindReplacePalette::new(),
             find_palette_open: false,
+            go_to_line_palette: None,
+            go_to_line_open: false,
         }
     }
 
@@ -148,6 +153,19 @@ impl JereIDEApp {
                     self.find_palette.set_find(sel);
                 }
             }
+        }
+    }
+
+    fn toggle_go_to_line(&mut self) {
+        if self.state.tabs.is_empty() {
+            return;
+        }
+        if self.go_to_line_open {
+            self.go_to_line_open = false;
+            self.go_to_line_palette = None;
+        } else {
+            self.go_to_line_open = true;
+            self.go_to_line_palette = Some(GoToLinePalette::new());
         }
     }
 
@@ -293,6 +311,9 @@ impl JereIDEApp {
             "editor: find replace" => {
                 self.toggle_find_palette();
             }
+            "editor: go to line" => {
+                self.toggle_go_to_line();
+            }
             _ => {
                 jereide_code::edit::handle_edit_action(&mut self.state, ctx, action);
             }
@@ -352,6 +373,7 @@ impl eframe::App for JereIDEApp {
                     cmd && i.key_pressed(egui::Key::B),
                     cmd && i.modifiers.shift && i.key_pressed(egui::Key::W),
                     cmd && i.key_pressed(egui::Key::F),
+                    cmd && i.key_pressed(egui::Key::G),
                 )
             });
             let (
@@ -372,6 +394,7 @@ impl eframe::App for JereIDEApp {
                 want_toggle_sidebar,
                 want_widget_palette,
                 want_find_replace,
+                want_go_to_line,
             ) = input;
             if want_new {
                 self.handle_action("file: new", &ctx, frame);
@@ -421,6 +444,9 @@ impl eframe::App for JereIDEApp {
             if want_find_replace {
                 self.toggle_find_palette();
             }
+            if want_go_to_line {
+                self.toggle_go_to_line();
+            }
             if want_command_palette {
                 self.state.command_palette_open = !self.state.command_palette_open;
                 if self.state.command_palette_open {
@@ -457,10 +483,12 @@ impl eframe::App for JereIDEApp {
             }
         }
 
+        let go_to_line_clicked;
+
         {
             let state = &mut self.state;
 
-            jereide_ui::status_bar::render_status_bar(state, ui);
+            go_to_line_clicked = jereide_ui::status_bar::render_status_bar(state, ui);
 
             egui::CentralPanel::default()
                 .frame(egui::Frame::NONE.fill(SURFACE_BG))
@@ -509,6 +537,10 @@ impl eframe::App for JereIDEApp {
                 );
                 self.compose.render(&mut overlay_ui);
             }
+        }
+
+        if go_to_line_clicked {
+            self.toggle_go_to_line();
         }
 
         use jereide_ui::dialog::{CloseConfirmAction, LargeFileAction};
@@ -661,6 +693,22 @@ impl eframe::App for JereIDEApp {
         } else {
             self.state.find_highlight = None;
             self.find_palette_open = false;
+        }
+
+        if self.go_to_line_open && !self.state.tabs.is_empty() {
+            let idx = self.state.active_tab_index;
+            let total_lines = jereide_text::count_lines(&self.state.tabs[idx].text);
+            if let Some(palette) = &mut self.go_to_line_palette {
+                if let Some(line) = palette.render(&ctx, total_lines, &mut self.go_to_line_open) {
+                    let tab_text = self.state.tabs[idx].text.clone();
+                    let target = jereide_text::line_start_char_index(&tab_text, line);
+                    jereide_code::go_to_line::go_to_line(&mut self.state, &ctx, target);
+                    self.state.go_to_line_scroll_to = Some(target);
+                }
+            }
+        } else {
+            self.go_to_line_open = false;
+            self.go_to_line_palette = None;
         }
 
         jereide_ui::dialog::render_about_dialog(&ctx, &mut self.state.show_about_dialog);

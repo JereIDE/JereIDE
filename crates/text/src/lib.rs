@@ -1,3 +1,25 @@
+/// Number of lines, counting each `\n` as the end of a line.
+pub fn count_lines(text: &str) -> usize {
+    text.chars().filter(|&c| c == '\n').count() + 1
+}
+
+/// Char index of the start of the given 1-based line. Clamps to the end of the text.
+pub fn line_start_char_index(text: &str, line: usize) -> usize {
+    if line <= 1 {
+        return 0;
+    }
+    let mut current = 1;
+    for (char_idx, ch) in text.chars().enumerate() {
+        if ch == '\n' {
+            current += 1;
+            if current == line {
+                return char_idx + 1;
+            }
+        }
+    }
+    text.chars().count()
+}
+
 /// For the line/column indicator.
 pub fn char_index_to_line_col(text: &str, char_index: usize) -> (usize, usize) {
     let mut line = 0;
