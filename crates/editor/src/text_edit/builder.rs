@@ -62,6 +62,7 @@ pub struct TextEdit<'t> {
     return_key: Option<KeyboardShortcut>,
     background_color: Option<Color32>,
     gutter_config: Option<GutterConfig>,
+    gutter_scroll_x: f32,
 }
 
 impl WidgetWithState for TextEdit<'_> {
@@ -120,6 +121,7 @@ impl<'t> TextEdit<'t> {
             return_key: Some(KeyboardShortcut::new(Modifiers::NONE, Key::Enter)),
             background_color: None,
             gutter_config: None,
+            gutter_scroll_x: 0.0,
         }
     }
 
@@ -286,6 +288,11 @@ impl<'t> TextEdit<'t> {
         self.gutter_config = Some(config);
         self
     }
+
+    pub fn gutter_scroll_x(mut self, x: f32) -> Self {
+        self.gutter_scroll_x = x;
+        self
+    }
 }
 
 impl Widget for TextEdit<'_> {
@@ -322,6 +329,7 @@ impl TextEdit<'_> {
             return_key,
             background_color,
             gutter_config,
+            gutter_scroll_x,
         } = self;
 
         let line_count = if text.as_str().is_empty() {
@@ -582,11 +590,9 @@ impl TextEdit<'_> {
         let mut galley = get_galley.expect("Galley should be available here");
 
         response.flags -= response::Flags::FAKE_PRIMARY_CLICKED;
+        let pinned_text_left = inner_rect.left() + gutter_scroll_x;
         let text_clip_rect = if gutter_w > 0.0 {
-            Rect::from_min_max(
-                pos2(inner_rect.left() - gutter_w, inner_rect.top()),
-                inner_rect.max,
-            )
+            Rect::from_min_max(pos2(pinned_text_left, inner_rect.top()), inner_rect.max)
         } else {
             inner_rect
         };
@@ -736,14 +742,16 @@ impl TextEdit<'_> {
         }
 
         if let Some(ref gutter) = gutter_config {
+            let gutter_painter = ui.painter();
+            let pinned_text_left = inner_rect.left() + gutter_scroll_x;
             let gutter_rect = Rect::from_min_max(
-                pos2(inner_rect.left() - gutter_w, inner_rect.top()),
+                pos2(ui.clip_rect().left(), response.rect.top()),
                 pos2(
-                    inner_rect.left() - 1.0,
-                    inner_rect.bottom().max(inner_rect.top()),
+                    pinned_text_left - 1.0,
+                    response.rect.bottom().max(response.rect.top()),
                 ),
             );
-            painter.rect_filled(gutter_rect, 0.0, gutter.background_color);
+            gutter_painter.rect_filled(gutter_rect, 0.0, gutter.background_color);
 
             for (i, row) in galley.rows.iter().enumerate() {
                 let line_num = i + 1;
@@ -754,8 +762,8 @@ impl TextEdit<'_> {
                 } else {
                     gutter.muted_color
                 };
-                let x = inner_rect.left() - gutter.line_number_right_offset;
-                painter.text(
+                let x = pinned_text_left - gutter.line_number_right_offset;
+                gutter_painter.text(
                     pos2(x, line_y),
                     Align2::RIGHT_TOP,
                     line_num.to_string(),

@@ -78,7 +78,13 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
 
     let old_text = state.tabs[active_idx].text.clone();
 
+    let scroll_area_id = ui.make_persistent_id(egui::Id::new("editor_scroll"));
+    let gutter_scroll_x = egui::containers::scroll_area::State::load(ui.ctx(), scroll_area_id)
+        .map(|s| s.offset.x)
+        .unwrap_or(0.0);
+
     let text_edit_output = egui::ScrollArea::both()
+        .id_salt("editor_scroll")
         .auto_shrink(false)
         .show(ui, |ui| {
             let viewport = ui.max_rect().size();
@@ -99,6 +105,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 ..egui::Frame::NONE
             })
             .layouter(&mut layouter)
+            .gutter_scroll_x(gutter_scroll_x)
             .show_gutter(jereide_editor::GutterConfig {
                 padding_left: GUTTER_PADDING_LEFT,
                 padding_right: GUTTER_PADDING_RIGHT,
