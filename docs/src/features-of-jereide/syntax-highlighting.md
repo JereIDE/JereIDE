@@ -2,8 +2,8 @@
 
 JereIDE colorizes code automatically as you type. Highlighting for the correct language is done based on file extension.
 
-> [!WARNING]
-> Syntax highlighting will increase typing latency dramatically. This is under inspection and a fix is coming on the way.
+> [!TIP]
+> Syntax highlighting will make typing a bit slower, but it's already quite fast because of recent fixes.
 
 ## Language Support
 

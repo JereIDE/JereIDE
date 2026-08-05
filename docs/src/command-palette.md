@@ -54,13 +54,17 @@ Selects everything inside the current file.
 
 Opens a find&replace palette. You can learn more [here.](./features-of-jereide/find-and-replace.md)
 
+## `editor: go to line`
+
+Opens an entry for you to jump to a certain line. Also invokable by status bar line indicator or `Cmd/Ctrl+G`.
+
 ## `command palette: toggle`
 
 Since the command palette is open, this will close it.
 
 ## `view: toggle sidebar`
 
-Shows or hides the sidebar. (Experimental)
+Shows or hides the sidebar. (Experimental) Also invokable by `Cmd/Ctrl+B`.
 
 ## `view: code`
 
@@ -72,7 +76,7 @@ Switches to the compose mode.
 
 ## `jereide: open settings`
 
-Opens settings in the future, does nothing right now
+Opens settings.toml in a new tab. Also invokable by App Menu or `Cmd/Ctrl+,`.
 
 ## `jereide: toggle fullscreen`
 
