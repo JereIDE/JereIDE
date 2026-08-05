@@ -33,8 +33,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn new_palette() {
-        let palette = GoToLinePalette::new();
-        assert_eq!(palette.palette.input, "");
+    fn closed_palette_returns_none() {
+        let mut palette = GoToLinePalette::new();
+        let ctx = egui::Context::default();
+        let mut open = false;
+        assert_eq!(palette.render(&ctx, 100, &mut open), None);
+        assert!(!open);
     }
 }
