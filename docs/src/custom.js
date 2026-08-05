@@ -7,6 +7,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }, 100);
 });
 
+const s = document.createElement("script");
+s.defer = true;
+s.src = "https://cloud.umami.is/script.js";
+s.setAttribute("data-website-id", "c43aa06e-2825-4273-977f-787b149a63ec");
+document.head.appendChild(s);
+
 function modifyMenuBar() {
   const menuBar = document.getElementById("mdbook-menu-bar");
   if (!menuBar) return;
