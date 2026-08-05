@@ -265,12 +265,12 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
     if let Some(cursor_range) = text_edit_output.cursor_range {
         let cursor_idx: usize = cursor_range.primary.index.into();
 
-        // For the status bar Line/Col indicator
+        // For the status bar Line/Col indicator, some stuff to help it
         let (line, col) = char_index_to_line_col(&state.tabs[active_idx].text, cursor_idx);
         state.tabs[active_idx].cursor_line = line;
         state.tabs[active_idx].cursor_col = col;
 
-        // Auto-indent on Enter
+        // Auto-indenting is great!
         let text_len = state.tabs[active_idx].text.len();
         if text_len > old_text.len()
             && cursor_idx > 0
@@ -293,12 +293,21 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                         .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
                             new_cursor,
                         ))));
+
+                    let cursor_range = edit_state
+                        .cursor
+                        .char_range()
+                        .unwrap_or(egui::text::CCursorRange::one(CCursor::new(new_cursor)));
+                    edit_state.undoer().feed_state(
+                        ctx.input(|i| i.time),
+                        &(cursor_range, state.tabs[active_idx].text.clone()),
+                    );
                     edit_state.store(&ctx, text_edit_output.response.id);
                 }
             }
         }
 
-        // Auto-pair brackets and quotes
+        // Auto-pair brackets and quotes and stuff
         if text_len == old_text.len() + 1 && cursor_idx > 0 {
             let bytes = state.tabs[active_idx].text.as_bytes();
             let c = bytes[cursor_idx - 1] as char;
@@ -328,6 +337,12 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                         jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
                     {
                         store_cursor(&mut edit_state);
+                        if let Some(cursor_range) = edit_state.cursor.char_range() {
+                            edit_state.undoer().feed_state(
+                                ctx.input(|i| i.time),
+                                &(cursor_range, state.tabs[active_idx].text.clone()),
+                            );
+                        }
                         edit_state.store(&ctx, text_edit_output.response.id);
                     }
                 } else if is_opening {
@@ -336,14 +351,21 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                         jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
                     {
                         store_cursor(&mut edit_state);
+                        // Feed undo state after insertion to make it undoable
+                        if let Some(cursor_range) = edit_state.cursor.char_range() {
+                            edit_state.undoer().feed_state(
+                                ctx.input(|i| i.time),
+                                &(cursor_range, state.tabs[active_idx].text.clone()),
+                            );
+                        }
                         edit_state.store(&ctx, text_edit_output.response.id);
                     }
                 }
             }
         }
 
-        // Smart bracket deletion: deleting the opening bracket of an empty
-        // pair also removes the matching closing bracket.
+        // Smart bracket deletion, so deleting will delete... like, deleting the opening will delete
+        // the closing bracket.
         if should_delete_bracket_pair(&old_text, &state.tabs[active_idx].text, cursor_idx) {
             state.tabs[active_idx].text.remove(cursor_idx);
             if let Some(mut edit_state) =
@@ -354,6 +376,13 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                     .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
                         cursor_idx,
                     ))));
+
+                if let Some(cursor_range) = edit_state.cursor.char_range() {
+                    edit_state.undoer().feed_state(
+                        ctx.input(|i| i.time),
+                        &(cursor_range, state.tabs[active_idx].text.clone()),
+                    );
+                }
                 edit_state.store(&ctx, text_edit_output.response.id);
             }
         }
