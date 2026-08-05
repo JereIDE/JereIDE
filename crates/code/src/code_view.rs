@@ -78,7 +78,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
 
     let old_text = state.tabs[active_idx].text.clone();
 
-    let scroll_area_id = ui.make_persistent_id(egui::Id::new("editor_scroll"));
+    let scroll_area_id = ui.make_persistent_id(egui::IdSalt::new("editor_scroll"));
     let gutter_scroll_x = egui::containers::scroll_area::State::load(ui.ctx(), scroll_area_id)
         .map(|s| s.offset.x)
         .unwrap_or(0.0);
