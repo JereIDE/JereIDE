@@ -1,11 +1,15 @@
 use eframe::egui;
 use jereide_core::constants::STATUS_BAR_MARGIN;
 use jereide_core::{AppState, CurrentView};
-use jereide_settings::{COMPOSE_BG, SURFACE_BG, TEXT_SECONDARY};
+use jereide_settings::{compose_bg, surface_bg, text_secondary};
 
 pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) -> bool {
     let in_compose = state.current_view == CurrentView::Compose;
-    let bg = if in_compose { COMPOSE_BG } else { SURFACE_BG };
+    let bg = if in_compose {
+        compose_bg()
+    } else {
+        surface_bg()
+    };
 
     let mut go_to_line_clicked = false;
 
@@ -16,14 +20,14 @@ pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) -> bool {
                 return;
             }
             ui.horizontal(|ui| {
-                ui.colored_label(TEXT_SECONDARY, format!("v{}", env!("CARGO_PKG_VERSION")));
+                ui.colored_label(text_secondary(), format!("v{}", env!("CARGO_PKG_VERSION")));
                 if !state.tabs.is_empty() {
                     let tab = state.current_tab();
                     if tab.file_path.is_some() {
                         let lang = jereide_data::lookup_language_by_path(tab.file_path.as_deref());
                         let sep = if lang.is_some() { " · " } else { "" };
                         ui.colored_label(
-                            TEXT_SECONDARY,
+                            text_secondary(),
                             format!(
                                 "{}{}{}",
                                 lang.as_ref().map(|l| l.name.as_str()).unwrap_or(""),

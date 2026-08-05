@@ -3,7 +3,7 @@ use std::sync::OnceLock;
 use eframe::egui;
 use jereide_data::data_dir;
 use jereide_settings::{
-    COMPOSE_VIEW_FONT_SIZE, EDITOR_FONT_SIZE, SURFACE_BG, TEXT_MUTED, TEXT_PRIMARY, TEXT_SECONDARY,
+    compose_view_font_size, editor_font_size, surface_bg, text_muted, text_primary, text_secondary,
 };
 
 fn app_icon() -> egui::Image<'static> {
@@ -18,7 +18,7 @@ fn app_icon() -> egui::Image<'static> {
 
 pub fn render_welcome_view(ui: &mut egui::Ui) {
     let rect = ui.max_rect();
-    ui.painter().rect_filled(rect, 0.0, SURFACE_BG);
+    ui.painter().rect_filled(rect, 0.0, surface_bg());
     ui.put(
         egui::Rect::from_center_size(
             egui::pos2(rect.center().x - 110.0, rect.center().y + 13.0),
@@ -26,7 +26,7 @@ pub fn render_welcome_view(ui: &mut egui::Ui) {
         ),
         app_icon(),
     );
-    let font = egui::FontId::proportional(COMPOSE_VIEW_FONT_SIZE);
+    let font = egui::FontId::proportional(compose_view_font_size());
     let version = format!("v{}", env!("CARGO_PKG_VERSION"));
     let main = "Welcome back to JereIDE ";
     let full_text = format!("{}{}", main, version);
@@ -36,25 +36,25 @@ pub fn render_welcome_view(ui: &mut egui::Ui) {
     job.sections.push(egui::text::LayoutSection {
         leading_space: 0.0,
         byte_range: 0..main_end,
-        format: egui::TextFormat::simple(font.clone(), TEXT_PRIMARY),
+        format: egui::TextFormat::simple(font.clone(), text_primary()),
     });
     job.sections.push(egui::text::LayoutSection {
         leading_space: 0.0,
         byte_range: main_end..job.text.len(),
-        format: egui::TextFormat::simple(font, TEXT_SECONDARY),
+        format: egui::TextFormat::simple(font, text_secondary()),
     });
     let galley = ui.fonts_mut(|f| f.layout_job(job));
     let text_pos = egui::pos2(
         rect.center().x - 70.0,
         rect.center().y - galley.size().y / 2.0,
     );
-    ui.painter().galley(text_pos, galley, TEXT_PRIMARY);
+    ui.painter().galley(text_pos, galley, text_primary());
 
     ui.painter().text(
         egui::Pos2::new(rect.center().x - 70.0, rect.center().y + 26.0),
         egui::Align2::LEFT_CENTER,
         "The ready-to-use editor that nobody ever uses",
-        egui::FontId::proportional(EDITOR_FONT_SIZE),
-        TEXT_MUTED,
+        egui::FontId::proportional(editor_font_size()),
+        text_muted(),
     );
 }

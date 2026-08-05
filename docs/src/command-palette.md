@@ -70,6 +70,10 @@ Switches to the code mode.
 
 Switches to the compose mode.
 
+## `jereide: open settings`
+
+Opens settings in the future, does nothing right now
+
 ## `jereide: toggle fullscreen`
 
 Toggles fullscreen, literally.

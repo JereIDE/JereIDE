@@ -2,7 +2,7 @@ use std::sync::OnceLock;
 
 use eframe::egui;
 use jereide_data::data_dir;
-use jereide_settings::DIALOG_WIDTH;
+use jereide_settings::dialog_width;
 use jereide_text::find_matches;
 
 const FIND_ID: &str = "find_replace_palette_find";
@@ -154,7 +154,7 @@ impl FindReplacePalette {
         let mut action = None;
         let mut find_id = egui::Id::NULL;
         let mut replace_id = egui::Id::NULL;
-        let window_width = DIALOG_WIDTH + 120.0;
+        let window_width = dialog_width() + 120.0;
         let enter_pressed = ctx.input(|i| i.key_pressed(egui::Key::Enter));
 
         egui::Window::new("Find / Replace")

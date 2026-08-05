@@ -1,5 +1,5 @@
 use eframe::egui;
-use jereide_settings::COMPOSE_BG;
+use jereide_settings::compose_bg;
 
 pub struct Compose {
     pub prompt: String,
@@ -14,7 +14,7 @@ impl Compose {
 
     pub fn render(&mut self, ui: &mut egui::Ui) {
         let rect = ui.max_rect();
-        ui.painter().rect_filled(rect, 0.0, COMPOSE_BG);
+        ui.painter().rect_filled(rect, 0.0, compose_bg());
 
         let avail = ui.available_rect_before_wrap();
         let text_width = avail.width() * 0.8;

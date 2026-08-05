@@ -9,8 +9,8 @@ use jereide_core::constants::{
 };
 use jereide_core::AppState;
 use jereide_settings::{
-    BRACKET_MATCH, EDITOR_FONT_SIZE, FIND_HIGHLIGHT, FIND_HIGHLIGHT_CURRENT, SURFACE_BG,
-    TEXT_CURRENT_LINE, TEXT_MUTED,
+    bracket_match, editor_font_size, find_highlight, find_highlight_current, surface_bg,
+    text_current_line, text_muted,
 };
 use jereide_text::{char_index_to_line_col, char_range_substring, find_matches};
 
@@ -28,7 +28,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
     let ctx = ui.ctx().clone();
 
     let style = ui.style_mut();
-    style.visuals.extreme_bg_color = SURFACE_BG;
+    style.visuals.extreme_bg_color = surface_bg();
     style.visuals.widgets.inactive.bg_stroke = egui::Stroke::NONE;
     style.visuals.widgets.hovered.bg_stroke = egui::Stroke::NONE;
     style.visuals.widgets.active.bg_stroke = egui::Stroke::NONE;
@@ -58,10 +58,10 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         cache.retain(|id, _| valid_ids.contains(id));
         cache
             .entry(tab_id)
-            .or_insert_with(|| SyntaxHighlighter::new(EDITOR_FONT_SIZE, syntax_file.as_deref()));
+            .or_insert_with(|| SyntaxHighlighter::new(editor_font_size(), syntax_file.as_deref()));
     });
 
-    let font_id = egui::FontId::monospace(EDITOR_FONT_SIZE);
+    let font_id = egui::FontId::monospace(editor_font_size());
     let cursor_line = state.tabs[active_idx].cursor_line;
 
     let mut layouter =
@@ -111,9 +111,9 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 padding_right: GUTTER_PADDING_RIGHT,
                 digit_width: GUTTER_DIGIT_WIDTH,
                 line_number_right_offset: GUTTER_LINE_NUMBER_RIGHT_OFFSET,
-                current_line_color: TEXT_CURRENT_LINE,
-                muted_color: TEXT_MUTED,
-                background_color: SURFACE_BG,
+                current_line_color: text_current_line(),
+                muted_color: text_muted(),
+                background_color: surface_bg(),
                 font_id: font_id.clone(),
                 current_line: cursor_line,
             })
@@ -169,7 +169,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                                         egui::vec2(w, h),
                                     ),
                                     2.0,
-                                    BRACKET_MATCH.linear_multiply(0.3),
+                                    bracket_match().linear_multiply(0.3),
                                 );
                             }
                         }
@@ -377,9 +377,9 @@ fn paint_find_highlights(
             continue;
         }
         let color = if i == current {
-            FIND_HIGHLIGHT_CURRENT.linear_multiply(0.4)
+            find_highlight_current().linear_multiply(0.4)
         } else {
-            FIND_HIGHLIGHT.linear_multiply(0.25)
+            find_highlight().linear_multiply(0.25)
         };
         let Some((start_row, start_x)) = char_row_x(galley, s) else {
             continue;

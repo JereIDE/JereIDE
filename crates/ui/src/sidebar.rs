@@ -6,7 +6,7 @@ use std::time::SystemTime;
 use eframe::egui;
 use jereide_core::AppState;
 use jereide_fs::{list_directory, DirectoryEntry};
-use jereide_settings::{TEXT_DEFAULT, TEXT_MUTED, TEXT_SECONDARY};
+use jereide_settings::{text_default, text_muted, text_secondary};
 
 struct CachedListing {
     entries: Vec<DirectoryEntry>,
@@ -34,12 +34,12 @@ pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
             ui.set_min_height(ui.available_height());
             ui.vertical(|ui| {
                 ui.add_space(12.0);
-                ui.colored_label(TEXT_MUTED, "Explorer");
+                ui.colored_label(text_muted(), "Explorer");
                 ui.add_space(4.0);
 
                 match state.current_project_dir.clone() {
                     Some(dir) => {
-                        ui.colored_label(TEXT_SECONDARY, &dir);
+                        ui.colored_label(text_secondary(), &dir);
                         ui.separator();
 
                         let entries = LS_CACHE.with(|cache| {
@@ -68,16 +68,16 @@ pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
                         egui::ScrollArea::vertical().show(ui, |ui| {
                             for entry in &entries {
                                 if entry.is_directory {
-                                    ui.colored_label(TEXT_DEFAULT, format!("{}/", entry.name));
+                                    ui.colored_label(text_default(), format!("{}/", entry.name));
                                 } else {
-                                    ui.colored_label(TEXT_SECONDARY, &entry.name);
+                                    ui.colored_label(text_secondary(), &entry.name);
                                 }
                             }
                         });
                     }
                     None => {
                         ui.add_space(4.0);
-                        ui.colored_label(TEXT_MUTED, "No project open.");
+                        ui.colored_label(text_muted(), "No project open.");
                     }
                 }
             });

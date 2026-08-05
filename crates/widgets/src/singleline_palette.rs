@@ -1,5 +1,5 @@
 use eframe::egui;
-use jereide_settings::DIALOG_WIDTH;
+use jereide_settings::dialog_width;
 
 pub struct SinglelinePalette {
     input: String,
@@ -16,9 +16,6 @@ impl SinglelinePalette {
         }
     }
 
-    /// Renders a centered palette with a single text entry. Returns the
-    /// entered text when the user submits with Enter, or `None` while the
-    /// palette is still open.
     pub fn render(
         &mut self,
         ctx: &egui::Context,
@@ -73,7 +70,7 @@ impl SinglelinePalette {
         }
 
         let enter_pressed = ctx.input(|i| i.key_pressed(egui::Key::Enter));
-        let window_width = DIALOG_WIDTH + 120.0;
+        let window_width = dialog_width() + 120.0;
         let input_id = egui::Id::new(title).with("input");
 
         egui::Window::new(title)

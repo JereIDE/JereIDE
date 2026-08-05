@@ -6,9 +6,9 @@ use regex::Regex;
 use serde::Deserialize;
 
 use jereide_settings::{
-    SYNTAX_CODE, SYNTAX_COMMENT, SYNTAX_EMPHASIS, SYNTAX_FUNCTION, SYNTAX_HEADING, SYNTAX_KEYWORD,
-    SYNTAX_KEYWORD2, SYNTAX_LINK, SYNTAX_LITERAL, SYNTAX_NUMBER, SYNTAX_OPERATOR, SYNTAX_STRING,
-    TEXT_DEFAULT,
+    syntax_code, syntax_comment, syntax_emphasis, syntax_function, syntax_heading, syntax_keyword,
+    syntax_keyword2, syntax_link, syntax_literal, syntax_number, syntax_operator, syntax_string,
+    text_default,
 };
 
 #[derive(Debug, Deserialize)]
@@ -339,19 +339,19 @@ fn resolve_type(
 
 fn type_to_color(type_: &str) -> Color32 {
     match type_ {
-        "keyword" => SYNTAX_KEYWORD,
-        "keyword2" => SYNTAX_KEYWORD2,
-        "string" => SYNTAX_STRING,
-        "comment" => SYNTAX_COMMENT,
-        "number" => SYNTAX_NUMBER,
-        "operator" => SYNTAX_OPERATOR,
-        "function" => SYNTAX_FUNCTION,
-        "literal" => SYNTAX_LITERAL,
-        "heading" => SYNTAX_HEADING,
-        "code" => SYNTAX_CODE,
-        "emphasis" => SYNTAX_EMPHASIS,
-        "link" => SYNTAX_LINK,
-        _ => TEXT_DEFAULT,
+        "keyword" => syntax_keyword(),
+        "keyword2" => syntax_keyword2(),
+        "string" => syntax_string(),
+        "comment" => syntax_comment(),
+        "number" => syntax_number(),
+        "operator" => syntax_operator(),
+        "function" => syntax_function(),
+        "literal" => syntax_literal(),
+        "heading" => syntax_heading(),
+        "code" => syntax_code(),
+        "emphasis" => syntax_emphasis(),
+        "link" => syntax_link(),
+        _ => text_default(),
     }
 }
 
@@ -402,7 +402,7 @@ impl SyntaxHighlighter {
                 job.sections.push(egui::text::LayoutSection {
                     leading_space: 0.0,
                     byte_range: 0..text.len(),
-                    format: TextFormat::simple(self.font_id.clone(), TEXT_DEFAULT),
+                    format: TextFormat::simple(self.font_id.clone(), text_default()),
                 });
             }
             self.cached_text = text.to_string();
@@ -533,7 +533,7 @@ impl SyntaxHighlighter {
             job.sections.push(egui::text::LayoutSection {
                 leading_space: 0.0,
                 byte_range: 0..text.len(),
-                format: TextFormat::simple(self.font_id.clone(), TEXT_DEFAULT),
+                format: TextFormat::simple(self.font_id.clone(), text_default()),
             });
         }
 
@@ -563,7 +563,7 @@ mod tests {
     fn markdown_loads_and_highlights_heading() {
         let colors = section_colors("# Hello\n");
         assert!(
-            colors.iter().any(|&(_, _, c)| c == SYNTAX_HEADING),
+            colors.iter().any(|&(_, _, c)| c == syntax_heading()),
             "expected a heading-colored section, got {:?}",
             colors
         );
@@ -573,7 +573,7 @@ mod tests {
     fn markdown_highlights_inline_code() {
         let colors = section_colors("Use `x` here\n");
         assert!(
-            colors.iter().any(|&(_, _, c)| c == SYNTAX_CODE),
+            colors.iter().any(|&(_, _, c)| c == syntax_code()),
             "expected a code-colored section, got {:?}",
             colors
         );
@@ -583,7 +583,7 @@ mod tests {
     fn markdown_highlights_bold() {
         let colors = section_colors("some **bold** text\n");
         assert!(
-            colors.iter().any(|&(_, _, c)| c == SYNTAX_EMPHASIS),
+            colors.iter().any(|&(_, _, c)| c == syntax_emphasis()),
             "expected an emphasis-colored section, got {:?}",
             colors
         );
@@ -594,7 +594,7 @@ mod tests {
         let text = "```rust\nlet x = 1;\n```\n";
         let colors = section_colors(text);
         assert!(
-            colors.iter().any(|&(_, _, c)| c == SYNTAX_CODE),
+            colors.iter().any(|&(_, _, c)| c == syntax_code()),
             "expected a code-colored section for the fenced block, got {:?}",
             colors
         );
@@ -605,7 +605,7 @@ mod tests {
         let text = "```rust\nlet x = 1;\n```\n# After\n";
         let colors = section_colors(text);
         assert!(
-            colors.iter().any(|&(_, _, c)| c == SYNTAX_HEADING),
+            colors.iter().any(|&(_, _, c)| c == syntax_heading()),
             "expected content after the closing fence to be highlighted (not swallowed by the \
              code block), got {:?}",
             colors
@@ -617,7 +617,7 @@ mod tests {
         let text = "Hello × world\n```rust\nlet s = \"×\";\n```\n# × Heading\n";
         let colors = section_colors(text);
         assert!(
-            colors.iter().any(|&(_, _, c)| c == SYNTAX_HEADING),
+            colors.iter().any(|&(_, _, c)| c == syntax_heading()),
             "expected a heading-colored section, got {:?}",
             colors
         );
@@ -633,11 +633,11 @@ mod tests {
         }
         let colors = section_colors(&text);
         assert!(
-            colors.iter().any(|&(_, _, c)| c == SYNTAX_HEADING),
+            colors.iter().any(|&(_, _, c)| c == syntax_heading()),
             "expected headings to be highlighted in a large file"
         );
         assert!(
-            colors.iter().any(|&(_, _, c)| c == SYNTAX_EMPHASIS),
+            colors.iter().any(|&(_, _, c)| c == syntax_emphasis()),
             "expected emphasis to be highlighted in a large file"
         );
     }

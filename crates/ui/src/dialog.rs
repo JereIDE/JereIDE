@@ -1,7 +1,7 @@
 use eframe::egui;
 use jereide_core::AppState;
 use jereide_settings::{
-    ACCENT, DESTRUCTIVE, DIALOG_WIDTH, TEXT_DEFAULT, TEXT_MUTED, TEXT_SECONDARY,
+    accent, destructive, dialog_width, text_default, text_muted, text_secondary,
 };
 
 pub enum CloseConfirmAction {
@@ -34,7 +34,7 @@ pub fn render_close_confirm_modal(
         .title_bar(false)
         .collapsible(false)
         .resizable(false)
-        .max_width(DIALOG_WIDTH)
+        .max_width(dialog_width())
         .order(egui::Order::Tooltip)
         .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
@@ -53,7 +53,7 @@ pub fn render_close_confirm_modal(
             if ui
                 .add_sized(
                     egui::vec2(btn_w, 0.0),
-                    egui::Button::new("Save").fill(ACCENT),
+                    egui::Button::new("Save").fill(accent()),
                 )
                 .clicked()
             {
@@ -107,23 +107,26 @@ pub fn render_large_file_blocked(ctx: &egui::Context, size: u64) -> bool {
         .title_bar(false)
         .collapsible(false)
         .resizable(false)
-        .max_width(DIALOG_WIDTH)
+        .max_width(dialog_width())
         .order(egui::Order::Tooltip)
         .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 ui.colored_label(
-                    TEXT_DEFAULT,
+                    text_default(),
                     format!("This file is {:.1} MB.", size as f64 / 1024.0 / 1024.0),
                 );
-                ui.colored_label(TEXT_MUTED, "Files larger than 200 MB cannot be opened.");
+                ui.colored_label(text_muted(), "Files larger than 200 MB cannot be opened.");
             });
 
             ui.add_space(10.0);
 
             let btn_w = ui.available_width();
             if ui
-                .add_sized(egui::vec2(btn_w, 0.0), egui::Button::new("OK").fill(ACCENT))
+                .add_sized(
+                    egui::vec2(btn_w, 0.0),
+                    egui::Button::new("OK").fill(accent()),
+                )
                 .clicked()
             {
                 dismissed = true;
@@ -154,17 +157,17 @@ pub fn render_large_file_warning(
         .title_bar(false)
         .collapsible(false)
         .resizable(false)
-        .max_width(DIALOG_WIDTH)
+        .max_width(dialog_width())
         .order(egui::Order::Tooltip)
         .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 ui.colored_label(
-                    TEXT_DEFAULT,
+                    text_default(),
                     format!("This file is {:.1} MB.", size as f64 / 1024.0 / 1024.0),
                 );
                 ui.colored_label(
-                    TEXT_MUTED,
+                    text_muted(),
                     "Opening very large files may cause performance issues.",
                 );
             });
@@ -177,7 +180,7 @@ pub fn render_large_file_warning(
             if ui
                 .add_sized(
                     egui::vec2(btn_w, 0.0),
-                    egui::Button::new("Cancel").fill(ACCENT),
+                    egui::Button::new("Cancel").fill(accent()),
                 )
                 .clicked()
             {
@@ -187,7 +190,7 @@ pub fn render_large_file_warning(
             if ui
                 .add_sized(
                     egui::vec2(btn_w, 0.0),
-                    egui::Button::new(egui::RichText::new("Open Anyway").color(DESTRUCTIVE)),
+                    egui::Button::new(egui::RichText::new("Open Anyway").color(destructive())),
                 )
                 .clicked()
             {
@@ -224,7 +227,7 @@ pub fn render_about_dialog(ctx: &egui::Context, open: &mut bool) {
         .title_bar(false)
         .collapsible(false)
         .resizable(false)
-        .max_width(DIALOG_WIDTH)
+        .max_width(dialog_width())
         .order(egui::Order::Tooltip)
         .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
@@ -233,11 +236,11 @@ pub fn render_about_dialog(ctx: &egui::Context, open: &mut bool) {
                 ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
                 ui.add_space(8.0);
                 ui.colored_label(
-                    TEXT_SECONDARY,
+                    text_secondary(),
                     egui::RichText::new("The ready-to-use editor that nobody ever uses.").italics(),
                 );
                 ui.add_space(4.0);
-                ui.colored_label(TEXT_MUTED, "Built with egui");
+                ui.colored_label(text_muted(), "Built with egui");
             });
 
             ui.add_space(16.0);
@@ -246,7 +249,7 @@ pub fn render_about_dialog(ctx: &egui::Context, open: &mut bool) {
             if ui
                 .add_sized(
                     egui::vec2(btn_w, 0.0),
-                    egui::Button::new("Close").fill(ACCENT),
+                    egui::Button::new("Close").fill(accent()),
                 )
                 .clicked()
             {

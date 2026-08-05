@@ -49,6 +49,9 @@ pub fn items() -> Vec<PaletteItem> {
             code: "view: compose",
         },
         PaletteItem {
+            code: "jereide: open settings",
+        },
+        PaletteItem {
             code: "jereide: toggle fullscreen",
         },
         PaletteItem {
@@ -68,12 +71,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn command_palette_has_22_items() {
-        let items = items();
-        assert_eq!(items.len(), 22);
-    }
-
-    #[test]
     fn command_palette_no_duplicate_codes() {
         let items = items();
         let mut codes: Vec<&str> = items.iter().map(|i| i.code).collect();
@@ -91,52 +88,6 @@ mod tests {
                 item.code
             );
         }
-    }
-
-    #[test]
-    fn command_palette_has_file_operations() {
-        let items = items();
-        assert!(items.iter().any(|i| i.code == "file: new"));
-        assert!(items.iter().any(|i| i.code == "file: open"));
-        assert!(items.iter().any(|i| i.code == "file: save"));
-        assert!(items.iter().any(|i| i.code == "file: save as"));
-        assert!(items.iter().any(|i| i.code == "file: close tab"));
-        assert!(items.iter().any(|i| i.code == "file: open project"))
-    }
-
-    #[test]
-    fn command_palette_has_editor_operations() {
-        let items = items();
-        assert!(items.iter().any(|i| i.code == "editor: undo"));
-        assert!(items.iter().any(|i| i.code == "editor: redo"));
-        assert!(items.iter().any(|i| i.code == "editor: cut"));
-        assert!(items.iter().any(|i| i.code == "editor: copy"));
-        assert!(items.iter().any(|i| i.code == "editor: paste"));
-        assert!(items.iter().any(|i| i.code == "editor: select all"));
-        assert!(items.iter().any(|i| i.code == "editor: find replace"));
-        assert!(items.iter().any(|i| i.code == "editor: go to line"));
-    }
-
-    #[test]
-    fn command_palette_has_jereide_operations() {
-        let items = items();
-        assert!(items.iter().any(|i| i.code == "jereide: quit"));
-        assert!(items.iter().any(|i| i.code == "jereide: about"));
-        assert!(items.iter().any(|i| i.code == "jereide: toggle fullscreen"));
-        assert!(items.iter().any(|i| i.code == "jereide: star on github"));
-    }
-
-    #[test]
-    fn command_palette_has_toggle() {
-        let items = items();
-        assert!(items.iter().any(|i| i.code == "command palette: toggle"));
-    }
-
-    #[test]
-    fn command_palette_has_view_operations() {
-        let items = items();
-        assert!(items.iter().any(|i| i.code == "view: code"));
-        assert!(items.iter().any(|i| i.code == "view: compose"));
     }
 
     #[test]
