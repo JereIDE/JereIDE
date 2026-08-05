@@ -15,7 +15,7 @@ pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) -> bool {
 
     egui::Panel::bottom("status_bar")
         .frame(egui::Frame::NONE.fill(bg).inner_margin(STATUS_BAR_MARGIN))
-        .show_inside(ui, |ui| {
+        .show(ui, |ui| {
             if in_compose {
                 return;
             }

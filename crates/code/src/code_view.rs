@@ -142,7 +142,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
             if let Some(cursor_range) = text_output.cursor_range {
                 let tab_text = &state.tabs[active_idx].text;
                 if let Some((open_idx, close_idx)) =
-                    find_matching_bracket(tab_text, cursor_range.primary.index)
+                    find_matching_bracket(tab_text, cursor_range.primary.index.into())
                 {
                     let highlight_at = |char_index: usize| {
                         if char_index >= tab_text.len() {
@@ -150,7 +150,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                         }
                         let lc = galley.layout_from_cursor(CCursor::new(char_index));
                         if let Some(placed_row) = galley.rows.get(lc.row) {
-                            if let Some(glyph) = placed_row.glyphs.get(lc.column) {
+                            if let Some(glyph) = placed_row.glyphs.get(lc.column.0) {
                                 let screen_x = galley_pos.x + placed_row.pos.x + glyph.pos.x;
                                 let screen_y = galley_pos.y + placed_row.pos.y;
                                 let w = glyph.advance_width;
@@ -249,8 +249,8 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         .cursor
         .char_range()
         .and_then(|range| {
-            let start = range.primary.index.min(range.secondary.index);
-            let end = range.primary.index.max(range.secondary.index);
+            let start: usize = range.primary.index.min(range.secondary.index).into();
+            let end: usize = range.primary.index.max(range.secondary.index).into();
             if end > start {
                 Some(char_range_substring(
                     &state.tabs[active_idx].text,
@@ -263,7 +263,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         });
 
     if let Some(cursor_range) = text_edit_output.cursor_range {
-        let cursor_idx = cursor_range.primary.index;
+        let cursor_idx: usize = cursor_range.primary.index.into();
 
         // For the status bar Line/Col indicator
         let (line, col) = char_index_to_line_col(&state.tabs[active_idx].text, cursor_idx);
@@ -352,8 +352,8 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
 fn char_row_x(galley: &egui::Galley, char_index: usize) -> Option<(usize, f32)> {
     let lc = galley.layout_from_cursor(CCursor::new(char_index));
     let row = galley.rows.get(lc.row)?;
-    let x = if lc.column < row.glyphs.len() {
-        row.pos.x + row.glyphs[lc.column].pos.x
+    let x = if lc.column.0 < row.glyphs.len() {
+        row.pos.x + row.glyphs[lc.column.0].pos.x
     } else {
         row.pos.x + row.size.x
     };

@@ -31,8 +31,8 @@ fn action_select_all(state: &AppState, ctx: &egui::Context) {
 fn action_copy(state: &AppState, ctx: &egui::Context) {
     if let Some(edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id) {
         if let Some(range) = edit_state.cursor.char_range() {
-            let start = range.primary.index.min(range.secondary.index);
-            let end = range.primary.index.max(range.secondary.index);
+            let start: usize = range.primary.index.min(range.secondary.index).into();
+            let end: usize = range.primary.index.max(range.secondary.index).into();
             if end > start {
                 let text = char_range_substring(state.current_tab().text.as_str(), start, end);
                 ctx.copy_text(text);
@@ -44,8 +44,8 @@ fn action_copy(state: &AppState, ctx: &egui::Context) {
 fn action_cut(state: &mut AppState, ctx: &egui::Context) {
     if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id) {
         if let Some(range) = edit_state.cursor.char_range() {
-            let start = range.primary.index.min(range.secondary.index);
-            let end = range.primary.index.max(range.secondary.index);
+            let start: usize = range.primary.index.min(range.secondary.index).into();
+            let end: usize = range.primary.index.max(range.secondary.index).into();
             if end > start {
                 let idx = state.active_tab_index;
                 let text = char_range_substring(&state.tabs[idx].text, start, end);

@@ -401,7 +401,7 @@ impl SyntaxHighlighter {
             if !text.is_empty() {
                 job.sections.push(egui::text::LayoutSection {
                     leading_space: 0.0,
-                    byte_range: 0..text.len(),
+                    byte_range: egui::text::ByteIndex(0)..egui::text::ByteIndex(text.len()),
                     format: TextFormat::simple(self.font_id.clone(), text_default()),
                 });
             }
@@ -524,7 +524,7 @@ impl SyntaxHighlighter {
                 let color = type_to_color(t);
                 job.sections.push(egui::text::LayoutSection {
                     leading_space: 0.0,
-                    byte_range: s..e,
+                    byte_range: egui::text::ByteIndex(s)..egui::text::ByteIndex(e),
                     format: TextFormat::simple(self.font_id.clone(), color),
                 });
             }
@@ -532,7 +532,7 @@ impl SyntaxHighlighter {
         if job.sections.is_empty() && !text.is_empty() {
             job.sections.push(egui::text::LayoutSection {
                 leading_space: 0.0,
-                byte_range: 0..text.len(),
+                byte_range: egui::text::ByteIndex(0)..egui::text::ByteIndex(text.len()),
                 format: TextFormat::simple(self.font_id.clone(), text_default()),
             });
         }
@@ -555,7 +555,7 @@ mod tests {
         let job = hl.highlight(text);
         job.sections
             .iter()
-            .map(|s| (s.byte_range.start, s.byte_range.end, s.format.color))
+            .map(|s| (s.byte_range.start.0, s.byte_range.end.0, s.format.color))
             .collect()
     }
 

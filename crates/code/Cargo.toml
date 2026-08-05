@@ -1,10 +1,10 @@
 [package]
 name = "jereide-code"
 version.workspace = true
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-eframe = "0.34"
+eframe = "0.35"
 jereide-core = { path = "../core" }
 jereide-editor = { path = "../editor" }
 jereide-data = { path = "../datadir" }

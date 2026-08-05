@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use eframe::egui;
 use egui::mutex::Mutex;
+use egui::text::CCursor;
 
 use egui::{
     text_selection::{CCursorRange, TextCursorState},
@@ -14,11 +15,9 @@ pub type TextEditUndoer = egui::util::undoer::Undoer<(CCursorRange, String)>;
 pub struct TextEditState {
     pub cursor: TextCursorState,
 
+    pub(crate) cursor_purpose: TextEditCursorPurpose,
+
     pub(crate) undoer: Arc<Mutex<TextEditUndoer>>,
-
-    pub(crate) ime_enabled: bool,
-
-    pub(crate) ime_cursor_range: CCursorRange,
 
     pub(crate) text_offset: Vec2,
 
@@ -44,5 +43,26 @@ impl TextEditState {
 
     pub fn clear_undoer(&mut self) {
         self.set_undoer(TextEditUndoer::default());
+    }
+}
+
+#[derive(Clone, Default)]
+pub(crate) enum TextEditCursorPurpose {
+    #[default]
+    Selection,
+
+    ImeComposition {
+        #[allow(dead_code)]
+        active_range: Option<std::ops::Range<CCursor>>,
+    },
+}
+
+impl TextEditCursorPurpose {
+    pub(crate) fn is_selection(&self) -> bool {
+        matches!(self, Self::Selection)
+    }
+
+    pub(crate) fn is_ime_composition(&self) -> bool {
+        matches!(self, Self::ImeComposition { .. })
     }
 }

@@ -505,7 +505,7 @@ impl eframe::App for JereIDEApp {
 
             egui::CentralPanel::default()
                 .frame(egui::Frame::NONE.fill(surface_bg()))
-                .show_inside(ui, |ui| {
+                .show(ui, |ui| {
                     let style = ui.style_mut();
                     style.visuals.extreme_bg_color = surface_bg();
                     style.spacing.item_spacing.y = ITEM_SPACING_Y;

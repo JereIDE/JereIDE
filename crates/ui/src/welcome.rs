@@ -35,12 +35,12 @@ pub fn render_welcome_view(ui: &mut egui::Ui) {
     let main_end = main.len();
     job.sections.push(egui::text::LayoutSection {
         leading_space: 0.0,
-        byte_range: 0..main_end,
+        byte_range: egui::text::ByteIndex(0)..egui::text::ByteIndex(main_end),
         format: egui::TextFormat::simple(font.clone(), text_primary()),
     });
     job.sections.push(egui::text::LayoutSection {
         leading_space: 0.0,
-        byte_range: main_end..job.text.len(),
+        byte_range: egui::text::ByteIndex(main_end)..egui::text::ByteIndex(job.text.len()),
         format: egui::TextFormat::simple(font, text_secondary()),
     });
     let galley = ui.fonts_mut(|f| f.layout_job(job));

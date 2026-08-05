@@ -30,7 +30,7 @@ pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
         .resizable(true)
         .default_size(200.0)
         .min_size(80.0)
-        .show_inside(ui, |ui| {
+        .show(ui, |ui| {
             ui.set_min_height(ui.available_height());
             ui.vertical(|ui| {
                 ui.add_space(12.0);
