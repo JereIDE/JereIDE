@@ -57,13 +57,52 @@ jobs:
 
           NOTES_FLAG=""
           if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
-            BODY="$(git log -1 --format=%b)"
-            if [[ -n "$BODY" ]]; then
-              {
-                printf "## What's Changed\n%s" "$BODY"
-              } > /tmp/release_notes.md
-              NOTES_FLAG="--notes-file /tmp/release_notes.md"
+            PREV_TAG="$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || true)"
+
+            RANGE="HEAD"
+            if [[ -n "$PREV_TAG" ]]; then
+              RANGE="$PREV_TAG..HEAD"
             fi
+
+            COMMITS="$(git log --format='%s%x09%an%x09%ae' "$RANGE" \
+              | awk -F '\t' -v me="jeremytheking2013@gmail.com" '
+                  tolower($1) ~ /\[release v/ { next }
+                  tolower($1) ~ /\[release ignore/ { next }
+                  tolower($1) == "update docs" { next }
+                  {
+                    line = $1
+                    if ($3 != me) {
+                      name = $2
+                      sub(/\[bot\]$/, "", name)
+                      line = line " (Thanks @" name "!)"
+                    }
+                    print line
+                  }' || true)"
+
+            {
+              printf "## What's Changed\n"
+              if [[ -n "$COMMITS" ]]; then
+                echo "$COMMITS" | sed 's/^/- /'
+              fi
+            } > /tmp/release_notes.md
+
+            IS_PATCH=""
+            if [[ -n "$PREV_TAG" ]]; then
+              PREV_VERSION="${PREV_TAG#v}"
+              IFS=. read -r PREV_MAJ PREV_MIN PREV_PAT <<< "$PREV_VERSION"
+              IFS=. read -r MAJ MIN PAT <<< "$VERSION"
+              if [[ "$PREV_MAJ" == "$MAJ" && "$PREV_MIN" == "$MIN" ]]; then
+                IS_PATCH=1
+              fi
+            fi
+
+            if [[ -z "$IS_PATCH" ]]; then
+              {
+                printf "\n### Added\n- \n\n### Improved\n- \n\n### Fixed\n- \n\n### Breaking Changes\n- \n"
+              } >> /tmp/release_notes.md
+            fi
+
+            NOTES_FLAG="--notes-file /tmp/release_notes.md"
           fi
 
           if gh release view "v$VERSION" >/dev/null 2>&1; then
