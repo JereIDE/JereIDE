@@ -19,6 +19,8 @@ impl AppMenu {
             .append_items(&[
                 &MenuItem::with_id("jereide: about", "About JereIDE", true, None),
                 &PredefinedMenuItem::separator(),
+                &MenuItem::with_id("jereide: open settings", "Settings...", true, None),
+                &PredefinedMenuItem::separator(),
                 #[cfg(target_os = "macos")]
                 &PredefinedMenuItem::services(None),
                 #[cfg(target_os = "macos")]

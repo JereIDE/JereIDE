@@ -1,5 +1,5 @@
 use eframe::egui;
-use jereide_settings::{ACCENT, DIALOG_WIDTH, HOVER_BG, SURFACE_BG, TEXT_DEFAULT};
+use jereide_settings::{accent, dialog_width, hover_bg, surface_bg, text_default};
 
 pub struct PaletteItem {
     pub code: &'static str,
@@ -105,7 +105,7 @@ impl Palette {
             return None;
         }
 
-        let window_width = DIALOG_WIDTH + 120.0;
+        let window_width = dialog_width() + 120.0;
 
         egui::Window::new(title)
             .title_bar(false)
@@ -160,7 +160,11 @@ impl Palette {
                         for (i, &item_idx) in indices.iter().enumerate() {
                             let item = &self.items[item_idx];
                             let selected = i == self.selected_index;
-                            let text_color = if selected { SURFACE_BG } else { TEXT_DEFAULT };
+                            let text_color = if selected {
+                                surface_bg()
+                            } else {
+                                text_default()
+                            };
 
                             let (rect, resp) = ui.allocate_exact_size(
                                 egui::vec2(ui.available_width(), 28.0),
@@ -168,9 +172,9 @@ impl Palette {
                             );
 
                             if selected {
-                                ui.painter().rect_filled(rect, 4.0, ACCENT);
+                                ui.painter().rect_filled(rect, 4.0, accent());
                             } else if resp.hovered() {
-                                ui.painter().rect_filled(rect, 4.0, HOVER_BG);
+                                ui.painter().rect_filled(rect, 4.0, hover_bg());
                             }
 
                             if selected {

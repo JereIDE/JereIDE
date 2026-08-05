@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 eframe = "0.34"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"

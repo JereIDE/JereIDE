@@ -7,7 +7,7 @@ use jereide_fs::{
     file_size, pick_directory, pick_file, read_file_at, save_as_dialog, save_to_path,
 };
 use jereide_menu::AppMenu;
-use jereide_settings::{ACCENT, SURFACE_BG};
+use jereide_settings::{accent, surface_bg};
 use jereide_ui::find_replace_palette::{FindReplaceAction, FindReplacePalette};
 use jereide_ui::go_to_line_palette::GoToLinePalette;
 use jereide_ui::sidebar::clear_ls_cache;
@@ -196,12 +196,19 @@ impl JereIDEApp {
     }
 
     fn handle_open_project(&mut self) {
-        // TODO: Handle Open Project
         let Some(path) = pick_directory() else {
             return;
         };
         self.state.current_project_dir = Some(path.to_string_lossy().into_owned());
         clear_ls_cache();
+    }
+
+    fn handle_settings(&mut self) {
+        let path = jereide_settings::settings_file_path();
+        let Some(content) = read_file_at(&path) else {
+            return;
+        };
+        self.state.open_file(path.display().to_string(), content);
     }
 
     fn handle_save(&mut self) {
@@ -293,6 +300,7 @@ impl JereIDEApp {
             }
             "view: code" => self.state.switch_to_view(CurrentView::Code),
             "view: compose" => self.state.switch_to_view(CurrentView::Compose),
+            "jereide: open settings" => self.handle_settings(),
             "jereide: quit" => {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             }
@@ -327,8 +335,8 @@ impl eframe::App for JereIDEApp {
 
         if !self.visuals_initialized {
             let mut visuals = ctx.global_style().visuals.clone();
-            visuals.selection.bg_fill = ACCENT;
-            visuals.selection.stroke = egui::Stroke::new(1.0, jereide_settings::TEXT_DEFAULT);
+            visuals.selection.bg_fill = accent();
+            visuals.selection.stroke = egui::Stroke::new(1.0, jereide_settings::text_default());
             ctx.set_visuals(visuals);
             self.visuals_initialized = true;
         }
@@ -373,6 +381,7 @@ impl eframe::App for JereIDEApp {
                     cmd && i.key_pressed(egui::Key::B),
                     cmd && i.modifiers.shift && i.key_pressed(egui::Key::W),
                     cmd && i.key_pressed(egui::Key::F),
+                    cmd && i.key_pressed(egui::Key::Comma),
                     cmd && i.key_pressed(egui::Key::G),
                 )
             });
@@ -394,6 +403,7 @@ impl eframe::App for JereIDEApp {
                 want_toggle_sidebar,
                 want_widget_palette,
                 want_find_replace,
+                want_open_settings,
                 want_go_to_line,
             ) = input;
             if want_new {
@@ -444,6 +454,9 @@ impl eframe::App for JereIDEApp {
             if want_find_replace {
                 self.toggle_find_palette();
             }
+            if want_open_settings {
+                self.handle_settings();
+            }
             if want_go_to_line {
                 self.toggle_go_to_line();
             }
@@ -491,10 +504,10 @@ impl eframe::App for JereIDEApp {
             go_to_line_clicked = jereide_ui::status_bar::render_status_bar(state, ui);
 
             egui::CentralPanel::default()
-                .frame(egui::Frame::NONE.fill(SURFACE_BG))
+                .frame(egui::Frame::NONE.fill(surface_bg()))
                 .show_inside(ui, |ui| {
                     let style = ui.style_mut();
-                    style.visuals.extreme_bg_color = SURFACE_BG;
+                    style.visuals.extreme_bg_color = surface_bg();
                     style.spacing.item_spacing.y = ITEM_SPACING_Y;
 
                     let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));

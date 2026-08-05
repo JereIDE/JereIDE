@@ -1,11 +1,11 @@
 use jereide_data::data_dir;
 use jereide_main_window::JereIDEApp;
-use jereide_settings::{WINDOW_HEIGHT, WINDOW_WIDTH};
+use jereide_settings::{window_height, window_width};
 
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
-            .with_inner_size([WINDOW_WIDTH, WINDOW_HEIGHT])
+            .with_inner_size([window_width(), window_height()])
             .with_min_inner_size([360.0, 240.0])
             .with_titlebar_shown(false)
             .with_title_shown(false)

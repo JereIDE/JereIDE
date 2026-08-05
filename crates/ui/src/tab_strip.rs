@@ -8,8 +8,8 @@ use jereide_core::constants::{
 };
 use jereide_core::AppState;
 use jereide_settings::{
-    ACCENT, BORDER, ELEVATED_BG, HOVER_BG, SURFACE_BG, TAB_FONT_SIZE, TEXT_DEFAULT, TEXT_PRIMARY,
-    TEXT_SECONDARY,
+    accent, border, elevated_bg, hover_bg, surface_bg, tab_font_size, text_default, text_primary,
+    text_secondary,
 };
 
 struct TabLayout {
@@ -25,7 +25,7 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
     let sidebar_open = state.sidebar_open;
     let available_w = ui.available_width();
 
-    let font_id = FontId::monospace(TAB_FONT_SIZE);
+    let font_id = FontId::monospace(tab_font_size());
 
     // Layout tabs in content coordinates (starting from x = 0).
     let mut layouts: Vec<TabLayout> = Vec::with_capacity(state.tabs.len());
@@ -103,7 +103,7 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
             let (_, content_resp) = ui.allocate_exact_size(content_rect.size(), Sense::click());
 
             let painter = ui.painter();
-            painter.rect_filled(content_rect, 0.0, ELEVATED_BG);
+            painter.rect_filled(content_rect, 0.0, elevated_bg());
 
             for idx in 0..state.tabs.len() {
                 let l = &layouts[idx];
@@ -114,19 +114,23 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                 let dot_pos = origin + l.dot_pos.to_vec2();
 
                 let is_active = idx == state.active_tab_index;
-                let bg = if is_active { SURFACE_BG } else { ELEVATED_BG };
+                let bg = if is_active {
+                    surface_bg()
+                } else {
+                    elevated_bg()
+                };
 
                 painter.rect_filled(rect, 0.0, bg);
 
                 let text_color = if is_active {
-                    TEXT_PRIMARY
+                    text_primary()
                 } else {
-                    TEXT_SECONDARY
+                    text_secondary()
                 };
                 painter.galley_with_override_text_color(text_pos, l.galley.clone(), text_color);
 
                 if l.has_dot {
-                    painter.circle_filled(dot_pos, TAB_MODIFIED_DOT_RADIUS, ACCENT);
+                    painter.circle_filled(dot_pos, TAB_MODIFIED_DOT_RADIUS, accent());
                 }
 
                 let tab_resp = ui
@@ -147,9 +151,13 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
 
                 if tab_h {
                     if close_h {
-                        painter.rect_filled(close_rect, TAB_CLOSE_BTN_RADIUS, HOVER_BG);
+                        painter.rect_filled(close_rect, TAB_CLOSE_BTN_RADIUS, hover_bg());
                     }
-                    let icon_color = if close_h { TEXT_DEFAULT } else { TEXT_PRIMARY };
+                    let icon_color = if close_h {
+                        text_default()
+                    } else {
+                        text_primary()
+                    };
                     let cx = close_rect.center().x;
                     let cy = close_rect.center().y;
                     painter.line_segment(
@@ -176,14 +184,14 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                 painter.vline(
                     origin.x + layouts[idx].rect.left(),
                     egui::Rangef::new(origin.y, origin.y + TAB_STRIP_HEIGHT),
-                    Stroke::new(TAB_BORDER_WIDTH, BORDER),
+                    Stroke::new(TAB_BORDER_WIDTH, border()),
                 );
             }
             if let Some(last) = layouts.last() {
                 painter.vline(
                     origin.x + last.rect.right(),
                     egui::Rangef::new(origin.y, origin.y + TAB_STRIP_HEIGHT),
-                    Stroke::new(TAB_BORDER_WIDTH, BORDER),
+                    Stroke::new(TAB_BORDER_WIDTH, border()),
                 );
             }
 
@@ -194,10 +202,10 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                         content_rect.left(),
                         content_rect.bottom() - TAB_BORDER_WIDTH,
                     ),
-                    Vec2::new(content_rect.width(), TAB_BORDER_WIDTH),
+                    egui::vec2(content_rect.width(), TAB_BORDER_WIDTH),
                 ),
                 0.0,
-                BORDER,
+                border(),
             );
 
             // Active tab breaks the bottom border.
@@ -210,7 +218,7 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                         Vec2::new(active_rect.width(), TAB_BORDER_WIDTH),
                     ),
                     0.0,
-                    SURFACE_BG,
+                    surface_bg(),
                 );
             }
 

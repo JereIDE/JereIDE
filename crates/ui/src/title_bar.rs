@@ -7,7 +7,7 @@ use jereide_core::constants::{
 };
 use jereide_core::{AppState, CurrentView};
 use jereide_data::data_dir;
-use jereide_settings::{BORDER, ELEVATED_BG, TITLE_BAR_FONT_SIZE};
+use jereide_settings::{border, elevated_bg, title_bar_font_size};
 
 fn alpha_image() -> egui::Image<'static> {
     static BYTES: OnceLock<Vec<u8>> = OnceLock::new();
@@ -36,19 +36,19 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
         egui::vec2(available.x, TITLE_BAR_HEIGHT),
         egui::Sense::hover(),
     );
-    ui.painter().rect_filled(rect, 0.0, ELEVATED_BG);
+    ui.painter().rect_filled(rect, 0.0, elevated_bg());
     ui.painter().rect_filled(
         egui::Rect::from_min_size(
             egui::pos2(rect.left(), rect.bottom() - TAB_BORDER_WIDTH),
             egui::vec2(rect.width(), TAB_BORDER_WIDTH),
         ),
         0.0,
-        BORDER,
+        border(),
     );
     ui.scope_builder(egui::UiBuilder::new().max_rect(rect), |ui| {
         ui.style_mut().text_styles.insert(
             egui::TextStyle::Button,
-            egui::FontId::proportional(TITLE_BAR_FONT_SIZE),
+            egui::FontId::proportional(title_bar_font_size()),
         );
 
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {

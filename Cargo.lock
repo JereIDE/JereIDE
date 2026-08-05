@@ -2089,6 +2089,8 @@ name = "jereide-settings"
 version = "0.26.0"
 dependencies = [
  "eframe",
+ "serde",
+ "toml",
 ]
 
 [[package]]

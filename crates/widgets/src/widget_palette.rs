@@ -1,5 +1,5 @@
 use eframe::egui;
-use jereide_settings::DIALOG_WIDTH;
+use jereide_settings::dialog_width;
 
 pub struct WidgetPalette {
     filter: String,
@@ -65,7 +65,7 @@ impl WidgetPalette {
             return;
         }
 
-        let window_width = DIALOG_WIDTH + 120.0;
+        let window_width = dialog_width() + 120.0;
 
         egui::Window::new(title)
             .title_bar(false)
