@@ -14,4 +14,8 @@ If you are inside a bracket and your cursor is near one of them, both brackets g
 
 When you type `{`, `(`, `[`, or `<`, the closing bracket(`}`, `)`, `]`, or `>`) is automatically inserted. If you happen to type the closing bracket yourself by habit, it won't turn into `{}}`. Your cursor would just jump to after the closing bracket, as if auto-bracket-pairing had never happened.
 
-In the future a better implementation will automatically delete both brackets when you delete the opening one, and also lots of other smart features that [Zed](https://zed.dev) somehow achieves.
+If you delete the opening bracket of an empty pair, the closing bracket will be deleted too.
+
+> [!IMPORTANT]
+> The current implementations are not smart.
+> In the future a better implementation will include the smart features that [Zed](https://zed.dev) somehow achieves.

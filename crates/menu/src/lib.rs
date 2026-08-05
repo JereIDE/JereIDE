@@ -1,5 +1,5 @@
 use muda::{
-    accelerator::Accelerator, Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem, Submenu,
+    Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem, Submenu, accelerator::Accelerator,
 };
 use raw_window_handle::RawWindowHandle;
 

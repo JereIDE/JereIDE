@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use eframe::egui::{self, Color32, FontId, Pos2, Rect, Sense, Stroke, Vec2};
+use jereide_core::AppState;
 use jereide_core::constants::{
     TAB_BORDER_WIDTH, TAB_CLOSE_BTN_RADIUS, TAB_CLOSE_BTN_SIZE, TAB_CLOSE_BTN_SPACING,
     TAB_CLOSE_ICON_HALF, TAB_CLOSE_STROKE, TAB_MODIFIED_DOT_RADIUS, TAB_PAD_LEFT, TAB_PAD_RIGHT,
     TAB_STRIP_HEIGHT,
 };
-use jereide_core::AppState;
 use jereide_settings::{
     accent, border, elevated_bg, hover_bg, surface_bg, tab_font_size, text_default, text_primary,
     text_secondary,

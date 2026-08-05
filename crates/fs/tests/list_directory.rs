@@ -19,9 +19,11 @@ fn unique_temp_dir(tag: &str) -> PathBuf {
 #[test]
 fn list_directory_returns_known_entries() {
     let entries = list_directory(Path::new(env!("CARGO_MANIFEST_DIR"))).unwrap();
-    assert!(entries
-        .iter()
-        .any(|e| e.name == "Cargo.toml" && !e.is_directory));
+    assert!(
+        entries
+            .iter()
+            .any(|e| e.name == "Cargo.toml" && !e.is_directory)
+    );
     assert!(entries.iter().any(|e| e.name == "src" && e.is_directory));
 }
 

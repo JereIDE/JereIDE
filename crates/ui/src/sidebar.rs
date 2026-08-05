@@ -5,7 +5,7 @@ use std::time::SystemTime;
 
 use eframe::egui;
 use jereide_core::AppState;
-use jereide_fs::{list_directory, DirectoryEntry};
+use jereide_fs::{DirectoryEntry, list_directory};
 use jereide_settings::{text_default, text_muted, text_secondary};
 
 struct CachedListing {

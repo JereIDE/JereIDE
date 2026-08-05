@@ -2,12 +2,12 @@ use std::cell::RefCell;
 
 use eframe::egui;
 use egui::text::CCursor;
+use jereide_core::AppState;
 use jereide_core::constants::{
     EDITOR_INNER_MARGIN_BOTTOM, EDITOR_INNER_MARGIN_LEFT_EXTRA, EDITOR_INNER_MARGIN_RIGHT,
     EDITOR_INNER_MARGIN_TOP, GUTTER_DIGIT_WIDTH, GUTTER_LINE_NUMBER_RIGHT_OFFSET,
     GUTTER_PADDING_LEFT, GUTTER_PADDING_RIGHT, SCROLL_BAR_WIDTH,
 };
-use jereide_core::AppState;
 use jereide_settings::{
     bracket_match, editor_font_size, find_highlight, find_highlight_current, surface_bg,
     text_current_line, text_muted,
@@ -341,6 +341,22 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 }
             }
         }
+
+        // Smart bracket deletion: deleting the opening bracket of an empty
+        // pair also removes the matching closing bracket.
+        if should_delete_bracket_pair(&old_text, &state.tabs[active_idx].text, cursor_idx) {
+            state.tabs[active_idx].text.remove(cursor_idx);
+            if let Some(mut edit_state) =
+                jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
+            {
+                edit_state
+                    .cursor
+                    .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
+                        cursor_idx,
+                    ))));
+                edit_state.store(&ctx, text_edit_output.response.id);
+            }
+        }
     }
 
     if !state.editor_focused {
@@ -532,6 +548,23 @@ fn compute_indent(text: &str, cursor_idx: usize) -> String {
     prev_line[..indent_len].to_string()
 }
 
+fn should_delete_bracket_pair(old_text: &str, new_text: &str, cursor_idx: usize) -> bool {
+    if new_text.len() + 1 != old_text.len() {
+        return false;
+    }
+    let old = old_text.as_bytes();
+    let closing = match old.get(cursor_idx).map(|&b| b as char) {
+        Some('(') => Some(')'),
+        Some('[') => Some(']'),
+        Some('{') => Some('}'),
+        _ => None,
+    };
+    match closing {
+        Some(closing) => old.get(cursor_idx + 1) == Some(&(closing as u8)),
+        None => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -706,5 +739,40 @@ mod tests {
     fn compute_indent_mixed() {
         let text = "  \t  hello\n";
         assert_eq!(compute_indent(text, 11), "  \t  ");
+    }
+
+    #[test]
+    fn should_delete_bracket_pair_empty_curly() {
+        assert!(should_delete_bracket_pair("{}", "}", 0));
+    }
+
+    #[test]
+    fn should_delete_bracket_pair_empty_paren() {
+        assert!(should_delete_bracket_pair("()", ")", 0));
+    }
+
+    #[test]
+    fn should_delete_bracket_pair_empty_square() {
+        assert!(should_delete_bracket_pair("[]", "]", 0));
+    }
+
+    #[test]
+    fn should_delete_bracket_pair_non_empty() {
+        assert!(!should_delete_bracket_pair("{a}", "a}", 0));
+    }
+
+    #[test]
+    fn should_delete_bracket_pair_with_space() {
+        assert!(!should_delete_bracket_pair("{ }", " }", 0));
+    }
+
+    #[test]
+    fn should_delete_bracket_pair_closing_deleted() {
+        assert!(!should_delete_bracket_pair("{}", "{", 1));
+    }
+
+    #[test]
+    fn should_delete_bracket_pair_wrong_deleted_char() {
+        assert!(!should_delete_bracket_pair("a}", "}", 0));
     }
 }

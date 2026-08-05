@@ -5,8 +5,8 @@ use egui::mutex::Mutex;
 use egui::text::CCursor;
 
 use egui::{
-    text_selection::{CCursorRange, TextCursorState},
     Context, Id, Vec2,
+    text_selection::{CCursorRange, TextCursorState},
 };
 
 pub type TextEditUndoer = egui::util::undoer::Undoer<(CCursorRange, String)>;

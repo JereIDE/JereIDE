@@ -1,7 +1,7 @@
 use std::{borrow::Cow, ops::Range};
 
 use eframe::egui;
-use egui::epaint::text::{cursor::CCursor, ByteIndex, CharIndex, CharRange, CharRangeExt as _};
+use egui::epaint::text::{ByteIndex, CharIndex, CharRange, CharRangeExt as _, cursor::CCursor};
 use egui::text::CCursorRange;
 use egui::text_selection::text_cursor_state::{
     byte_index_from_char_index, ccursor_next_word, ccursor_previous_word,
