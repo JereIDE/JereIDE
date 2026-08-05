@@ -9,7 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 eframe = "0.34"
-egui_extras = { version = "0.34", features = ["all_loaders"] }
+egui_extras = { version = "0.35", features = ["all_loaders"] }
 jereide-data = { path = "../datadir" }
 jereide-settings = { path = "../settings" }
 jereide-main-window = { path = "../main-window" }
