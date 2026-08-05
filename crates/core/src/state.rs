@@ -96,6 +96,7 @@ pub struct AppState {
 
     pub pending_open: bool,
     pub pending_open_project: bool,
+    pub pending_open_file: Option<String>,
 }
 
 #[derive(Clone)]
@@ -130,6 +131,7 @@ impl AppState {
             show_about_dialog: false,
             pending_open: false,
             pending_open_project: false,
+            pending_open_file: None,
         }
     }
 

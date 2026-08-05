@@ -1,12 +1,16 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::path::Path;
 use std::time::SystemTime;
 
 use eframe::egui;
+use egui::AtomExt;
 use jereide_core::AppState;
 use jereide_fs::{DirectoryEntry, list_directory};
 use jereide_settings::{text_default, text_muted, text_secondary};
+
+const INDENT: f32 = 16.0;
 
 struct CachedListing {
     entries: Vec<DirectoryEntry>,
@@ -15,71 +19,121 @@ struct CachedListing {
 
 thread_local! {
     static LS_CACHE: RefCell<HashMap<String, CachedListing>> = RefCell::new(HashMap::new());
+    static EXPANDED: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
 }
 
 pub fn clear_ls_cache() {
     LS_CACHE.with(|cache| cache.borrow_mut().clear());
+    EXPANDED.with(|expanded| expanded.borrow_mut().clear());
 }
 
 fn directory_modified(path: &Path) -> Option<SystemTime> {
     std::fs::metadata(path).and_then(|m| m.modified()).ok()
 }
 
+fn cached_entries(dir: &str) -> Vec<DirectoryEntry> {
+    LS_CACHE.with(|cache| {
+        let mut cache = cache.borrow_mut();
+        let path = Path::new(dir);
+        let modified = directory_modified(path);
+        let needs_refresh = match cache.get(dir) {
+            Some(cached) => cached.modified != modified,
+            None => true,
+        };
+        if needs_refresh {
+            cache.insert(
+                dir.to_string(),
+                CachedListing {
+                    entries: list_directory(path).unwrap_or_default(),
+                    modified,
+                },
+            );
+        }
+        cache
+            .get(dir)
+            .map(|c| c.entries.clone())
+            .unwrap_or_default()
+    })
+}
+
+fn render_entries(state: &mut AppState, ui: &mut egui::Ui, dir: &Path, depth: usize) {
+    let entries = cached_entries(&dir.display().to_string());
+    for entry in &entries {
+        let full_path = dir.join(&entry.name);
+        let full_path_str = full_path.display().to_string();
+        let indent = depth as f32 * INDENT;
+        let spacer = egui::Atom::default().atom_size(egui::vec2(indent, 0.0));
+
+        if entry.is_directory {
+            let expanded = EXPANDED.with(|set| set.borrow().contains(&full_path_str));
+            let label = format!("{} {}", if expanded { "📂" } else { "📁" }, entry.name);
+            let full_width = ui.available_width();
+            let button =
+                egui::Button::new((spacer, egui::RichText::new(label).color(text_default())))
+                    .corner_radius(egui::CornerRadius::ZERO)
+                    .stroke(egui::Stroke::NONE)
+                    .min_size(egui::vec2(full_width, 0.0));
+            if ui.add(button).clicked() {
+                EXPANDED.with(|set| {
+                    let mut set = set.borrow_mut();
+                    if expanded {
+                        set.remove(&full_path_str);
+                    } else {
+                        set.insert(full_path_str);
+                    }
+                });
+            }
+            if expanded {
+                render_entries(state, ui, &full_path, depth + 1);
+            }
+        } else {
+            let full_width = ui.available_width();
+            let button = egui::Button::new((
+                spacer,
+                egui::RichText::new(&entry.name).color(text_secondary()),
+            ))
+            .corner_radius(egui::CornerRadius::ZERO)
+            .stroke(egui::Stroke::NONE)
+            .min_size(egui::vec2(full_width, 0.0));
+            if ui.add(button).clicked() {
+                state.pending_open_file = Some(full_path_str);
+            }
+        }
+    }
+}
+
 pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
+    let panel_frame = egui::Frame::side_top_panel(ui.style()).inner_margin(egui::Margin {
+        left: 0,
+        right: 0,
+        top: 8,
+        bottom: 4,
+    });
+
     egui::Panel::left("sidebar")
         .resizable(true)
         .default_size(200.0)
         .min_size(80.0)
+        .frame(panel_frame)
         .show(ui, |ui| {
             ui.set_min_height(ui.available_height());
-            ui.vertical(|ui| {
-                ui.add_space(12.0);
-                ui.colored_label(text_muted(), "Explorer");
-                ui.add_space(4.0);
+            ui.add_space(12.0);
+            ui.colored_label(text_muted(), "Explorer");
+            ui.add_space(4.0);
 
-                match state.current_project_dir.clone() {
-                    Some(dir) => {
-                        ui.colored_label(text_secondary(), &dir);
-                        ui.separator();
+            match state.current_project_dir.clone() {
+                Some(dir) => {
+                    ui.colored_label(text_secondary(), &dir);
+                    ui.separator();
 
-                        let entries = LS_CACHE.with(|cache| {
-                            let mut cache = cache.borrow_mut();
-                            let path = Path::new(&dir);
-                            let modified = directory_modified(path);
-                            let needs_refresh = match cache.get(&dir) {
-                                Some(cached) => cached.modified != modified,
-                                None => true,
-                            };
-                            if needs_refresh {
-                                cache.insert(
-                                    dir.clone(),
-                                    CachedListing {
-                                        entries: list_directory(path).unwrap_or_default(),
-                                        modified,
-                                    },
-                                );
-                            }
-                            cache
-                                .get(&dir)
-                                .map(|c| c.entries.clone())
-                                .unwrap_or_default()
-                        });
-
-                        egui::ScrollArea::vertical().show(ui, |ui| {
-                            for entry in &entries {
-                                if entry.is_directory {
-                                    ui.colored_label(text_default(), format!("{}/", entry.name));
-                                } else {
-                                    ui.colored_label(text_secondary(), &entry.name);
-                                }
-                            }
-                        });
-                    }
-                    None => {
-                        ui.add_space(4.0);
-                        ui.colored_label(text_muted(), "No project open.");
-                    }
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        render_entries(state, ui, Path::new(&dir), 0);
+                    });
                 }
-            });
+                None => {
+                    ui.add_space(4.0);
+                    ui.colored_label(text_muted(), "No project open.");
+                }
+            }
         });
 }
