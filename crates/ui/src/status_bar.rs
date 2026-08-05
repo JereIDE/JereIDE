@@ -40,14 +40,16 @@ pub fn render_status_bar(state: &AppState, ui: &mut egui::Ui) -> bool {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if !state.tabs.is_empty() {
                         let tab = state.current_tab();
-                        let resp = ui.add(
-                            egui::Label::new(format!("{}:{}", tab.cursor_line, tab.cursor_col))
-                                .sense(egui::Sense::click()),
-                        );
+                        let resp = ui
+                            .add(
+                                egui::Label::new(format!("{}:{}", tab.cursor_line, tab.cursor_col))
+                                    .sense(egui::Sense::click()),
+                            )
+                            .on_hover_text("Go to Line")
+                            .on_hover_cursor(egui::CursorIcon::PointingHand);
                         if resp.clicked() {
                             go_to_line_clicked = true;
                         }
-                        resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                     }
                 });
             });

@@ -56,7 +56,8 @@ impl Tab {
         self.saved_text = self.text.clone();
     }
 
-    /// Returns the file name to display (e.g. "main.rs") or "Untitled".
+    /// Returns the file name to display (e.g. "main.rs") or "Untitled" if the file isn't a file,
+    /// like, if it was created fresh.
     pub fn file_name(&self) -> String {
         self.file_path
             .as_ref()
@@ -106,7 +107,7 @@ pub struct FindHighlight {
     pub scroll_to: Option<usize>,
 }
 
-/// Another new method.
+/// Starts an AppState with all the default stuff
 impl AppState {
     pub fn new() -> Self {
         Self {
@@ -149,14 +150,14 @@ impl AppState {
     }
 
     pub fn open_file(&mut self, path: String, content: String) -> usize {
-        // Check if this file is already open
+        // This thingie checks if this file is already open
         for (i, tab) in self.tabs.iter().enumerate() {
             if tab.file_path.as_deref() == Some(&path) {
                 self.active_tab_index = i;
                 return i;
             }
         }
-        // Otherwise create a new tab
+        // If it isn't, I probably need a new tab
         let tab = Tab::with_path_and_content(path, content);
         self.tabs.push(tab);
         let idx = self.tabs.len() - 1;

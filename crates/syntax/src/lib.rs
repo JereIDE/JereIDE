@@ -668,37 +668,30 @@ mod tests {
         let base = "# H1\nSome *it* text\n```rust\nlet x = 1;\n```\n# H2\nlast line\n";
         hl.highlight(base);
 
-        // Insert a bold word in the middle of line 1.
         assert_same(
             &mut hl,
             "# H1\nSome *it* **b** text\n```rust\nlet x = 1;\n```\n# H2\nlast line\n",
         );
-        // Edit inside a code block.
         assert_same(
             &mut hl,
             "# H1\nSome *it* **b** text\n```rust\nlet x = 2;\n```\n# H2\nlast line\n",
         );
-        // Insert a new line.
         assert_same(
             &mut hl,
             "# H1\nSome *it* **b** text\n\n```rust\nlet x = 2;\n```\n# H2\nlast line\n",
         );
-        // Delete a line.
         assert_same(
             &mut hl,
             "# H1\nSome *it* **b** text\n```rust\nlet x = 2;\n```\nlast line\n",
         );
-        // Edit the last line.
         assert_same(
             &mut hl,
             "# H1\nSome *it* **b** text\n```rust\nlet x = 2;\n```\n# H2\nlast **bold**\n",
         );
-        // Delete a character from the middle line (same line count; tests negative shift).
         assert_same(
             &mut hl,
             "# H1\nSome *it* **b** tex\n```rust\nlet x = 2;\n```\n# H2\nlast **bold**\n",
         );
-        // Insert a character near the start of the first line.
         assert_same(
             &mut hl,
             "# H1X\nSome *it* **b** tex\n```rust\nlet x = 2;\n```\n# H2\nlast **bold**\n",

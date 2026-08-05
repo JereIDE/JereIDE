@@ -1,9 +1,9 @@
-/// Number of lines, counting each `\n` as the end of a line.
+/// Counts the number of lines, obviously
 pub fn count_lines(text: &str) -> usize {
     text.chars().filter(|&c| c == '\n').count() + 1
 }
 
-/// Char index of the start of the given 1-based line. Clamps to the end of the text.
+/// I don't know what this does
 pub fn line_start_char_index(text: &str, line: usize) -> usize {
     if line <= 1 {
         return 0;

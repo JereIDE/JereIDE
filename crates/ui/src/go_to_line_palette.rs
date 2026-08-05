@@ -12,8 +12,6 @@ impl GoToLinePalette {
         }
     }
 
-    /// Returns the 1-based target line to jump to, or `None` while the
-    /// palette is still open.
     pub fn render(
         &mut self,
         ctx: &egui::Context,
@@ -21,6 +19,7 @@ impl GoToLinePalette {
         open: &mut bool,
     ) -> Option<usize> {
         let hint = format!("Enter Line... (1-{})", total_lines);
+        // TODO: We need a label below, saying the stuff, like Zed.
         self.palette
             .render(ctx, "Go to Line", &hint, open)
             .and_then(|input| input.trim().parse().ok())

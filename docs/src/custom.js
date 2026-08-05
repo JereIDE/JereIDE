@@ -121,13 +121,10 @@ function modifyMenuBar() {
     searchToggle.click();
   }
 
-  // Set a custom search placeholder
   const searchbar = document.getElementById("mdbook-searchbar");
   if (searchbar) {
     searchbar.placeholder = "Search docs...";
   }
-
-  // 7. Keep the sidebar visible and prevent toggling it off
   const sidebarToggleAnchor = document.getElementById(
     "mdbook-sidebar-toggle-anchor",
   );

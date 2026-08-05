@@ -675,7 +675,6 @@ mod tests {
     #[test]
     fn find_matching_bracket_checks_char_before_cursor() {
         let text = "(hello)";
-        // cursor at index 7 (past the closing paren) should check char before
         assert_eq!(find_matching_bracket(text, 7), Some((0, 6)));
     }
 

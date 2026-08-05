@@ -65,7 +65,7 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
             #[cfg(target_os = "windows")]
             ui.add_space(TITLE_BAR_FULLSCREEN_SPACE);
 
-            let choose_project_resp = ui.button("Open…");
+            let choose_project_resp = ui.button("Open…").on_hover_text("Open File/Project");
 
             egui::Popup::menu(&choose_project_resp)
                 .gap(TITLE_BAR_POPUP_GAP)
@@ -103,10 +103,12 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
                 ui.add_space(TITLE_BAR_FULLSCREEN_SPACE);
 
                 let d = 20.0;
-                let usericon_clicked = ui.add_sized(
-                    egui::vec2(d, d),
-                    egui::Button::new(user_icon_image()).corner_radius(d / 2.0),
-                );
+                let usericon_clicked = ui
+                    .add_sized(
+                        egui::vec2(d, d),
+                        egui::Button::new(user_icon_image()).corner_radius(d / 2.0),
+                    )
+                    .on_hover_text("Show User Menu");
                 egui::Popup::menu(&usericon_clicked)
                     .gap(TITLE_BAR_POPUP_GAP)
                     .close_behavior(egui::PopupCloseBehavior::CloseOnClick)

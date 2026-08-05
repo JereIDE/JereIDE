@@ -138,7 +138,8 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                     .on_hover_cursor(egui::CursorIcon::PointingHand);
                 let close_resp = ui
                     .interact(close_rect, egui::Id::new(("close", idx)), Sense::click())
-                    .on_hover_cursor(egui::CursorIcon::PointingHand);
+                    .on_hover_cursor(egui::CursorIcon::PointingHand)
+                    .on_hover_text("Close Tab");
 
                 let close_h = close_resp.hovered();
                 let tab_h = tab_resp.hovered() || close_h;
@@ -195,7 +196,6 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                 );
             }
 
-            // Bottom border across the whole content.
             painter.rect_filled(
                 Rect::from_min_size(
                     Pos2::new(
@@ -208,7 +208,6 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                 border(),
             );
 
-            // Active tab breaks the bottom border.
             if let Some(active) = layouts.get(state.active_tab_index) {
                 let active_rect =
                     Rect::from_min_size(origin + active.rect.min.to_vec2(), active.rect.size());
