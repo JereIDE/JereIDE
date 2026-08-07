@@ -8,7 +8,7 @@ use eframe::egui;
 use egui::AtomExt;
 use jereide_core::AppState;
 use jereide_fs::{DirectoryEntry, list_directory};
-use jereide_settings::{destructive, surface_bg, text_default, text_muted, text_secondary};
+use jereide_settings::{bold_folders, destructive, surface_bg, text_default, text_muted, text_secondary};
 
 const INDENT: f32 = 16.0;
 const MIN_SIDEBAR_WIDTH: f32 = 150.0;
@@ -116,8 +116,17 @@ fn render_entries(state: &mut AppState, ui: &mut egui::Ui, dir: &Path, depth: us
             } else {
                 text_secondary()
             };
-            let button =
-                egui::Button::new((spacer, egui::RichText::new(label).color(color)))
+            let text = egui::RichText::new(label).color(color);
+            let text = if target_is_dir && bold_folders() {
+                let base = egui::TextStyle::Button.resolve(ui.style());
+                text.font(egui::FontId::new(
+                    base.size,
+                    egui::FontFamily::Name("jereide-bold".into()),
+                ))
+            } else {
+                text
+            };
+            let button = egui::Button::new((spacer, text))
                     .corner_radius(egui::CornerRadius::ZERO)
                     .frame_when_inactive(false)
                     .min_size(egui::vec2(full_width, 0.0));
@@ -127,9 +136,19 @@ fn render_entries(state: &mut AppState, ui: &mut egui::Ui, dir: &Path, depth: us
         } else if entry.is_directory {
             let expanded = EXPANDED.with(|set| set.borrow().contains(&full_path_str));
             let label = format!("{} {}", if expanded { "📂" } else { "📁" }, entry.name);
+            let text = egui::RichText::new(label).color(text_default());
+            let text = if bold_folders() {
+                let base = egui::TextStyle::Button.resolve(ui.style());
+                text.font(egui::FontId::new(
+                    base.size,
+                    egui::FontFamily::Name("jereide-bold".into()),
+                ))
+            } else {
+                text
+            };
             let full_width = ui.available_width();
             let button =
-                egui::Button::new((spacer, egui::RichText::new(label).color(text_default())))
+                egui::Button::new((spacer, text))
                     .corner_radius(egui::CornerRadius::ZERO)
                     .frame_when_inactive(false)
                     .min_size(egui::vec2(full_width, 0.0));
