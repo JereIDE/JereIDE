@@ -121,22 +121,20 @@ pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
         .frame(panel_frame)
         .show(ui, |ui| {
             ui.set_min_height(ui.available_height());
-            ui.add_space(12.0);
-            ui.colored_label(text_muted(), "Explorer");
-            ui.add_space(4.0);
 
             match state.current_project_dir.clone() {
                 Some(dir) => {
-                    ui.colored_label(text_secondary(), &dir);
-                    ui.separator();
-
                     egui::ScrollArea::vertical().show(ui, |ui| {
                         render_entries(state, ui, Path::new(&dir), 0);
                     });
                 }
                 None => {
-                    ui.add_space(4.0);
-                    ui.colored_label(text_muted(), "No project open.");
+                    ui.with_layout(
+                        egui::Layout::centered_and_justified(egui::Direction::TopDown),
+                        |ui| {
+                            ui.colored_label(text_muted(), "No project open.");
+                        },
+                    );
                 }
             }
 
