@@ -16,7 +16,8 @@ const MAX_SIDEBAR_WIDTH: f32 = 800.0;
 const RESIZE_GRAB: f32 = 6.0;
 
 struct CachedListing {
-    entries: Vec<DirectoryEntry>,
+    entries: Option<Vec<DirectoryEntry>>,
+    error: Option<String>,
     modified: Option<SystemTime>,
 }
 
@@ -44,13 +45,37 @@ fn cached_entries(dir: &str) -> Result<Vec<DirectoryEntry>, std::io::Error> {
             None => true,
         };
         if needs_refresh {
-            let entries = list_directory(path)?;
-            cache.insert(dir.to_string(), CachedListing { entries, modified });
+            match list_directory(path) {
+                Ok(entries) => {
+                    cache.insert(
+                        dir.to_string(),
+                        CachedListing {
+                            entries: Some(entries),
+                            error: None,
+                            modified,
+                        },
+                    );
+                }
+                Err(err) => {
+                    cache.insert(
+                        dir.to_string(),
+                        CachedListing {
+                            entries: None,
+                            error: Some(err.to_string()),
+                            modified,
+                        },
+                    );
+                }
+            }
         }
-        cache
-            .get(dir)
-            .map(|c| c.entries.clone())
-            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "no cached listing"))
+        let cached = cache.get(dir).unwrap();
+        match cached.entries.as_ref() {
+            Some(entries) => Ok(entries.clone()),
+            None => Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                cached.error.clone().unwrap_or_default(),
+            )),
+        }
     })
 }
 
