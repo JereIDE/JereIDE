@@ -8,7 +8,7 @@ use eframe::egui;
 use egui::AtomExt;
 use jereide_core::AppState;
 use jereide_fs::{DirectoryEntry, list_directory};
-use jereide_settings::{surface_bg, text_default, text_muted, text_secondary};
+use jereide_settings::{destructive, surface_bg, text_default, text_muted, text_secondary};
 
 const INDENT: f32 = 16.0;
 const MIN_SIDEBAR_WIDTH: f32 = 150.0;
@@ -34,7 +34,7 @@ fn directory_modified(path: &Path) -> Option<SystemTime> {
     std::fs::metadata(path).and_then(|m| m.modified()).ok()
 }
 
-fn cached_entries(dir: &str) -> Vec<DirectoryEntry> {
+fn cached_entries(dir: &str) -> Result<Vec<DirectoryEntry>, std::io::Error> {
     LS_CACHE.with(|cache| {
         let mut cache = cache.borrow_mut();
         let path = Path::new(dir);
@@ -44,23 +44,36 @@ fn cached_entries(dir: &str) -> Vec<DirectoryEntry> {
             None => true,
         };
         if needs_refresh {
-            cache.insert(
-                dir.to_string(),
-                CachedListing {
-                    entries: list_directory(path).unwrap_or_default(),
-                    modified,
-                },
-            );
+            let entries = list_directory(path)?;
+            cache.insert(dir.to_string(), CachedListing { entries, modified });
         }
         cache
             .get(dir)
             .map(|c| c.entries.clone())
-            .unwrap_or_default()
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "no cached listing"))
     })
 }
 
 fn render_entries(state: &mut AppState, ui: &mut egui::Ui, dir: &Path, depth: usize) {
-    let entries = cached_entries(&dir.display().to_string());
+    let entries = match cached_entries(&dir.display().to_string()) {
+        Ok(entries) => entries,
+        Err(err) => {
+            let indent = depth as f32 * INDENT;
+            let spacer = egui::Atom::default().atom_size(egui::vec2(indent, 0.0));
+            let full_width = ui.available_width();
+            let button = egui::Button::new((
+                spacer,
+                egui::RichText::new(format!("⚠ {}", err))
+                    .color(destructive())
+                    .italics(),
+            ))
+            .corner_radius(egui::CornerRadius::ZERO)
+            .frame_when_inactive(false)
+            .min_size(egui::vec2(full_width, 0.0));
+            ui.add(button);
+            return;
+        }
+    };
     for entry in &entries {
         let full_path = dir.join(&entry.name);
         let full_path_str = full_path.display().to_string();
