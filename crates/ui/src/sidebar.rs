@@ -8,7 +8,7 @@ use eframe::egui;
 use egui::AtomExt;
 use jereide_core::AppState;
 use jereide_fs::{DirectoryEntry, list_directory};
-use jereide_settings::{text_default, text_muted, text_secondary};
+use jereide_settings::{surface_bg, text_default, text_muted, text_secondary};
 
 const INDENT: f32 = 16.0;
 
@@ -71,7 +71,7 @@ fn render_entries(state: &mut AppState, ui: &mut egui::Ui, dir: &Path, depth: us
             let button =
                 egui::Button::new((spacer, egui::RichText::new(label).color(text_default())))
                     .corner_radius(egui::CornerRadius::ZERO)
-                    .stroke(egui::Stroke::NONE)
+                    .frame_when_inactive(false)
                     .min_size(egui::vec2(full_width, 0.0));
             if ui.add(button).clicked() {
                 EXPANDED.with(|set| {
@@ -93,7 +93,7 @@ fn render_entries(state: &mut AppState, ui: &mut egui::Ui, dir: &Path, depth: us
                 egui::RichText::new(&entry.name).color(text_secondary()),
             ))
             .corner_radius(egui::CornerRadius::ZERO)
-            .stroke(egui::Stroke::NONE)
+            .frame_when_inactive(false)
             .min_size(egui::vec2(full_width, 0.0));
             if ui.add(button).clicked() {
                 state.pending_open_file = Some(full_path_str);
@@ -103,12 +103,14 @@ fn render_entries(state: &mut AppState, ui: &mut egui::Ui, dir: &Path, depth: us
 }
 
 pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
-    let panel_frame = egui::Frame::side_top_panel(ui.style()).inner_margin(egui::Margin {
-        left: 0,
-        right: 0,
-        top: 8,
-        bottom: 4,
-    });
+    let panel_frame = egui::Frame::side_top_panel(ui.style())
+        .fill(surface_bg())
+        .inner_margin(egui::Margin {
+            left: 0,
+            right: 0,
+            top: 8,
+            bottom: 4,
+        });
 
     egui::Panel::left("sidebar")
         .resizable(true)
