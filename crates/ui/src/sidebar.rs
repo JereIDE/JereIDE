@@ -11,6 +11,9 @@ use jereide_fs::{DirectoryEntry, list_directory};
 use jereide_settings::{surface_bg, text_default, text_muted, text_secondary};
 
 const INDENT: f32 = 16.0;
+const MIN_SIDEBAR_WIDTH: f32 = 150.0;
+const MAX_SIDEBAR_WIDTH: f32 = 800.0;
+const RESIZE_GRAB: f32 = 6.0;
 
 struct CachedListing {
     entries: Vec<DirectoryEntry>,
@@ -113,9 +116,8 @@ pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
         });
 
     egui::Panel::left("sidebar")
-        .resizable(true)
-        .default_size(200.0)
-        .min_size(80.0)
+        .exact_size(state.sidebar_width)
+        .resizable(false)
         .frame(panel_frame)
         .show(ui, |ui| {
             ui.set_min_height(ui.available_height());
@@ -136,6 +138,24 @@ pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
                     ui.add_space(4.0);
                     ui.colored_label(text_muted(), "No project open.");
                 }
+            }
+
+            let panel_rect = ui.max_rect();
+            let handle_rect = egui::Rect::from_min_max(
+                egui::pos2(panel_rect.right() - RESIZE_GRAB, panel_rect.top()),
+                egui::pos2(panel_rect.right(), panel_rect.bottom()),
+            );
+            let handle = ui.interact(
+                handle_rect,
+                egui::Id::new("sidebar_resize_handle"),
+                egui::Sense::drag(),
+            );
+            if handle.dragged() {
+                state.sidebar_width = (state.sidebar_width + handle.drag_delta().x)
+                    .clamp(MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH);
+            }
+            if handle.hovered() {
+                ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
             }
         });
 }
