@@ -91,13 +91,12 @@ fn render_entries(state: &mut AppState, ui: &mut egui::Ui, dir: &Path, depth: us
             }
         } else {
             let full_width = ui.available_width();
-            let button = egui::Button::new((
-                spacer,
-                egui::RichText::new(&entry.name).color(text_secondary()),
-            ))
-            .corner_radius(egui::CornerRadius::ZERO)
-            .frame_when_inactive(false)
-            .min_size(egui::vec2(full_width, 0.0));
+            let label = format!("📄 {}", entry.name);
+            let button =
+                egui::Button::new((spacer, egui::RichText::new(label).color(text_secondary())))
+                    .corner_radius(egui::CornerRadius::ZERO)
+                    .frame_when_inactive(false)
+                    .min_size(egui::vec2(full_width, 0.0));
             if ui.add(button).clicked() {
                 state.pending_open_file = Some(full_path_str);
             }
