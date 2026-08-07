@@ -105,7 +105,26 @@ fn render_entries(state: &mut AppState, ui: &mut egui::Ui, dir: &Path, depth: us
         let indent = depth as f32 * INDENT;
         let spacer = egui::Atom::default().atom_size(egui::vec2(indent, 0.0));
 
-        if entry.is_directory {
+        if entry.is_symlink {
+            let target_is_dir = std::fs::metadata(&full_path)
+                .map(|m| m.is_dir())
+                .unwrap_or(false);
+            let full_width = ui.available_width();
+            let label = format!("📎 {}", entry.name);
+            let color = if target_is_dir {
+                text_default()
+            } else {
+                text_secondary()
+            };
+            let button =
+                egui::Button::new((spacer, egui::RichText::new(label).color(color)))
+                    .corner_radius(egui::CornerRadius::ZERO)
+                    .frame_when_inactive(false)
+                    .min_size(egui::vec2(full_width, 0.0));
+            if ui.add(button).clicked() && !target_is_dir {
+                state.pending_open_file = Some(full_path_str);
+            }
+        } else if entry.is_directory {
             let expanded = EXPANDED.with(|set| set.borrow().contains(&full_path_str));
             let label = format!("{} {}", if expanded { "📂" } else { "📁" }, entry.name);
             let full_width = ui.available_width();
