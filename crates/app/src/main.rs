@@ -27,9 +27,7 @@ fn main() -> Result<(), eframe::Error> {
                     if let Ok(bytes) = std::fs::read(&prop_path) {
                         fonts.font_data.insert(
                             "iAWriterQuattroV".into(),
-                            std::sync::Arc::new(eframe::egui::FontData::from_owned(
-                                bytes.clone(),
-                            )),
+                            std::sync::Arc::new(eframe::egui::FontData::from_owned(bytes.clone())),
                         );
                         fonts
                             .families
@@ -37,9 +35,9 @@ fn main() -> Result<(), eframe::Error> {
                             .map(|list| list.insert(0, "iAWriterQuattroV".into()));
 
                         let bold_tweak = eframe::egui::FontTweak {
-                            coords: eframe::egui::epaint::text::VariationCoords::new([
-                                (b"wght", 700.0),
-                            ]),
+                            coords: eframe::egui::epaint::text::VariationCoords::new([(
+                                b"wght", 700.0,
+                            )]),
                             ..Default::default()
                         };
                         fonts.font_data.insert(
@@ -50,10 +48,7 @@ fn main() -> Result<(), eframe::Error> {
                         );
                         fonts.families.insert(
                             eframe::egui::FontFamily::Name("jereide-bold".into()),
-                            vec![
-                                "iAWriterQuattroV-Bold".into(),
-                                "NotoEmoji-Regular".into(),
-                            ],
+                            vec!["iAWriterQuattroV-Bold".into(), "NotoEmoji-Regular".into()],
                         );
                     }
                 }
