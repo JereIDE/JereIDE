@@ -16,16 +16,19 @@ const INDENT: f32 = 16.0;
 const MIN_SIDEBAR_WIDTH: f32 = 150.0;
 const MAX_SIDEBAR_WIDTH: f32 = 800.0;
 const RESIZE_GRAB: f32 = 6.0;
+const LS_REFRESH_INTERVAL: f64 = 1.0;
 
 struct CachedListing {
     entries: Option<Vec<DirectoryEntry>>,
     error: Option<String>,
+    exists: bool,
     modified: Option<SystemTime>,
 }
 
 thread_local! {
     static LS_CACHE: RefCell<HashMap<String, CachedListing>> = RefCell::new(HashMap::new());
     static EXPANDED: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
+    static LAST_REFRESH: RefCell<f64> = RefCell::new(f64::NEG_INFINITY);
 }
 
 pub fn clear_ls_cache() {
@@ -41,9 +44,14 @@ fn cached_entries(dir: &str) -> Result<Vec<DirectoryEntry>, std::io::Error> {
     LS_CACHE.with(|cache| {
         let mut cache = cache.borrow_mut();
         let path = Path::new(dir);
-        let modified = directory_modified(path);
+        let exists = path.is_dir();
+        let modified = if exists {
+            directory_modified(path)
+        } else {
+            None
+        };
         let needs_refresh = match cache.get(dir) {
-            Some(cached) => cached.modified != modified,
+            Some(cached) => cached.exists != exists || cached.modified != modified,
             None => true,
         };
         if needs_refresh {
@@ -54,6 +62,7 @@ fn cached_entries(dir: &str) -> Result<Vec<DirectoryEntry>, std::io::Error> {
                         CachedListing {
                             entries: Some(entries),
                             error: None,
+                            exists,
                             modified,
                         },
                     );
@@ -64,6 +73,7 @@ fn cached_entries(dir: &str) -> Result<Vec<DirectoryEntry>, std::io::Error> {
                         CachedListing {
                             entries: None,
                             error: Some(err.to_string()),
+                            exists,
                             modified,
                         },
                     );
@@ -194,6 +204,20 @@ pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
     state.sidebar_width = state
         .sidebar_width
         .clamp(MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH);
+
+    let now = ui.input(|i| i.time);
+    let refresh_due = LAST_REFRESH.with(|last| {
+        let mut last = last.borrow_mut();
+        if now - *last >= LS_REFRESH_INTERVAL {
+            *last = now;
+            true
+        } else {
+            false
+        }
+    });
+    if refresh_due {
+        LS_CACHE.with(|cache| cache.borrow_mut().clear());
+    }
 
     egui::Panel::left("sidebar")
         .exact_size(state.sidebar_width)
