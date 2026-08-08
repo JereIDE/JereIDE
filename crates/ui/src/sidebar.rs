@@ -204,9 +204,20 @@ pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
 
             match state.current_project_dir.clone() {
                 Some(dir) => {
-                    egui::ScrollArea::vertical().show(ui, |ui| {
-                        render_entries(state, ui, Path::new(&dir), 0);
-                    });
+                    let path = Path::new(&dir);
+                    let readable = std::fs::metadata(path).map(|m| m.is_dir()).unwrap_or(false);
+                    if readable {
+                        egui::ScrollArea::vertical().show(ui, |ui| {
+                            render_entries(state, ui, path, 0);
+                        });
+                    } else {
+                        ui.with_layout(
+                            egui::Layout::centered_and_justified(egui::Direction::TopDown),
+                            |ui| {
+                                ui.colored_label(destructive(), "Project folder unavailable.");
+                            },
+                        );
+                    }
                 }
                 None => {
                     ui.with_layout(
