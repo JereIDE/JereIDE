@@ -511,6 +511,7 @@ impl eframe::App for JereIDEApp {
             egui::Panel::top("title_bar")
                 .exact_size(TITLE_BAR_HEIGHT)
                 .frame(egui::Frame::NONE)
+                .show_separator_line(false)
                 .show(ui, |ui| {
                     jereide_ui::title_bar::render_title_bar(state, ui, is_fullscreen);
                 });

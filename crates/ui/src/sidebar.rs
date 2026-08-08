@@ -7,9 +7,10 @@ use std::time::SystemTime;
 use eframe::egui;
 use egui::AtomExt;
 use jereide_core::AppState;
+use jereide_core::constants::TAB_BORDER_WIDTH;
 use jereide_fs::{DirectoryEntry, list_directory};
 use jereide_settings::{
-    bold_folders, destructive, surface_bg, text_default, text_muted, text_secondary,
+    bold_folders, border, destructive, surface_bg, text_default, text_muted, text_secondary,
 };
 
 const INDENT: f32 = 16.0;
@@ -203,10 +204,11 @@ pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
         .sidebar_width
         .clamp(MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH);
 
-    egui::Panel::left("sidebar")
+    let sidebar = egui::Panel::left("sidebar")
         .exact_size(state.sidebar_width)
         .resizable(false)
         .frame(panel_frame)
+        .show_separator_line(false)
         .show(ui, |ui| {
             ui.set_min_height(ui.available_height());
 
@@ -255,4 +257,11 @@ pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
                 ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
             }
         });
+
+    let panel_rect = sidebar.response.rect;
+    ui.painter().vline(
+        panel_rect.right() - 0.5,
+        egui::Rangef::new(panel_rect.top(), panel_rect.bottom()),
+        egui::Stroke::new(TAB_BORDER_WIDTH, border()),
+    );
 }
