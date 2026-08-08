@@ -191,6 +191,10 @@ pub fn render_sidebar(state: &mut AppState, ui: &mut egui::Ui) {
             bottom: 4,
         });
 
+    state.sidebar_width = state
+        .sidebar_width
+        .clamp(MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH);
+
     egui::Panel::left("sidebar")
         .exact_size(state.sidebar_width)
         .resizable(false)
