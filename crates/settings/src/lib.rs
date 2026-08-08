@@ -87,6 +87,8 @@ struct Settings {
     find_highlight: HexColor,
     find_highlight_current: HexColor,
 
+    bold_folders: bool,
+
     title_bar_font_size: f32,
     tab_font_size: f32,
     editor_font_size: f32,
@@ -135,6 +137,8 @@ impl Default for Settings {
 
             find_highlight: HexColor(Color32::from_rgb(255, 235, 130)),
             find_highlight_current: HexColor(Color32::from_rgb(255, 170, 40)),
+
+            bold_folders: true,
 
             title_bar_font_size: 12.0,
             tab_font_size: 12.0,
@@ -292,6 +296,10 @@ pub fn find_highlight() -> Color32 {
 }
 pub fn find_highlight_current() -> Color32 {
     SETTINGS.find_highlight_current.0
+}
+
+pub fn bold_folders() -> bool {
+    SETTINGS.bold_folders
 }
 
 pub fn title_bar_font_size() -> f32 {

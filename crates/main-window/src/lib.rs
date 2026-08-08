@@ -169,11 +169,7 @@ impl JereIDEApp {
         }
     }
 
-    fn handle_open(&mut self) {
-        let Some(path) = pick_file() else {
-            return;
-        };
-
+    fn open_path(&mut self, path: std::path::PathBuf) {
         let Some(size) = file_size(&path) else {
             return;
         };
@@ -193,6 +189,13 @@ impl JereIDEApp {
         };
         let path_str = path.display().to_string();
         self.state.open_file(path_str, content);
+    }
+
+    fn handle_open(&mut self) {
+        let Some(path) = pick_file() else {
+            return;
+        };
+        self.open_path(path);
     }
 
     fn handle_open_project(&mut self) {
@@ -497,11 +500,25 @@ impl eframe::App for JereIDEApp {
         }
 
         let go_to_line_clicked;
+        let pending_sidebar_open: Option<String>;
 
         {
             let state = &mut self.state;
 
             go_to_line_clicked = jereide_ui::status_bar::render_status_bar(state, ui);
+
+            let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
+            egui::Panel::top("title_bar")
+                .exact_size(TITLE_BAR_HEIGHT)
+                .frame(egui::Frame::NONE)
+                .show(ui, |ui| {
+                    jereide_ui::title_bar::render_title_bar(state, ui, is_fullscreen);
+                });
+
+            if state.sidebar_open {
+                jereide_ui::sidebar::render_sidebar(state, ui);
+            }
+            pending_sidebar_open = state.pending_open_file.take();
 
             egui::CentralPanel::default()
                 .frame(egui::Frame::NONE.fill(surface_bg()))
@@ -509,13 +526,6 @@ impl eframe::App for JereIDEApp {
                     let style = ui.style_mut();
                     style.visuals.extreme_bg_color = surface_bg();
                     style.spacing.item_spacing.y = ITEM_SPACING_Y;
-
-                    let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
-                    jereide_ui::title_bar::render_title_bar(state, ui, is_fullscreen);
-
-                    if state.sidebar_open {
-                        jereide_ui::sidebar::render_sidebar(state, ui);
-                    }
 
                     if !state.tabs.is_empty() {
                         jereide_ui::tab_strip::render_tab_strip(state, ui);
@@ -554,6 +564,10 @@ impl eframe::App for JereIDEApp {
 
         if go_to_line_clicked {
             self.toggle_go_to_line();
+        }
+
+        if let Some(path) = pending_sidebar_open {
+            self.open_path(std::path::PathBuf::from(path));
         }
 
         use jereide_ui::dialog::{CloseConfirmAction, LargeFileAction};

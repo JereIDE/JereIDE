@@ -27,12 +27,29 @@ fn main() -> Result<(), eframe::Error> {
                     if let Ok(bytes) = std::fs::read(&prop_path) {
                         fonts.font_data.insert(
                             "iAWriterQuattroV".into(),
-                            std::sync::Arc::new(eframe::egui::FontData::from_owned(bytes)),
+                            std::sync::Arc::new(eframe::egui::FontData::from_owned(bytes.clone())),
                         );
                         fonts
                             .families
                             .get_mut(&eframe::egui::FontFamily::Proportional)
                             .map(|list| list.insert(0, "iAWriterQuattroV".into()));
+
+                        let bold_tweak = eframe::egui::FontTweak {
+                            coords: eframe::egui::epaint::text::VariationCoords::new([(
+                                b"wght", 700.0,
+                            )]),
+                            ..Default::default()
+                        };
+                        fonts.font_data.insert(
+                            "iAWriterQuattroV-Bold".into(),
+                            std::sync::Arc::new(
+                                eframe::egui::FontData::from_owned(bytes).tweak(bold_tweak),
+                            ),
+                        );
+                        fonts.families.insert(
+                            eframe::egui::FontFamily::Name("jereide-bold".into()),
+                            vec!["iAWriterQuattroV-Bold".into(), "NotoEmoji-Regular".into()],
+                        );
                     }
                 }
 
