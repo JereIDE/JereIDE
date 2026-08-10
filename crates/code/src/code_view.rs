@@ -18,6 +18,15 @@ use jereide_syntax::SyntaxHighlighter;
 use std::collections::HashMap;
 thread_local! {
     static HIGHLIGHTERS: RefCell<HashMap<usize, SyntaxHighlighter>> = RefCell::new(HashMap::new());
+    static FIND_CACHE: RefCell<HashMap<usize, FindCache>> = RefCell::new(HashMap::new());
+}
+
+struct FindCache {
+    text: String,
+    query: String,
+    match_case: bool,
+    whole_word: bool,
+    matches: Vec<(usize, usize)>,
 }
 
 pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
@@ -59,6 +68,10 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         cache
             .entry(tab_id)
             .or_insert_with(|| SyntaxHighlighter::new(editor_font_size(), syntax_file.as_deref()));
+    });
+    FIND_CACHE.with(|cache| {
+        let mut cache = cache.borrow_mut();
+        cache.retain(|id, _| valid_ids.contains(id));
     });
 
     let font_id = egui::FontId::monospace(editor_font_size());
@@ -126,7 +139,29 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
             if let Some(hl) = state.find_highlight.clone() {
                 if !hl.query.is_empty() {
                     let tab_text = &state.tabs[active_idx].text;
-                    let matches = find_matches(tab_text, &hl.query, hl.match_case, hl.whole_word);
+                    let matches = FIND_CACHE.with(|cache| {
+                        let mut cache = cache.borrow_mut();
+                        let entry = cache.entry(tab_id).or_insert_with(|| FindCache {
+                            text: String::new(),
+                            query: String::new(),
+                            match_case: false,
+                            whole_word: false,
+                            matches: Vec::new(),
+                        });
+                        if entry.text != *tab_text
+                            || entry.query != hl.query
+                            || entry.match_case != hl.match_case
+                            || entry.whole_word != hl.whole_word
+                        {
+                            entry.text = tab_text.clone();
+                            entry.query = hl.query.clone();
+                            entry.match_case = hl.match_case;
+                            entry.whole_word = hl.whole_word;
+                            entry.matches =
+                                find_matches(tab_text, &hl.query, hl.match_case, hl.whole_word);
+                        }
+                        entry.matches.clone()
+                    });
                     paint_find_highlights(ui, &galley, galley_pos, &matches, hl.current_match);
                     if let Some(target) = hl.scroll_to {
                         scroll_to_char(ui, &galley, galley_pos, target);
