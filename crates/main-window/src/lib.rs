@@ -691,15 +691,17 @@ impl eframe::App for JereIDEApp {
                 let state = &mut self.state;
                 match action {
                     FindReplaceAction::Select(s, e) => {
-                        jereide_code::find_replace::select_match(state, &ctx, s, e);
+                        state.pending_find_selection = Some((s, e));
                         scroll_to = Some(s);
                     }
                     FindReplaceAction::Replace(s, e) => {
+                        state.pending_find_selection = None;
                         let replacement = self.find_palette.replace_text();
                         jereide_code::find_replace::replace_range(state, &ctx, s, e, replacement);
                         scroll_to = Some(s + replacement.chars().count());
                     }
                     FindReplaceAction::ReplaceAll => {
+                        state.pending_find_selection = None;
                         let find = self.find_palette.find_text().to_string();
                         let replace = self.find_palette.replace_text().to_string();
                         let match_case = self.find_palette.match_case();
@@ -721,6 +723,9 @@ impl eframe::App for JereIDEApp {
         } else {
             self.state.find_highlight = None;
             self.find_palette_open = false;
+            if let Some((s, e)) = self.state.pending_find_selection.take() {
+                jereide_code::find_replace::select_match(&mut self.state, &ctx, s, e);
+            }
         }
 
         if self.go_to_line_open && !self.state.tabs.is_empty() {

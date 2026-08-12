@@ -233,12 +233,14 @@ impl FindReplacePalette {
             });
 
         if enter_pressed {
-            if focus_before == Some(find_id) && !self.matches.is_empty() {
-                self.current_match = (self.current_match + 1) % self.matches.len();
-                let (s, e) = self.matches[self.current_match];
-                action = Some(FindReplaceAction::Select(s, e));
-            } else if focus_before == Some(replace_id) && !self.matches.is_empty() {
-                let (s, e) = self.matches[self.current_match];
+            if focus_before == Some(find_id) {
+                if !self.matches.is_empty() {
+                    self.current_match = (self.current_match + 1) % self.matches.len();
+                    let (s, e) = self.matches[self.current_match];
+                    action = Some(FindReplaceAction::Select(s, e));
+                }
+                ctx.memory_mut(|m| m.request_focus(find_id));
+            } else if focus_before == Some(replace_id) && !self.matches.is_empty() {                let (s, e) = self.matches[self.current_match];
                 action = Some(FindReplaceAction::Replace(s, e));
             }
         }
