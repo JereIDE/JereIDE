@@ -372,6 +372,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                     _ => (None, false),
                 };
                 if let Some(pair_char) = pair {
+                    let open_bracket = matches!(c, '(' | '[' | '{');
                     let store_cursor = |edit_state: &mut jereide_editor::TextEditState| {
                         edit_state
                             .cursor
@@ -379,7 +380,10 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                                 cursor_idx,
                             ))));
                     };
-                    if cursor_idx < text_len && bytes[cursor_idx] as char == pair_char {
+                    if !open_bracket
+                        && cursor_idx < text_len
+                        && bytes[cursor_idx] as char == pair_char
+                    {
                         state.tabs[active_idx].text.remove(cursor_idx);
                         if let Some(mut edit_state) =
                             jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
