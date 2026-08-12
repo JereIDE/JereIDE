@@ -240,7 +240,8 @@ impl FindReplacePalette {
                     action = Some(FindReplaceAction::Select(s, e));
                 }
                 ctx.memory_mut(|m| m.request_focus(find_id));
-            } else if focus_before == Some(replace_id) && !self.matches.is_empty() {                let (s, e) = self.matches[self.current_match];
+            } else if focus_before == Some(replace_id) && !self.matches.is_empty() {
+                let (s, e) = self.matches[self.current_match];
                 action = Some(FindReplaceAction::Replace(s, e));
             }
         }

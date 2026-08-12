@@ -163,15 +163,24 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                         }
                         entry.matches.clone()
                     });
-                    paint_find_highlights(ui, &galley, galley_pos, &matches, hl.current_match);
+                    paint_find_highlights(
+                        ui,
+                        &galley,
+                        galley_pos,
+                        &matches,
+                        hl.current_match,
+                        text_output.text_clip_rect,
+                    );
                     if let Some(target) = hl.scroll_to {
-                        scroll_to_char(ui, &galley, galley_pos, target);
+                        let gutter_w = gutter_width(galley.rows.len());
+                        scroll_to_char(ui, &galley, galley_pos, target, gutter_w);
                     }
                 }
             }
 
             if let Some(target) = state.go_to_line_scroll_to {
-                scroll_to_char(ui, &galley, galley_pos, target);
+                let gutter_w = gutter_width(galley.rows.len());
+                scroll_to_char(ui, &galley, galley_pos, target, gutter_w);
                 state.go_to_line_scroll_to = None;
             }
 
@@ -180,6 +189,12 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 if let Some((open_idx, close_idx)) =
                     find_matching_bracket(tab_text, cursor_range.primary.index.into())
                 {
+                    let bracket_painter = ui
+                        .painter_at(text_output.text_clip_rect.expand(1.0))
+                        .with_layer_id(egui::LayerId::new(
+                            egui::Order::Background,
+                            egui::Id::new("bracket_highlight"),
+                        ));
                     let highlight_at = |char_index: usize| {
                         if char_index >= tab_text.len() {
                             return;
@@ -191,15 +206,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                                 let screen_y = galley_pos.y + placed_row.pos.y;
                                 let w = glyph.advance_width;
                                 let h = placed_row.height();
-                                let bg_painter = egui::Painter::new(
-                                    ui.ctx().clone(),
-                                    egui::LayerId::new(
-                                        egui::Order::Background,
-                                        egui::Id::new("bracket_highlight"),
-                                    ),
-                                    ui.clip_rect(),
-                                );
-                                bg_painter.rect_filled(
+                                bracket_painter.rect_filled(
                                     egui::Rect::from_min_size(
                                         egui::pos2(screen_x, screen_y),
                                         egui::vec2(w, h),
@@ -458,12 +465,14 @@ fn paint_find_highlights(
     galley_pos: egui::Pos2,
     matches: &[(usize, usize)],
     current: usize,
+    text_clip_rect: egui::Rect,
 ) {
-    let painter = egui::Painter::new(
-        ui.ctx().clone(),
-        egui::LayerId::new(egui::Order::Background, egui::Id::new("find_highlight")),
-        ui.clip_rect(),
-    );
+    let painter = ui
+        .painter_at(text_clip_rect.expand(1.0))
+        .with_layer_id(egui::LayerId::new(
+            egui::Order::Background,
+            egui::Id::new("find_highlight"),
+        ));
     for (i, &(s, e)) in matches.iter().enumerate() {
         if s >= e {
             continue;
@@ -530,16 +539,39 @@ fn paint_find_highlights(
     }
 }
 
-fn scroll_to_char(ui: &egui::Ui, galley: &egui::Galley, galley_pos: egui::Pos2, char_index: usize) {
+fn scroll_to_char(
+    ui: &egui::Ui,
+    galley: &egui::Galley,
+    galley_pos: egui::Pos2,
+    char_index: usize,
+    gutter_w: f32,
+) {
     if let Some((row_idx, x)) = char_row_x(galley, char_index) {
         if let Some(row) = galley.rows.get(row_idx) {
-            let rect = egui::Rect::from_min_size(
-                egui::pos2(galley_pos.x + x, galley_pos.y + row.pos.y),
-                egui::vec2(1.0, row.height()),
+            const MARGIN_X: f32 = 24.0;
+            const MARGIN_Y: f32 = 16.0;
+            let rect = egui::Rect::from_min_max(
+                egui::pos2(
+                    galley_pos.x + x - gutter_w - MARGIN_X,
+                    (galley_pos.y + row.pos.y - MARGIN_Y).max(galley_pos.y),
+                ),
+                egui::pos2(
+                    galley_pos.x + x + 1.0,
+                    galley_pos.y + row.pos.y + row.height(),
+                ),
             );
             ui.scroll_to_rect(rect, Some(egui::Align::TOP));
         }
     }
+}
+
+fn gutter_width(line_count: usize) -> f32 {
+    let digit_count = if line_count < 10 {
+        1
+    } else {
+        line_count.ilog10() as usize + 1
+    };
+    GUTTER_PADDING_LEFT + digit_count as f32 * GUTTER_DIGIT_WIDTH + GUTTER_PADDING_RIGHT
 }
 
 fn find_matching_bracket(text: &str, cursor_char_index: usize) -> Option<(usize, usize)> {
