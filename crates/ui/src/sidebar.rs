@@ -2,7 +2,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::Path;
-use std::time::SystemTime;
+use std::rc::Rc;
+use std::time::{Duration, Instant, SystemTime};
 
 use eframe::egui;
 use egui::AtomExt;
@@ -17,12 +18,14 @@ const INDENT: f32 = 16.0;
 const MIN_SIDEBAR_WIDTH: f32 = 150.0;
 const MAX_SIDEBAR_WIDTH: f32 = 800.0;
 const RESIZE_GRAB: f32 = 6.0;
+const REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
 struct CachedListing {
-    entries: Option<Vec<DirectoryEntry>>,
+    entries: Option<Rc<Vec<DirectoryEntry>>>,
     error: Option<String>,
     exists: bool,
     modified: Option<SystemTime>,
+    last_checked: Instant,
 }
 
 thread_local! {
@@ -39,46 +42,62 @@ fn directory_modified(path: &Path) -> Option<SystemTime> {
     std::fs::metadata(path).and_then(|m| m.modified()).ok()
 }
 
-fn cached_entries(dir: &str) -> Result<Vec<DirectoryEntry>, std::io::Error> {
+fn cached_entries(dir: &str) -> Result<Rc<Vec<DirectoryEntry>>, std::io::Error> {
     LS_CACHE.with(|cache| {
         let mut cache = cache.borrow_mut();
         let path = Path::new(dir);
-        let exists = path.is_dir();
-        let modified = if exists {
-            directory_modified(path)
-        } else {
-            None
-        };
-        let needs_refresh = match cache.get(dir) {
-            Some(cached) => cached.exists != exists || cached.modified != modified,
+        let now = Instant::now();
+
+        let stale = match cache.get(dir) {
+            Some(c) => now.duration_since(c.last_checked) >= REFRESH_INTERVAL,
             None => true,
         };
-        if needs_refresh {
-            match list_directory(path) {
-                Ok(entries) => {
-                    cache.insert(
-                        dir.to_string(),
-                        CachedListing {
-                            entries: Some(entries),
-                            error: None,
-                            exists,
-                            modified,
-                        },
-                    );
+
+        if stale {
+            let exists = path.is_dir();
+            let modified = if exists {
+                directory_modified(path)
+            } else {
+                None
+            };
+            let needs_refresh = match cache.get(dir) {
+                Some(c) => c.exists != exists || c.modified != modified,
+                None => true,
+            };
+            if needs_refresh {
+                match list_directory(path) {
+                    Ok(entries) => {
+                        cache.insert(
+                            dir.to_string(),
+                            CachedListing {
+                                entries: Some(Rc::new(entries)),
+                                error: None,
+                                exists,
+                                modified,
+                                last_checked: now,
+                            },
+                        );
+                    }
+                    Err(err) => {
+                        cache.insert(
+                            dir.to_string(),
+                            CachedListing {
+                                entries: None,
+                                error: Some(err.to_string()),
+                                exists,
+                                modified,
+                                last_checked: now,
+                            },
+                        );
+                    }
                 }
-                Err(err) => {
-                    cache.insert(
-                        dir.to_string(),
-                        CachedListing {
-                            entries: None,
-                            error: Some(err.to_string()),
-                            exists,
-                            modified,
-                        },
-                    );
-                }
+            } else if let Some(c) = cache.get_mut(dir) {
+                c.last_checked = now;
+                c.exists = exists;
+                c.modified = modified;
             }
         }
+
         let cached = cache.get(dir).unwrap();
         match cached.entries.as_ref() {
             Some(entries) => Ok(entries.clone()),
@@ -110,7 +129,7 @@ fn render_entries(state: &mut AppState, ui: &mut egui::Ui, dir: &Path, depth: us
             return;
         }
     };
-    for entry in &entries {
+    for entry in entries.iter() {
         let full_path = dir.join(&entry.name);
         let full_path_str = full_path.display().to_string();
         let indent = depth as f32 * INDENT;

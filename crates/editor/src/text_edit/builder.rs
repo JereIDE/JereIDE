@@ -414,7 +414,6 @@ impl TextEdit<'_> {
             // .unwrap_or_else(|| ui.style().interact(&response).text_color()); // too bright
             .unwrap_or_else(|| ui.visuals().widgets.inactive.text_color());
 
-        let prev_text = text.as_str().to_owned();
         let hint_text_str = hint_text.text().unwrap_or_default().to_string();
 
         let font_id = font_selection.resolve(ui.style());
@@ -894,7 +893,7 @@ impl TextEdit<'_> {
             response.widget_info(|| {
                 WidgetInfo::text_edit(
                     ui.is_enabled(),
-                    mask_if_password(password, prev_text.as_str()),
+                    mask_if_password(password, text.as_str()),
                     mask_if_password(password, text.as_str()),
                     hint_text_str.as_str(),
                 )
@@ -911,7 +910,7 @@ impl TextEdit<'_> {
             response.widget_info(|| {
                 WidgetInfo::text_edit(
                     ui.is_enabled(),
-                    mask_if_password(password, prev_text.as_str()),
+                    mask_if_password(password, text.as_str()),
                     mask_if_password(password, text.as_str()),
                     hint_text_str.as_str(),
                 )

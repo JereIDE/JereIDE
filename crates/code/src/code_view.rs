@@ -19,6 +19,7 @@ use std::collections::HashMap;
 thread_local! {
     static HIGHLIGHTERS: RefCell<HashMap<usize, SyntaxHighlighter>> = RefCell::new(HashMap::new());
     static FIND_CACHE: RefCell<HashMap<usize, FindCache>> = RefCell::new(HashMap::new());
+    static PREV_TEXT: RefCell<HashMap<usize, String>> = RefCell::new(HashMap::new());
 }
 
 struct FindCache {
@@ -73,6 +74,10 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         let mut cache = cache.borrow_mut();
         cache.retain(|id, _| valid_ids.contains(id));
     });
+    PREV_TEXT.with(|cache| {
+        let mut cache = cache.borrow_mut();
+        cache.retain(|id, _| valid_ids.contains(id));
+    });
 
     let font_id = egui::FontId::monospace(editor_font_size());
     let cursor_line = state.tabs[active_idx].cursor_line;
@@ -80,16 +85,12 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
     let mut layouter =
         |layouter_ui: &egui::Ui, text: &dyn jereide_editor::TextBuffer, _wrap_width: f32| {
             let text_str = text.as_str();
-
-            let mut layout_job = HIGHLIGHTERS.with(|cache| {
+            HIGHLIGHTERS.with(|cache| {
                 let mut c = cache.borrow_mut();
-                c.get_mut(&tab_id).unwrap().highlight(text_str).clone()
-            });
-            layout_job.wrap.max_width = f32::INFINITY;
-            layouter_ui.fonts_mut(|f| f.layout_job(layout_job))
+                let hl = c.get_mut(&tab_id).unwrap();
+                layouter_ui.fonts_mut(|f| hl.highlight_galley(text_str, f))
+            })
         };
-
-    let old_text = state.tabs[active_idx].text.clone();
 
     let scroll_area_id = ui.make_persistent_id(egui::IdSalt::new("editor_scroll"));
     let gutter_scroll_x = egui::containers::scroll_area::State::load(ui.ctx(), scroll_area_id)
@@ -305,121 +306,132 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         state.tabs[active_idx].cursor_line = line;
         state.tabs[active_idx].cursor_col = col;
 
-        // Auto-indenting is great!
-        let text_len = state.tabs[active_idx].text.len();
-        if text_len > old_text.len()
-            && cursor_idx > 0
-            && state.tabs[active_idx].text.as_bytes()[cursor_idx - 1] == b'\n'
-            && (cursor_idx > old_text.len()
-                || old_text.as_bytes().get(cursor_idx - 1) != Some(&b'\n'))
-        {
-            let indent = {
-                let t = &state.tabs[active_idx].text;
-                compute_indent(t, cursor_idx)
-            };
-            if !indent.is_empty() {
-                state.tabs[active_idx].text.insert_str(cursor_idx, &indent);
-                let new_cursor = cursor_idx + indent.len();
+        if text_edit_output.response.changed() {
+            let old_text = PREV_TEXT
+                .with(|c| c.borrow().get(&tab_id).cloned())
+                .unwrap_or_else(|| state.tabs[active_idx].text.clone());
+
+            // Auto-indenting is great!
+            let text_len = state.tabs[active_idx].text.len();
+            if text_len > old_text.len()
+                && cursor_idx > 0
+                && state.tabs[active_idx].text.as_bytes()[cursor_idx - 1] == b'\n'
+                && (cursor_idx > old_text.len()
+                    || old_text.as_bytes().get(cursor_idx - 1) != Some(&b'\n'))
+            {
+                let indent = {
+                    let t = &state.tabs[active_idx].text;
+                    compute_indent(t, cursor_idx)
+                };
+                if !indent.is_empty() {
+                    state.tabs[active_idx].text.insert_str(cursor_idx, &indent);
+                    let new_cursor = cursor_idx + indent.len();
+                    if let Some(mut edit_state) =
+                        jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
+                    {
+                        edit_state
+                            .cursor
+                            .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
+                                new_cursor,
+                            ))));
+
+                        let cursor_range = edit_state
+                            .cursor
+                            .char_range()
+                            .unwrap_or(egui::text::CCursorRange::one(CCursor::new(new_cursor)));
+                        edit_state.undoer().feed_state(
+                            ctx.input(|i| i.time),
+                            &(cursor_range, state.tabs[active_idx].text.clone()),
+                        );
+                        edit_state.store(&ctx, text_edit_output.response.id);
+                    }
+                }
+            }
+
+            // Auto-pair brackets and quotes and stuff
+            if text_len == old_text.len() + 1 && cursor_idx > 0 {
+                let bytes = state.tabs[active_idx].text.as_bytes();
+                let c = bytes[cursor_idx - 1] as char;
+                let (pair, is_opening) = match c {
+                    '(' => (Some(')'), true),
+                    ')' => (Some(')'), false),
+                    '[' => (Some(']'), true),
+                    ']' => (Some(']'), false),
+                    '{' => (Some('}'), true),
+                    '}' => (Some('}'), false),
+                    '"' => (Some('"'), true),
+                    '\'' => (Some('\''), true),
+                    '`' => (Some('`'), true),
+                    _ => (None, false),
+                };
+                if let Some(pair_char) = pair {
+                    let store_cursor = |edit_state: &mut jereide_editor::TextEditState| {
+                        edit_state
+                            .cursor
+                            .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
+                                cursor_idx,
+                            ))));
+                    };
+                    if cursor_idx < text_len && bytes[cursor_idx] as char == pair_char {
+                        state.tabs[active_idx].text.remove(cursor_idx);
+                        if let Some(mut edit_state) =
+                            jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
+                        {
+                            store_cursor(&mut edit_state);
+                            if let Some(cursor_range) = edit_state.cursor.char_range() {
+                                edit_state.undoer().feed_state(
+                                    ctx.input(|i| i.time),
+                                    &(cursor_range, state.tabs[active_idx].text.clone()),
+                                );
+                            }
+                            edit_state.store(&ctx, text_edit_output.response.id);
+                        }
+                    } else if is_opening {
+                        state.tabs[active_idx].text.insert(cursor_idx, pair_char);
+                        if let Some(mut edit_state) =
+                            jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
+                        {
+                            store_cursor(&mut edit_state);
+                            // Feed undo state after insertion to make it undoable
+                            if let Some(cursor_range) = edit_state.cursor.char_range() {
+                                edit_state.undoer().feed_state(
+                                    ctx.input(|i| i.time),
+                                    &(cursor_range, state.tabs[active_idx].text.clone()),
+                                );
+                            }
+                            edit_state.store(&ctx, text_edit_output.response.id);
+                        }
+                    }
+                }
+            }
+
+            // Smart bracket deletion, so deleting will delete... like, deleting the opening will delete
+            // the closing bracket.
+            if should_delete_bracket_pair(&old_text, &state.tabs[active_idx].text, cursor_idx) {
+                state.tabs[active_idx].text.remove(cursor_idx);
                 if let Some(mut edit_state) =
                     jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
                 {
                     edit_state
                         .cursor
                         .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
-                            new_cursor,
+                            cursor_idx,
                         ))));
 
-                    let cursor_range = edit_state
-                        .cursor
-                        .char_range()
-                        .unwrap_or(egui::text::CCursorRange::one(CCursor::new(new_cursor)));
-                    edit_state.undoer().feed_state(
-                        ctx.input(|i| i.time),
-                        &(cursor_range, state.tabs[active_idx].text.clone()),
-                    );
+                    if let Some(cursor_range) = edit_state.cursor.char_range() {
+                        edit_state.undoer().feed_state(
+                            ctx.input(|i| i.time),
+                            &(cursor_range, state.tabs[active_idx].text.clone()),
+                        );
+                    }
                     edit_state.store(&ctx, text_edit_output.response.id);
                 }
             }
-        }
 
-        // Auto-pair brackets and quotes and stuff
-        if text_len == old_text.len() + 1 && cursor_idx > 0 {
-            let bytes = state.tabs[active_idx].text.as_bytes();
-            let c = bytes[cursor_idx - 1] as char;
-            let (pair, is_opening) = match c {
-                '(' => (Some(')'), true),
-                ')' => (Some(')'), false),
-                '[' => (Some(']'), true),
-                ']' => (Some(']'), false),
-                '{' => (Some('}'), true),
-                '}' => (Some('}'), false),
-                '"' => (Some('"'), true),
-                '\'' => (Some('\''), true),
-                '`' => (Some('`'), true),
-                _ => (None, false),
-            };
-            if let Some(pair_char) = pair {
-                let store_cursor = |edit_state: &mut jereide_editor::TextEditState| {
-                    edit_state
-                        .cursor
-                        .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
-                            cursor_idx,
-                        ))));
-                };
-                if cursor_idx < text_len && bytes[cursor_idx] as char == pair_char {
-                    state.tabs[active_idx].text.remove(cursor_idx);
-                    if let Some(mut edit_state) =
-                        jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
-                    {
-                        store_cursor(&mut edit_state);
-                        if let Some(cursor_range) = edit_state.cursor.char_range() {
-                            edit_state.undoer().feed_state(
-                                ctx.input(|i| i.time),
-                                &(cursor_range, state.tabs[active_idx].text.clone()),
-                            );
-                        }
-                        edit_state.store(&ctx, text_edit_output.response.id);
-                    }
-                } else if is_opening {
-                    state.tabs[active_idx].text.insert(cursor_idx, pair_char);
-                    if let Some(mut edit_state) =
-                        jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
-                    {
-                        store_cursor(&mut edit_state);
-                        // Feed undo state after insertion to make it undoable
-                        if let Some(cursor_range) = edit_state.cursor.char_range() {
-                            edit_state.undoer().feed_state(
-                                ctx.input(|i| i.time),
-                                &(cursor_range, state.tabs[active_idx].text.clone()),
-                            );
-                        }
-                        edit_state.store(&ctx, text_edit_output.response.id);
-                    }
-                }
-            }
-        }
-
-        // Smart bracket deletion, so deleting will delete... like, deleting the opening will delete
-        // the closing bracket.
-        if should_delete_bracket_pair(&old_text, &state.tabs[active_idx].text, cursor_idx) {
-            state.tabs[active_idx].text.remove(cursor_idx);
-            if let Some(mut edit_state) =
-                jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
-            {
-                edit_state
-                    .cursor
-                    .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
-                        cursor_idx,
-                    ))));
-
-                if let Some(cursor_range) = edit_state.cursor.char_range() {
-                    edit_state.undoer().feed_state(
-                        ctx.input(|i| i.time),
-                        &(cursor_range, state.tabs[active_idx].text.clone()),
-                    );
-                }
-                edit_state.store(&ctx, text_edit_output.response.id);
-            }
+            PREV_TEXT.with(|c| {
+                c.borrow_mut()
+                    .insert(tab_id, state.tabs[active_idx].text.clone())
+            });
         }
     }
 

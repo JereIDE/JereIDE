@@ -360,6 +360,7 @@ pub struct SyntaxHighlighter {
     syntax_def: Option<CompiledSyntax>,
     cached_text: String,
     cached_job: egui::text::LayoutJob,
+    cached_galley: Option<std::sync::Arc<egui::Galley>>,
     line_starts: Vec<usize>,
     line_states: Vec<HlState>,
     line_tokens: Vec<Vec<(usize, usize, String)>>,
@@ -378,6 +379,7 @@ impl SyntaxHighlighter {
             syntax_def,
             cached_text: String::new(),
             cached_job: egui::text::LayoutJob::default(),
+            cached_galley: None,
             line_starts: vec![0],
             line_states: vec![HlState::Normal],
             line_tokens: vec![vec![]],
@@ -544,6 +546,23 @@ impl SyntaxHighlighter {
         self.cached_job = job;
         &self.cached_job
     }
+
+    pub fn highlight_galley(
+        &mut self,
+        text: &str,
+        fonts: &mut eframe::egui::epaint::text::FontsView<'_>,
+    ) -> std::sync::Arc<egui::Galley> {
+        if text == self.cached_text
+            && !self.cached_text.is_empty()
+            && let Some(galley) = &self.cached_galley
+        {
+            return galley.clone();
+        }
+
+        let galley = fonts.layout_job(self.highlight(text).clone());
+        self.cached_galley = Some(galley.clone());
+        galley
+    }
 }
 
 #[cfg(test)]
@@ -660,6 +679,47 @@ mod tests {
                 text
             );
         }
+    }
+
+    fn large_md() -> String {
+        let mut text = String::new();
+        for i in 0..2000 {
+            text.push_str(&format!(
+                "# Heading {i}\nSome prose *emphasized* and **bold** here.\n\n"
+            ));
+        }
+        text
+    }
+
+    #[test]
+    #[ignore = "manual benchmark: cargo test -- --ignored --nocapture"]
+    fn bench_highlight_unchanged() {
+        let text = large_md();
+        let mut hl = SyntaxHighlighter::new(14.0, Some("md"));
+        hl.highlight(&text);
+        let start = std::time::Instant::now();
+        let mut checksum = 0usize;
+        for _ in 0..1000 {
+            checksum ^= hl.highlight(&text).sections.len();
+        }
+        let us = start.elapsed().as_micros() / 1000;
+        println!("bench_highlight_unchanged: {us} us/call (checksum {checksum})");
+    }
+
+    #[test]
+    #[ignore = "manual benchmark: cargo test -- --ignored --nocapture"]
+    fn bench_highlight_typing() {
+        let mut text = large_md();
+        let mut hl = SyntaxHighlighter::new(14.0, Some("md"));
+        hl.highlight(&text);
+        let start = std::time::Instant::now();
+        let mut checksum = 0usize;
+        for i in 0..1000 {
+            text.replace_range(i * 3 % text.len()..=(i * 3 % text.len()) + 2, "abc");
+            checksum ^= hl.highlight(&text).sections.len();
+        }
+        let us = start.elapsed().as_micros() / 1000;
+        println!("bench_highlight_typing: {us} us/call (checksum {checksum})");
     }
 
     #[test]

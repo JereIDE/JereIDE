@@ -67,11 +67,44 @@ pub fn find_matches(
     match_case: bool,
     whole_word: bool,
 ) -> Vec<(usize, usize)> {
-    let chars: Vec<char> = text.chars().collect();
-    let qchars: Vec<char> = query.chars().collect();
-    if qchars.is_empty() || chars.len() < qchars.len() {
+    if query.is_empty() || text.len() < query.len() {
         return Vec::new();
     }
+
+    if text.is_ascii() && query.is_ascii() {
+        let is_word = |b: u8| b.is_ascii_alphanumeric() || b == b'_';
+        let lower_text;
+        let lower_query;
+        let (t, q): (&[u8], &[u8]) = if match_case {
+            (text.as_bytes(), query.as_bytes())
+        } else {
+            lower_text = text.to_ascii_lowercase();
+            lower_query = query.to_ascii_lowercase();
+            (lower_text.as_bytes(), lower_query.as_bytes())
+        };
+        let n = t.len();
+        let m = q.len();
+        if n < m {
+            return Vec::new();
+        }
+        let mut result = Vec::new();
+        let mut i = 0;
+        while i + m <= n {
+            if &t[i..i + m] == q {
+                let end = i + m;
+                let before_ok = i == 0 || !is_word(t[i - 1]);
+                let after_ok = end >= n || !is_word(t[end]);
+                if !whole_word || (before_ok && after_ok) {
+                    result.push((i, end));
+                }
+            }
+            i += 1;
+        }
+        return result;
+    }
+
+    let chars: Vec<char> = text.chars().collect();
+    let qchars: Vec<char> = query.chars().collect();
     let is_word = |c: char| c.is_alphanumeric() || c == '_';
     let eq = |a: char, b: char| {
         if match_case {
@@ -176,5 +209,21 @@ mod find_matches_tests {
             find_matches("hello world", "world", true, true),
             vec![(6, 11)]
         );
+    }
+
+    #[test]
+    #[ignore = "manual benchmark: cargo test -- --ignored --nocapture"]
+    fn bench_find_matches() {
+        let mut text = String::new();
+        for i in 0..5000 {
+            text.push_str(&format!("let value {i} = 42; // crate::module::Path\n"));
+        }
+        let start = std::time::Instant::now();
+        let mut checksum = 0usize;
+        for _ in 0..100 {
+            checksum = find_matches(&text, "value", false, true).len();
+        }
+        let us = start.elapsed().as_micros() / 100;
+        println!("bench_find_matches: {us} us/call (matches {checksum})");
     }
 }
