@@ -696,8 +696,13 @@ impl TextEdit<'_> {
 
         let inner_rect = response.rect(inner_rect_id).unwrap_or(Rect::ZERO);
 
-        // Our atom closure was now called, so the galley should always be available here
-        let mut galley = get_galley.expect("Galley should be available here");
+        let mut galley = match get_galley {
+            Some(g) => g,
+            None => {
+                log::warn!("text edit galley was not produced by atom layout; laying out fallback");
+                layouter(ui, text, inner_rect.width())
+            }
+        };
 
         // Don't send `OutputEvent::Clicked` when a user presses the space bar
         response.flags -= response::Flags::FAKE_PRIMARY_CLICKED;

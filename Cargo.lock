@@ -2112,6 +2112,7 @@ name = "jereide-editor"
 version = "0.28.0"
 dependencies = [
  "eframe",
+ "log",
 ]
 
 [[package]]
