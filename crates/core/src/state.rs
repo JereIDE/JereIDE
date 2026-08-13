@@ -160,7 +160,11 @@ impl AppState {
         // This thingie checks if this file is already open
         for (i, tab) in self.tabs.iter().enumerate() {
             if tab.file_path.as_deref() == Some(&path) {
-                log::info!("switched to already-open tab {i} for {:?} ({} chars)", path, content.chars().count());
+                log::info!(
+                    "switched to already-open tab {i} for {:?} ({} chars)",
+                    path,
+                    content.chars().count()
+                );
                 self.active_tab_index = i;
                 return i;
             }
@@ -183,7 +187,10 @@ impl AppState {
         self.tabs.push(Tab::new());
         let idx = self.tabs.len() - 1;
         self.active_tab_index = idx;
-        log::info!("created new blank tab {idx} ({} tabs total)", self.tabs.len());
+        log::info!(
+            "created new blank tab {idx} ({} tabs total)",
+            self.tabs.len()
+        );
         idx
     }
 
@@ -207,7 +214,11 @@ impl AppState {
 
     pub fn switch_to_view(&mut self, target: CurrentView) {
         if target != self.current_view {
-            log::info!("switching view from {:?} to {:?}", self.current_view, target);
+            log::info!(
+                "switching view from {:?} to {:?}",
+                self.current_view,
+                target
+            );
             self.current_view = target;
         }
     }

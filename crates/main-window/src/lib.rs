@@ -253,7 +253,11 @@ impl JereIDEApp {
                 ) {
                     log::error!("failed to save file {}: {}", p, e);
                 } else {
-                    log::info!("saved {} bytes to {}", self.state.current_tab().text.chars().count(), p);
+                    log::info!(
+                        "saved {} bytes to {}",
+                        self.state.current_tab().text.chars().count(),
+                        p
+                    );
                     self.state.mark_saved();
                 }
             }
@@ -274,7 +278,11 @@ impl JereIDEApp {
             if let Err(e) = save_to_path(&self.state.current_tab().text, &path) {
                 log::error!("failed to save file as {}: {}", path.display(), e);
             } else {
-                log::info!("saved file as {} ({} chars)", path.display(), self.state.current_tab().text.chars().count());
+                log::info!(
+                    "saved file as {} ({} chars)",
+                    path.display(),
+                    self.state.current_tab().text.chars().count()
+                );
                 let path_str = path.display().to_string();
                 let idx = self.state.active_tab_index;
                 self.state.tabs[idx].file_path = Some(path_str);

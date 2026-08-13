@@ -114,7 +114,10 @@ pub fn init() {
             }
             let level = env_max_level();
             log::set_max_level(level);
-            log::info!("==== JereIDE logging initialized -> {:?} (level {level}) ====", path);
+            log::info!(
+                "==== JereIDE logging initialized -> {:?} (level {level}) ====",
+                path
+            );
         }
         Err(e) => {
             eprintln!("jereide-logging: could not open log file {path:?}: {e}");
