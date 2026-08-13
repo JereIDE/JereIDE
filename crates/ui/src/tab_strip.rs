@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use eframe::egui::{self, Color32, FontId, Pos2, Rect, Sense, Stroke, Vec2};
+use eframe::egui::{self, Color32, FontId, Pos2, Rect, Sense, Stroke, Vec2, WidgetInfo, WidgetType};
 use jereide_core::AppState;
 use jereide_core::constants::{
     TAB_BORDER_WIDTH, TAB_CLOSE_BTN_RADIUS, TAB_CLOSE_BTN_SIZE, TAB_CLOSE_BTN_SPACING,
@@ -140,6 +140,17 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                     .interact(close_rect, egui::Id::new(("close", idx)), Sense::click())
                     .on_hover_cursor(egui::CursorIcon::PointingHand)
                     .on_hover_text("Close Tab");
+
+                tab_resp.widget_info(|| {
+                    WidgetInfo::labeled(WidgetType::Button, ui.is_enabled(), l.galley.text())
+                });
+                close_resp.widget_info(|| {
+                    WidgetInfo::labeled(
+                        WidgetType::Button,
+                        ui.is_enabled(),
+                        format!("Close {}", l.galley.text()),
+                    )
+                });
 
                 let close_h = close_resp.hovered();
                 let tab_h = tab_resp.hovered() || close_h;

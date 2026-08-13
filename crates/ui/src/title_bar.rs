@@ -109,6 +109,13 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
                         egui::Button::new(user_icon_image()).corner_radius(d / 2.0),
                     )
                     .on_hover_text("Show User Menu");
+                usericon_clicked.widget_info(|| {
+                    egui::WidgetInfo::labeled(
+                        egui::WidgetType::Button,
+                        ui.is_enabled(),
+                        "Show User Menu",
+                    )
+                });
                 egui::Popup::menu(&usericon_clicked)
                     .gap(TITLE_BAR_POPUP_GAP)
                     .close_behavior(egui::PopupCloseBehavior::CloseOnClick)
