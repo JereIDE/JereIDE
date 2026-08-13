@@ -65,6 +65,7 @@ pub struct TextEdit<'t> {
     background_color: Option<Color32>,
     gutter_config: Option<GutterConfig>,
     gutter_scroll_x: f32,
+    autopair: bool,
 }
 
 impl WidgetWithState for TextEdit<'_> {
@@ -127,6 +128,7 @@ impl<'t> TextEdit<'t> {
             background_color: None,
             gutter_config: None,
             gutter_scroll_x: 0.0,
+            autopair: false,
         }
     }
 
@@ -135,7 +137,14 @@ impl<'t> TextEdit<'t> {
     /// - monospaced font
     /// - focus lock (tab will insert a tab character instead of moving focus)
     pub fn code_editor(self) -> Self {
-        self.font(TextStyle::Monospace).lock_focus(true)
+        self.font(TextStyle::Monospace)
+            .lock_focus(true)
+            .autopair(true)
+    }
+
+    fn autopair(mut self, on: bool) -> Self {
+        self.autopair = on;
+        self
     }
 
     /// Use if you want to set an explicit [`Id`] for this widget.
@@ -388,6 +397,7 @@ impl TextEdit<'_> {
             background_color,
             gutter_config,
             gutter_scroll_x,
+            autopair,
         } = self;
 
         let line_count = if text.as_str().is_empty() {
@@ -503,6 +513,7 @@ impl TextEdit<'_> {
                     char_limit,
                     event_filter,
                     return_key,
+                    autopair,
                 );
 
                 if changed {
@@ -963,6 +974,30 @@ fn mask_if_password(is_password: bool, text: &str) -> String {
 
 // ----------------------------------------------------------------------------
 
+fn indent_of_previous_line(text: &str, insert_index: usize) -> String {
+    let chars: Vec<char> = text.chars().collect();
+    if insert_index == 0 {
+        return String::new();
+    }
+    let mut line_start = 0;
+    let mut i = 0;
+    while i < insert_index.saturating_sub(1) {
+        if chars[i] == '\n' {
+            line_start = i + 1;
+        }
+        i += 1;
+    }
+    let mut indent_len = 0;
+    for &ch in &chars[line_start..insert_index.saturating_sub(1)] {
+        if matches!(ch, ' ' | '\t') {
+            indent_len += 1;
+        } else {
+            break;
+        }
+    }
+    chars[line_start..line_start + indent_len].iter().collect()
+}
+
 /// Check for (keyboard) events to edit the cursor and/or text.
 #[expect(clippy::too_many_arguments)]
 fn events(
@@ -979,6 +1014,7 @@ fn events(
     char_limit: usize,
     event_filter: EventFilter,
     return_key: Option<KeyboardShortcut>,
+    autopair: bool,
 ) -> (bool, CCursorRange) {
     let os = ui.os();
 
@@ -1045,9 +1081,48 @@ fn events(
                 if !text_to_insert.is_empty() && text_to_insert != "\n" && text_to_insert != "\r" {
                     let mut ccursor = text.delete_selected(&cursor_range);
 
-                    text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
-
-                    Some(CCursorRange::one(ccursor))
+                    if autopair && text_to_insert.chars().count() == 1 {
+                        let c = text_to_insert.chars().next().unwrap();
+                        let (pair_char, is_opening) = match c {
+                            '(' => (Some(')'), true),
+                            '[' => (Some(']'), true),
+                            '{' => (Some('}'), true),
+                            '"' => (Some('"'), true),
+                            '\'' => (Some('\''), true),
+                            '`' => (Some('`'), true),
+                            ')' => (Some(')'), false),
+                            ']' => (Some(']'), false),
+                            '}' => (Some('}'), false),
+                            _ => (None, false),
+                        };
+                        if let Some(pair_char) = pair_char {
+                            let next = text.as_str().chars().nth(usize::from(ccursor.index));
+                            let overtype = !matches!(c, '(' | '[' | '{') && next == Some(pair_char);
+                            if overtype {
+                                Some(CCursorRange::one(CCursor::new(usize::from(
+                                    ccursor.index + 1,
+                                ))))
+                            } else if is_opening {
+                                text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
+                                let between = ccursor;
+                                text.insert_text_at(
+                                    &mut ccursor,
+                                    &pair_char.to_string(),
+                                    char_limit,
+                                );
+                                Some(CCursorRange::one(between))
+                            } else {
+                                text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
+                                Some(CCursorRange::one(ccursor))
+                            }
+                        } else {
+                            text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
+                            Some(CCursorRange::one(ccursor))
+                        }
+                    } else {
+                        text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
+                        Some(CCursorRange::one(ccursor))
+                    }
                 } else {
                     None
                 }
@@ -1079,7 +1154,13 @@ fn events(
                 if multiline {
                     let mut ccursor = text.delete_selected(&cursor_range);
                     text.insert_text_at(&mut ccursor, "\n", char_limit);
-                    // TODO(emilk): if code editor, auto-indent by same leading tabs, + one if the lines end on an opening bracket
+                    if autopair {
+                        let indent =
+                            indent_of_previous_line(text.as_str(), usize::from(ccursor.index));
+                        if !indent.is_empty() {
+                            text.insert_text_at(&mut ccursor, &indent, char_limit);
+                        }
+                    }
                     Some(CCursorRange::one(ccursor))
                 } else {
                     ui.memory_mut(|mem| mem.surrender_focus(id)); // End input with enter
@@ -1299,5 +1380,51 @@ fn check_for_mutating_key_press(
         }
 
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod indent_tests {
+    use super::indent_of_previous_line;
+
+    #[test]
+    fn basic() {
+        let text = "    hello\n";
+        assert_eq!(indent_of_previous_line(text, 10), "    ");
+    }
+
+    #[test]
+    fn two_levels() {
+        let text = "        hello\n";
+        assert_eq!(indent_of_previous_line(text, 14), "        ");
+    }
+
+    #[test]
+    fn tabs() {
+        let text = "\t\thello\n";
+        assert_eq!(indent_of_previous_line(text, 8), "\t\t");
+    }
+
+    #[test]
+    fn no_indent() {
+        let text = "hello\n";
+        assert_eq!(indent_of_previous_line(text, 6), "");
+    }
+
+    #[test]
+    fn mixed() {
+        let text = "  \t  hello\n";
+        assert_eq!(indent_of_previous_line(text, 11), "  \t  ");
+    }
+
+    #[test]
+    fn empty_is_empty() {
+        assert_eq!(indent_of_previous_line("", 0), "");
+    }
+
+    #[test]
+    fn indents_from_correct_previous_line() {
+        let text = "a\n    b";
+        assert_eq!(indent_of_previous_line(text, 7), "    ");
     }
 }

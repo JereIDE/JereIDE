@@ -318,104 +318,6 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 .with(|c| c.borrow().get(&tab_id).cloned())
                 .unwrap_or_else(|| state.tabs[active_idx].text.clone());
 
-            // Auto-indenting is great!
-            let text_len = state.tabs[active_idx].text.len();
-            if text_len > old_text.len()
-                && cursor_idx > 0
-                && state.tabs[active_idx].text.as_bytes()[cursor_idx - 1] == b'\n'
-                && (cursor_idx > old_text.len()
-                    || old_text.as_bytes().get(cursor_idx - 1) != Some(&b'\n'))
-            {
-                let indent = {
-                    let t = &state.tabs[active_idx].text;
-                    compute_indent(t, cursor_idx)
-                };
-                if !indent.is_empty() {
-                    state.tabs[active_idx].text.insert_str(cursor_idx, &indent);
-                    let new_cursor = cursor_idx + indent.len();
-                    if let Some(mut edit_state) =
-                        jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
-                    {
-                        edit_state
-                            .cursor
-                            .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
-                                new_cursor,
-                            ))));
-
-                        let cursor_range = edit_state
-                            .cursor
-                            .char_range()
-                            .unwrap_or(egui::text::CCursorRange::one(CCursor::new(new_cursor)));
-                        edit_state.undoer().feed_state(
-                            ctx.input(|i| i.time),
-                            &(cursor_range, state.tabs[active_idx].text.clone()),
-                        );
-                        edit_state.store(&ctx, text_edit_output.response.id);
-                    }
-                }
-            }
-
-            // Auto-pair brackets and quotes and stuff
-            if text_len == old_text.len() + 1 && cursor_idx > 0 {
-                let bytes = state.tabs[active_idx].text.as_bytes();
-                let c = bytes[cursor_idx - 1] as char;
-                let (pair, is_opening) = match c {
-                    '(' => (Some(')'), true),
-                    ')' => (Some(')'), false),
-                    '[' => (Some(']'), true),
-                    ']' => (Some(']'), false),
-                    '{' => (Some('}'), true),
-                    '}' => (Some('}'), false),
-                    '"' => (Some('"'), true),
-                    '\'' => (Some('\''), true),
-                    '`' => (Some('`'), true),
-                    _ => (None, false),
-                };
-                if let Some(pair_char) = pair {
-                    let open_bracket = matches!(c, '(' | '[' | '{');
-                    let store_cursor = |edit_state: &mut jereide_editor::TextEditState| {
-                        edit_state
-                            .cursor
-                            .set_char_range(Some(egui::text::CCursorRange::one(CCursor::new(
-                                cursor_idx,
-                            ))));
-                    };
-                    if !open_bracket
-                        && cursor_idx < text_len
-                        && bytes[cursor_idx] as char == pair_char
-                    {
-                        state.tabs[active_idx].text.remove(cursor_idx);
-                        if let Some(mut edit_state) =
-                            jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
-                        {
-                            store_cursor(&mut edit_state);
-                            if let Some(cursor_range) = edit_state.cursor.char_range() {
-                                edit_state.undoer().feed_state(
-                                    ctx.input(|i| i.time),
-                                    &(cursor_range, state.tabs[active_idx].text.clone()),
-                                );
-                            }
-                            edit_state.store(&ctx, text_edit_output.response.id);
-                        }
-                    } else if is_opening {
-                        state.tabs[active_idx].text.insert(cursor_idx, pair_char);
-                        if let Some(mut edit_state) =
-                            jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
-                        {
-                            store_cursor(&mut edit_state);
-                            // Feed undo state after insertion to make it undoable
-                            if let Some(cursor_range) = edit_state.cursor.char_range() {
-                                edit_state.undoer().feed_state(
-                                    ctx.input(|i| i.time),
-                                    &(cursor_range, state.tabs[active_idx].text.clone()),
-                                );
-                            }
-                            edit_state.store(&ctx, text_edit_output.response.id);
-                        }
-                    }
-                }
-            }
-
             // Smart bracket deletion, so deleting will delete... like, deleting the opening will delete
             // the closing bracket.
             if should_delete_bracket_pair(&old_text, &state.tabs[active_idx].text, cursor_idx) {
@@ -649,17 +551,6 @@ fn find_match_backward(text: &str, start: usize, open: char, close: char) -> Opt
     None
 }
 
-fn compute_indent(text: &str, cursor_idx: usize) -> String {
-    let before = &text[..cursor_idx];
-    let prev_start = before[..before.len() - 1]
-        .rfind('\n')
-        .map(|pos| pos + 1)
-        .unwrap_or(0);
-    let prev_line = &text[prev_start..cursor_idx - 1];
-    let indent_len = prev_line.len() - prev_line.trim_start().len();
-    prev_line[..indent_len].to_string()
-}
-
 fn should_delete_bracket_pair(old_text: &str, new_text: &str, cursor_idx: usize) -> bool {
     if new_text.len() + 1 != old_text.len() {
         return false;
@@ -821,36 +712,6 @@ mod tests {
     fn find_matching_bracket_checks_char_before_cursor() {
         let text = "(hello)";
         assert_eq!(find_matching_bracket(text, 7), Some((0, 6)));
-    }
-
-    #[test]
-    fn compute_indent_basic() {
-        let text = "    hello\n";
-        assert_eq!(compute_indent(text, 10), "    ");
-    }
-
-    #[test]
-    fn compute_indent_two_levels() {
-        let text = "        hello\n";
-        assert_eq!(compute_indent(text, 14), "        ");
-    }
-
-    #[test]
-    fn compute_indent_tabs() {
-        let text = "\t\thello\n";
-        assert_eq!(compute_indent(text, 8), "\t\t");
-    }
-
-    #[test]
-    fn compute_indent_no_indent() {
-        let text = "hello\n";
-        assert_eq!(compute_indent(text, 6), "");
-    }
-
-    #[test]
-    fn compute_indent_mixed() {
-        let text = "  \t  hello\n";
-        assert_eq!(compute_indent(text, 11), "  \t  ");
     }
 
     #[test]
