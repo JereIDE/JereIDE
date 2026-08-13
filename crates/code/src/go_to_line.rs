@@ -16,7 +16,6 @@ pub fn go_to_line(state: &mut AppState, ctx: &egui::Context, char_index: usize) 
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

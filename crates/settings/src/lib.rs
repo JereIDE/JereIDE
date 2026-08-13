@@ -158,10 +158,10 @@ fn config_base_dir() -> PathBuf {
     }
     #[cfg(not(target_os = "windows"))]
     {
-        if let Some(xdg) = std::env::var_os("XDG_CONFIG_HOME") {
-            if !xdg.is_empty() {
-                return PathBuf::from(xdg);
-            }
+        if let Some(xdg) = std::env::var_os("XDG_CONFIG_HOME")
+            && !xdg.is_empty()
+        {
+            return PathBuf::from(xdg);
         }
     }
     if let Some(home) = std::env::var_os("HOME") {
@@ -285,10 +285,10 @@ fn apply_override(settings: &mut Settings, key: &str, value: &str) {
         window_height,
         dialog_width,
     );
-    if key == "bold_folders" {
-        if let Ok(b) = value.parse::<bool>() {
-            settings.bold_folders = b;
-        }
+    if key == "bold_folders"
+        && let Ok(b) = value.parse::<bool>()
+    {
+        settings.bold_folders = b;
     }
 }
 

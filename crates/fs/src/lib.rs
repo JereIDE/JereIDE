@@ -33,11 +33,9 @@ pub fn save_to_path(content: &str, path: &PathBuf) -> Result<(), std::io::Error>
         .parent()
         .filter(|p| !p.as_os_str().is_empty())
         .unwrap_or_else(|| Path::new("."));
-    let file_name = path
-        .file_name()
-        .ok_or_else(|| {
-            std::io::Error::new(std::io::ErrorKind::InvalidInput, "path has no file name")
-        })?;
+    let file_name = path.file_name().ok_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::InvalidInput, "path has no file name")
+    })?;
     let temp_path = dir.join(format!(".{}.jereide-tmp", file_name.to_string_lossy()));
 
     let result = (|| {
