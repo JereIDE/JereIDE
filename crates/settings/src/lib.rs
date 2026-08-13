@@ -2,10 +2,31 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 
 use eframe::egui::Color32;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Serialize, Serializer};
 
 #[derive(Clone, Copy)]
 struct HexColor(Color32);
+
+impl HexColor {
+    fn parse(s: &str) -> Option<Self> {
+        let s = s.trim().trim_start_matches('#');
+        let bytes = |range: std::ops::Range<usize>| u8::from_str_radix(&s[range], 16).ok();
+        match s.len() {
+            6 => Some(HexColor(Color32::from_rgb(
+                bytes(0..2)?,
+                bytes(2..4)?,
+                bytes(4..6)?,
+            ))),
+            8 => Some(HexColor(Color32::from_rgba_unmultiplied(
+                bytes(0..2)?,
+                bytes(2..4)?,
+                bytes(4..6)?,
+                bytes(6..8)?,
+            ))),
+            _ => None,
+        }
+    }
+}
 
 impl Serialize for HexColor {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -23,34 +44,7 @@ impl Serialize for HexColor {
     }
 }
 
-impl<'de> Deserialize<'de> for HexColor {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        let s = s.trim_start_matches('#');
-        let bytes = |range: std::ops::Range<usize>| u8::from_str_radix(&s[range], 16).ok();
-
-        if s.len() == 6 {
-            let r = bytes(0..2).ok_or_else(|| serde::de::Error::custom("invalid color"))?;
-            let g = bytes(2..4).ok_or_else(|| serde::de::Error::custom("invalid color"))?;
-            let b = bytes(4..6).ok_or_else(|| serde::de::Error::custom("invalid color"))?;
-            Ok(HexColor(Color32::from_rgb(r, g, b)))
-        } else if s.len() == 8 {
-            let r = bytes(0..2).ok_or_else(|| serde::de::Error::custom("invalid color"))?;
-            let g = bytes(2..4).ok_or_else(|| serde::de::Error::custom("invalid color"))?;
-            let b = bytes(4..6).ok_or_else(|| serde::de::Error::custom("invalid color"))?;
-            let a = bytes(6..8).ok_or_else(|| serde::de::Error::custom("invalid color"))?;
-            Ok(HexColor(Color32::from_rgba_unmultiplied(r, g, b, a)))
-        } else {
-            Err(serde::de::Error::custom("invalid color"))
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(default)]
+#[derive(Serialize)]
 struct Settings {
     surface_bg: HexColor,
     elevated_bg: HexColor,
@@ -182,21 +176,88 @@ pub fn settings_path() -> PathBuf {
 
 fn load() -> Settings {
     let path = settings_path();
-    if path.exists() {
-        if let Ok(content) = std::fs::read_to_string(&path) {
-            if let Ok(settings) = toml::from_str::<Settings>(&content) {
-                return settings;
+    let mut settings = Settings::default();
+    match std::fs::read_to_string(&path) {
+        Ok(content) => apply_overrides(&mut settings, &content),
+        Err(_) => {
+            if let Some(parent) = path.parent() {
+                let _ = std::fs::create_dir_all(parent);
             }
+            write_template(&path);
         }
     }
-    let defaults = Settings::default();
-    if let Some(parent) = path.parent() {
-        let _ = std::fs::create_dir_all(parent);
+    settings
+}
+
+fn write_template(path: &PathBuf) {
+    if let Ok(rendered) = toml::to_string(&Settings::default()) {
+        let commented = rendered
+            .lines()
+            .map(|line| format!("#{line}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let _ = std::fs::write(path, commented);
     }
-    if let Ok(rendered) = toml::to_string(&defaults) {
-        let _ = std::fs::write(&path, rendered);
+}
+
+fn apply_overrides(settings: &mut Settings, content: &str) {
+    for line in content.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let Some(eq) = line.find('=') else {
+            continue;
+        };
+        let key = line[..eq].trim();
+        let mut value = line[eq + 1..].trim();
+        if let Some(i) = value.find(" #") {
+            value = value[..i].trim();
+        }
+        apply_override(settings, key, value.trim_matches('"'));
     }
-    defaults
+}
+
+fn apply_override(settings: &mut Settings, key: &str, value: &str) {
+    macro_rules! set_color {
+        ($($field:ident),* $(,)?) => {
+            $(
+                if key == stringify!($field) {
+                    if let Some(c) = HexColor::parse(value) {
+                        settings.$field = c;
+                    }
+                }
+            )*
+        };
+    }
+    macro_rules! set_float {
+        ($($field:ident),* $(,)?) => {
+            $(
+                if key == stringify!($field) {
+                    if let Ok(f) = value.parse::<f32>() {
+                        settings.$field = f;
+                    }
+                }
+            )*
+        };
+    }
+
+    set_color!(
+        surface_bg, elevated_bg, hover_bg, compose_bg, text_default, text_primary, text_secondary,
+        text_muted, text_current_line, compose_text, border, syntax_keyword, syntax_keyword2,
+        syntax_string, syntax_comment, syntax_number, syntax_operator, syntax_function,
+        syntax_literal, syntax_heading, syntax_code, syntax_emphasis, syntax_link, accent,
+        destructive, bracket_match, find_highlight, find_highlight_current,
+    );
+    set_float!(
+        title_bar_font_size, tab_font_size, editor_font_size, compose_view_font_size,
+        window_width, window_height, dialog_width,
+    );
+    if key == "bold_folders" {
+        if let Ok(b) = value.parse::<bool>() {
+            settings.bold_folders = b;
+        }
+    }
 }
 
 pub fn settings_file_path() -> PathBuf {
@@ -324,4 +385,74 @@ pub fn window_height() -> f32 {
 
 pub fn dialog_width() -> f32 {
     SETTINGS.dialog_width
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn hex(rgb: u32) -> Color32 {
+        Color32::from_rgb((rgb >> 16) as u8, (rgb >> 8) as u8, rgb as u8)
+    }
+
+    #[test]
+    fn empty_config_keeps_defaults() {
+        let mut s = Settings::default();
+        apply_overrides(&mut s, "");
+        assert_eq!(s.editor_font_size, 14.0);
+        assert_eq!(s.bold_folders, true);
+    }
+
+    #[test]
+    fn valid_lines_override_defaults() {
+        let mut s = Settings::default();
+        apply_overrides(
+            &mut s,
+            "editor_font_size = 18.0\nsurface_bg = \"#112233FF\"\nbold_folders = false\n",
+        );
+        assert_eq!(s.editor_font_size, 18.0);
+        assert_eq!(s.surface_bg.0, hex(0x112233));
+        assert_eq!(s.bold_folders, false);
+    }
+
+    #[test]
+    fn malformed_lines_are_skipped_and_defaults_kept() {
+        let mut s = Settings::default();
+        apply_overrides(
+            &mut s,
+            "editor_font_size = 18.0\nthis is not toml at all = { bad\ntext_muted = \"#AABBCC\"\n",
+        );
+        assert_eq!(s.editor_font_size, 18.0);
+        assert_eq!(s.text_muted.0, hex(0xAABBCC));
+        assert_eq!(s.text_current_line.0, hex(0x303030));
+    }
+
+    #[test]
+    fn bad_value_falls_back_to_default() {
+        let mut s = Settings::default();
+        apply_overrides(&mut s, "editor_font_size = notanumber\nwindow_height = 999.0\n");
+        assert_eq!(s.editor_font_size, 14.0);
+        assert_eq!(s.window_height, 999.0);
+    }
+
+    #[test]
+    fn trailing_comment_is_ignored() {
+        let mut s = Settings::default();
+        apply_overrides(&mut s, "editor_font_size = 16.0  # line height\n");
+        assert_eq!(s.editor_font_size, 16.0);
+    }
+
+    #[test]
+    fn commented_template_matches_defaults() {
+        let mut s = Settings::default();
+        let rendered = toml::to_string(&Settings::default()).unwrap();
+        let commented = rendered
+            .lines()
+            .map(|l| format!("#{l}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        apply_overrides(&mut s, &commented);
+        assert_eq!(s.editor_font_size, 14.0);
+        assert_eq!(s.surface_bg.0, Color32::WHITE);
+    }
 }
