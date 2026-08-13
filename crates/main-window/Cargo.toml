@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 eframe = "0.36"
+log = "0.4"
 jereide-core = { path = "../core" }
 jereide-settings = { path = "../settings" }
 jereide-fs = { path = "../fs" }

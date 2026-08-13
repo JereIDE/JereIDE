@@ -831,7 +831,8 @@ impl TextEdit<'_> {
                         response.rect.bottom().max(response.rect.top()),
                     ),
                 );
-                ui.painter().rect_filled(gutter_rect, 0.0, gutter.background_color);
+                ui.painter()
+                    .rect_filled(gutter_rect, 0.0, gutter.background_color);
 
                 let row = galley.rows.get(current_row_idx);
                 let row_y = row.map_or(galley_pos.y, |row| galley_pos.y + row.pos.y);
@@ -1141,9 +1142,9 @@ fn events(
                             let next = text.as_str().chars().nth(usize::from(ccursor.index));
                             let overtype = !matches!(c, '(' | '[' | '{') && next == Some(pair_char);
                             if overtype {
-                                Some(CursorMutation::Selection(CCursorRange::one(
-                                    CCursor::new(usize::from(ccursor.index + 1)),
-                                )))
+                                Some(CursorMutation::Selection(CCursorRange::one(CCursor::new(
+                                    usize::from(ccursor.index + 1),
+                                ))))
                             } else if is_opening {
                                 text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
                                 let between = ccursor;

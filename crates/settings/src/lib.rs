@@ -170,8 +170,12 @@ fn config_base_dir() -> PathBuf {
     PathBuf::from(".")
 }
 
+pub fn config_dir() -> PathBuf {
+    config_base_dir().join("jereide")
+}
+
 pub fn settings_path() -> PathBuf {
-    config_base_dir().join("jereide").join("settings.toml")
+    config_dir().join("settings.toml")
 }
 
 fn load() -> Settings {
@@ -243,15 +247,43 @@ fn apply_override(settings: &mut Settings, key: &str, value: &str) {
     }
 
     set_color!(
-        surface_bg, elevated_bg, hover_bg, compose_bg, text_default, text_primary, text_secondary,
-        text_muted, text_current_line, compose_text, border, syntax_keyword, syntax_keyword2,
-        syntax_string, syntax_comment, syntax_number, syntax_operator, syntax_function,
-        syntax_literal, syntax_heading, syntax_code, syntax_emphasis, syntax_link, accent,
-        destructive, bracket_match, find_highlight, find_highlight_current,
+        surface_bg,
+        elevated_bg,
+        hover_bg,
+        compose_bg,
+        text_default,
+        text_primary,
+        text_secondary,
+        text_muted,
+        text_current_line,
+        compose_text,
+        border,
+        syntax_keyword,
+        syntax_keyword2,
+        syntax_string,
+        syntax_comment,
+        syntax_number,
+        syntax_operator,
+        syntax_function,
+        syntax_literal,
+        syntax_heading,
+        syntax_code,
+        syntax_emphasis,
+        syntax_link,
+        accent,
+        destructive,
+        bracket_match,
+        find_highlight,
+        find_highlight_current,
     );
     set_float!(
-        title_bar_font_size, tab_font_size, editor_font_size, compose_view_font_size,
-        window_width, window_height, dialog_width,
+        title_bar_font_size,
+        tab_font_size,
+        editor_font_size,
+        compose_view_font_size,
+        window_width,
+        window_height,
+        dialog_width,
     );
     if key == "bold_folders" {
         if let Ok(b) = value.parse::<bool>() {
@@ -430,7 +462,10 @@ mod tests {
     #[test]
     fn bad_value_falls_back_to_default() {
         let mut s = Settings::default();
-        apply_overrides(&mut s, "editor_font_size = notanumber\nwindow_height = 999.0\n");
+        apply_overrides(
+            &mut s,
+            "editor_font_size = notanumber\nwindow_height = 999.0\n",
+        );
         assert_eq!(s.editor_font_size, 14.0);
         assert_eq!(s.window_height, 999.0);
     }

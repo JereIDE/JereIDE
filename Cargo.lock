@@ -9,8 +9,10 @@ dependencies = [
  "eframe",
  "egui_extras",
  "jereide-data",
+ "jereide-logging",
  "jereide-main-window",
  "jereide-settings",
+ "log",
 ]
 
 [[package]]
@@ -2094,6 +2096,7 @@ name = "jereide-core"
 version = "0.28.0"
 dependencies = [
  "eframe",
+ "log",
 ]
 
 [[package]]
@@ -2119,6 +2122,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "jereide-logging"
+version = "0.28.0"
+dependencies = [
+ "jereide-settings",
+ "log",
+]
+
+[[package]]
 name = "jereide-main-window"
 version = "0.28.0"
 dependencies = [
@@ -2132,6 +2143,7 @@ dependencies = [
  "jereide-text",
  "jereide-ui",
  "jereide-widgets",
+ "log",
  "objc2 0.5.2",
  "objc2-foundation 0.2.2",
  "raw-window-handle",

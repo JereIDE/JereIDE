@@ -1,8 +1,8 @@
 [package]
-name = "jereide-core"
+name = "jereide-logging"
 version.workspace = true
 edition = "2024"
 
 [dependencies]
-eframe = "0.36"
 log = "0.4"
+jereide-settings = { path = "../settings" }

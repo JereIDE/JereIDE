@@ -147,6 +147,7 @@ impl JereIDEApp {
             return;
         }
         self.find_palette_open = !self.find_palette_open;
+        log::debug!("find palette open = {}", self.find_palette_open);
         if self.find_palette_open {
             if let Some(sel) = &self.state.selected_text {
                 if !sel.is_empty() {
@@ -167,48 +168,72 @@ impl JereIDEApp {
             self.go_to_line_open = true;
             self.go_to_line_palette = Some(GoToLinePalette::new());
         }
+        log::debug!("go-to-line palette open = {}", self.go_to_line_open);
     }
 
     fn open_path(&mut self, path: std::path::PathBuf) {
         let Some(size) = file_size(&path) else {
+            log::warn!("could not stat file, refusing to open: {}", path.display());
             return;
         };
 
         if size > MAX_FILE_SIZE {
+            log::warn!(
+                "file too large to open ({} bytes > {} max), blocked: {}",
+                size,
+                MAX_FILE_SIZE,
+                path.display()
+            );
             self.state.pending_large_file_blocked = Some(size);
             return;
         }
 
         if size > WARN_FILE_SIZE {
+            log::warn!(
+                "file is large ({} bytes > {} warn threshold): {}",
+                size,
+                WARN_FILE_SIZE,
+                path.display()
+            );
             self.state.pending_large_file_warn = Some((path.display().to_string(), size));
             return;
         }
 
         let Some(content) = read_file_at(&path) else {
+            log::error!("failed to read file contents: {}", path.display());
             return;
         };
+        log::debug!("read {} bytes from {}", content.len(), path.display());
         let path_str = path.display().to_string();
         self.state.open_file(path_str, content);
     }
 
     fn handle_open(&mut self) {
+        log::info!("user requested 'open file' dialog");
         let Some(path) = pick_file() else {
+            log::info!("open file dialog cancelled");
             return;
         };
+        log::info!("user picked file: {}", path.display());
         self.open_path(path);
     }
 
     fn handle_open_project(&mut self) {
+        log::info!("user requested 'open project' dialog");
         let Some(path) = pick_directory() else {
+            log::info!("open project dialog cancelled");
             return;
         };
+        log::info!("opening project directory: {}", path.display());
         self.state.current_project_dir = Some(path.to_string_lossy().into_owned());
         clear_ls_cache();
     }
 
     fn handle_settings(&mut self) {
         let path = jereide_settings::settings_file_path();
+        log::info!("opening settings file: {}", path.display());
         let Some(content) = read_file_at(&path) else {
+            log::error!("could not read settings file: {}", path.display());
             return;
         };
         self.state.open_file(path.display().to_string(), content);
@@ -216,6 +241,7 @@ impl JereIDEApp {
 
     fn handle_save(&mut self) {
         if self.state.tabs.is_empty() {
+            log::debug!("save requested but no tabs open");
             return;
         }
         let path = self.state.current_tab().file_path.clone();
@@ -225,28 +251,37 @@ impl JereIDEApp {
                     &self.state.current_tab().text,
                     &std::path::PathBuf::from(&p),
                 ) {
-                    eprintln!("Failed to save file: {}", e);
+                    log::error!("failed to save file {}: {}", p, e);
                 } else {
+                    log::info!("saved {} bytes to {}", self.state.current_tab().text.chars().count(), p);
                     self.state.mark_saved();
                 }
             }
-            None => self.handle_save_as(),
+            None => {
+                log::debug!("save requested on unnamed tab; falling back to save-as");
+                self.handle_save_as();
+            }
         }
     }
 
     fn handle_save_as(&mut self) {
         if self.state.tabs.is_empty() {
+            log::debug!("save-as requested but no tabs open");
             return;
         }
+        log::info!("user requested 'save as' dialog");
         if let Some(path) = save_as_dialog() {
             if let Err(e) = save_to_path(&self.state.current_tab().text, &path) {
-                eprintln!("Failed to save file: {}", e);
+                log::error!("failed to save file as {}: {}", path.display(), e);
             } else {
+                log::info!("saved file as {} ({} chars)", path.display(), self.state.current_tab().text.chars().count());
                 let path_str = path.display().to_string();
                 let idx = self.state.active_tab_index;
                 self.state.tabs[idx].file_path = Some(path_str);
                 self.state.mark_saved();
             }
+        } else {
+            log::info!("save-as dialog cancelled");
         }
     }
 
@@ -257,16 +292,17 @@ impl JereIDEApp {
                 if let Err(e) =
                     save_to_path(&self.state.tabs[idx].text, &std::path::PathBuf::from(&p))
                 {
-                    eprintln!("Failed to save file: {}", e);
+                    log::error!("failed to save tab {idx} to {}: {}", p, e);
                     false
                 } else {
+                    log::info!("saved tab {idx} to {}", p);
                     true
                 }
             }
             None => {
                 if let Some(path) = save_as_dialog() {
                     if let Err(e) = save_to_path(&self.state.tabs[idx].text, &path) {
-                        eprintln!("Failed to save file: {}", e);
+                        log::error!("failed to save tab {idx} as {}: {}", path.display(), e);
                         false
                     } else {
                         let path_str = path.display().to_string();
@@ -274,6 +310,7 @@ impl JereIDEApp {
                         true
                     }
                 } else {
+                    log::debug!("save-as dialog cancelled; tab {idx} not saved");
                     false
                 }
             }
@@ -300,6 +337,7 @@ impl JereIDEApp {
             }
             "view: toggle sidebar" => {
                 self.state.sidebar_open = !self.state.sidebar_open;
+                log::debug!("sidebar open = {}", self.state.sidebar_open);
             }
             "view: code" => self.state.switch_to_view(CurrentView::Code),
             "view: compose" => self.state.switch_to_view(CurrentView::Compose),
@@ -604,6 +642,7 @@ impl eframe::App for JereIDEApp {
                 self.state.pending_large_file_warn = None;
                 match lfa {
                     LargeFileAction::OpenAnyway(path_str) => {
+                        log::info!("user chose to open large file anyway: {}", path_str);
                         let pb = std::path::PathBuf::from(&path_str);
                         if let Some(content) = read_file_at(&pb) {
                             self.state.open_file(path_str, content);
@@ -640,13 +679,13 @@ impl eframe::App for JereIDEApp {
                     ui.label("A label and some buttons:");
                     ui.horizontal(|ui| {
                         if ui.button("Button A").clicked() {
-                            eprintln!("Clicked Button A");
+                            log::info!("widget palette 'Button A' clicked");
                         }
                         if ui.button("Button B").clicked() {
-                            eprintln!("Clicked Button B");
+                            log::info!("widget palette 'Button B' clicked");
                         }
                         if ui.button("Button C").clicked() {
-                            eprintln!("Clicked Button C");
+                            log::info!("widget palette 'Button C' clicked");
                         }
                     });
                     ui.add_space(8.0);

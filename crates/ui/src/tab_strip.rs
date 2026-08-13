@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use eframe::egui::{self, Color32, FontId, Pos2, Rect, Sense, Stroke, Vec2, WidgetInfo, WidgetType};
+use eframe::egui::{
+    self, Color32, FontId, Pos2, Rect, Sense, Stroke, Vec2, WidgetInfo, WidgetType,
+};
 use jereide_core::AppState;
 use jereide_core::constants::{
     TAB_BORDER_WIDTH, TAB_CLOSE_BTN_RADIUS, TAB_CLOSE_BTN_SIZE, TAB_CLOSE_BTN_SPACING,
