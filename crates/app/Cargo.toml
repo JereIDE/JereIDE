@@ -8,8 +8,8 @@ name = "JereIDE"
 path = "src/main.rs"
 
 [dependencies]
-eframe = "0.35"
-egui_extras = { version = "0.35", features = ["all_loaders"] }
+eframe = { version = "0.36", features = ["inspection"] }
+egui_extras = { version = "0.36", features = ["all_loaders"] }
 jereide-data = { path = "../datadir" }
 jereide-settings = { path = "../settings" }
 jereide-main-window = { path = "../main-window" }

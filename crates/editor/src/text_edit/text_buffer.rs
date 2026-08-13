@@ -92,6 +92,24 @@ pub trait TextBuffer {
         self.delete_selected_ccursor_range([min, max])
     }
 
+    fn delete_surrounding_chars(
+        &mut self,
+        mut cursor_range: CCursorRange,
+        before_chars: usize,
+        after_chars: usize,
+    ) -> CCursorRange {
+        let [min, max] = cursor_range.sorted_cursors();
+        if after_chars > 0 {
+            self.delete_selected_ccursor_range([max, max + after_chars]);
+        }
+        if before_chars > 0 {
+            self.delete_selected_ccursor_range([min - before_chars, min]);
+            cursor_range.primary -= before_chars;
+            cursor_range.secondary -= before_chars;
+        }
+        cursor_range
+    }
+
     fn delete_selected_ccursor_range(&mut self, [min, max]: [CCursor; 2]) -> CCursor {
         self.delete_char_range(min.index..max.index);
         CCursor {

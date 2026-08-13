@@ -856,6 +856,11 @@ impl TextEdit<'_> {
                             .unwrap_or_default();
                         ui.output_mut(|o| {
                             o.ime = Some(egui::output::IMEOutput {
+                                purpose: if password {
+                                    egui::IMEPurpose::Password
+                                } else {
+                                    egui::IMEPurpose::Normal
+                                },
                                 rect: to_global * inner_rect,
                                 cursor_rect: to_global * primary_cursor_rect,
                                 should_interrupt_composition: false,
@@ -1042,6 +1047,15 @@ fn events(
         state.cursor_purpose = TextEditCursorPurpose::Selection;
     }
 
+    enum CursorMutation {
+        Selection(CCursorRange),
+        ImeComposition {
+            cursor_range: CCursorRange,
+            active_range: Option<std::ops::Range<CCursor>>,
+        },
+        ImeCompositionCursorRange(CCursorRange),
+    }
+
     for event in &events {
         let did_mutate_text = match event {
             // First handle events that only changes the selection cursor, not the text:
@@ -1058,7 +1072,9 @@ fn events(
                     None
                 } else {
                     copy_if_not_password(ui, cursor_range.slice_str(text.as_str()).to_owned());
-                    Some(CCursorRange::one(text.delete_selected(&cursor_range)))
+                    Some(CursorMutation::Selection(CCursorRange::one(
+                        text.delete_selected(&cursor_range),
+                    )))
                 }
             }
             Event::Paste(text_to_insert) => {
@@ -1073,7 +1089,7 @@ fn events(
                         text.insert_text_at(&mut ccursor, &single_line, char_limit);
                     }
 
-                    Some(CCursorRange::one(ccursor))
+                    Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
                 }
             }
             Event::Text(text_to_insert) => {
@@ -1099,9 +1115,9 @@ fn events(
                             let next = text.as_str().chars().nth(usize::from(ccursor.index));
                             let overtype = !matches!(c, '(' | '[' | '{') && next == Some(pair_char);
                             if overtype {
-                                Some(CCursorRange::one(CCursor::new(usize::from(
-                                    ccursor.index + 1,
-                                ))))
+                                Some(CursorMutation::Selection(CCursorRange::one(
+                                    CCursor::new(usize::from(ccursor.index + 1)),
+                                )))
                             } else if is_opening {
                                 text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
                                 let between = ccursor;
@@ -1110,18 +1126,18 @@ fn events(
                                     &pair_char.to_string(),
                                     char_limit,
                                 );
-                                Some(CCursorRange::one(between))
+                                Some(CursorMutation::Selection(CCursorRange::one(between)))
                             } else {
                                 text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
-                                Some(CCursorRange::one(ccursor))
+                                Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
                             }
                         } else {
                             text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
-                            Some(CCursorRange::one(ccursor))
+                            Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
                         }
                     } else {
                         text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
-                        Some(CCursorRange::one(ccursor))
+                        Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
                     }
                 } else {
                     None
@@ -1140,7 +1156,7 @@ fn events(
                 } else {
                     text.insert_text_at(&mut ccursor, "\t", char_limit);
                 }
-                Some(CCursorRange::one(ccursor))
+                Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
             }
             Event::Key {
                 key,
@@ -1161,7 +1177,7 @@ fn events(
                             text.insert_text_at(&mut ccursor, &indent, char_limit);
                         }
                     }
-                    Some(CCursorRange::one(ccursor))
+                    Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
                 } else {
                     ui.memory_mut(|mem| mem.surrender_focus(id)); // End input with enter
                     break;
@@ -1183,7 +1199,7 @@ fn events(
                     .redo(&(cursor_range, text.as_str().to_owned()))
                 {
                     text.replace_with(redo_txt);
-                    Some(*redo_ccursor_range)
+                    Some(CursorMutation::Selection(*redo_ccursor_range))
                 } else {
                     None
                 }
@@ -1201,7 +1217,7 @@ fn events(
                     .undo(&(cursor_range, text.as_str().to_owned()))
                 {
                     text.replace_with(undo_txt);
-                    Some(*undo_ccursor_range)
+                    Some(CursorMutation::Selection(*undo_ccursor_range))
                 } else {
                     None
                 }
@@ -1212,7 +1228,8 @@ fn events(
                 key,
                 pressed: true,
                 ..
-            } => check_for_mutating_key_press(os, &cursor_range, text, galley, modifiers, *key),
+            } => check_for_mutating_key_press(os, &cursor_range, text, galley, modifiers, *key)
+                .map(CursorMutation::Selection),
 
             Event::Ime(ime_event) if owns_ime_events => {
                 /// Both `ImeEvent::Preedit("")` and `ImeEvent::Commit("")`
@@ -1253,47 +1270,65 @@ fn events(
                         text: preedit_text,
                         active_range_chars,
                     } => {
-                        state.cursor_purpose = if preedit_text.is_empty() {
-                            TextEditCursorPurpose::Selection
+                        let mut ccursor = clear_preedit_text(text, &cursor_range);
+
+                        if preedit_text.is_empty() {
+                            Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
                         } else {
-                            TextEditCursorPurpose::ImeComposition {
+                            let start_cursor = ccursor;
+                            text.insert_text_at(&mut ccursor, preedit_text, char_limit);
+                            Some(CursorMutation::ImeComposition {
+                                cursor_range: CCursorRange::two(start_cursor, ccursor),
                                 active_range: active_range_chars.clone().map(|range| {
                                     CCursor::new(range.start)..CCursor::new(range.end)
                                 }),
-                            }
-                        };
-                        let mut ccursor = clear_preedit_text(text, &cursor_range);
-
-                        let start_cursor = ccursor;
-                        if !preedit_text.is_empty() {
-                            text.insert_text_at(&mut ccursor, preedit_text, char_limit);
+                            })
                         }
-                        Some(CCursorRange::two(start_cursor, ccursor))
                     }
                     ImeEvent::Commit(commit_text) => {
-                        state.cursor_purpose = TextEditCursorPurpose::Selection;
                         let mut ccursor = clear_preedit_text(text, &cursor_range);
 
                         if !commit_text.is_empty() {
                             text.insert_text_at(&mut ccursor, commit_text, char_limit);
                         }
 
-                        Some(CCursorRange::one(ccursor))
+                        Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
                     }
+                    ImeEvent::DeleteSurrounding {
+                        before_chars,
+                        after_chars,
+                    } => Some(CursorMutation::ImeCompositionCursorRange(
+                        text.delete_surrounding_chars(cursor_range, *before_chars, *after_chars),
+                    )),
                 }
             }
 
             _ => None,
         };
 
-        if let Some(new_ccursor_range) = did_mutate_text {
+        if let Some(cursor_mutation) = did_mutate_text {
             any_change = true;
 
             // Layout again to avoid frame delay, and to keep `text` and `galley` in sync.
             *galley = layouter(ui, text, wrap_width);
 
             // Set cursor_range using new galley:
-            cursor_range = new_ccursor_range;
+            match cursor_mutation {
+                CursorMutation::Selection(new_cursor_range) => {
+                    cursor_range = new_cursor_range;
+                    state.cursor_purpose = TextEditCursorPurpose::Selection;
+                }
+                CursorMutation::ImeComposition {
+                    cursor_range: new_cursor_range,
+                    active_range,
+                } => {
+                    cursor_range = new_cursor_range;
+                    state.cursor_purpose = TextEditCursorPurpose::ImeComposition { active_range };
+                }
+                CursorMutation::ImeCompositionCursorRange(new_cursor_range) => {
+                    cursor_range = new_cursor_range;
+                }
+            }
         }
     }
 

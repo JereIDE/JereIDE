@@ -4,4 +4,4 @@ version.workspace = true
 edition = "2024"
 
 [dependencies]
-eframe = "0.35"
+eframe = "0.36"
