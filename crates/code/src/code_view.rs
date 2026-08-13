@@ -109,6 +109,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
             )
             .id_source("editor")
             .desired_width(f32::INFINITY)
+            .min_size(egui::vec2(0.0, viewport.y))
             .frame(egui::Frame {
                 inner_margin: egui::Margin {
                     left: EDITOR_INNER_MARGIN_LEFT_EXTRA,

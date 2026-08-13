@@ -635,7 +635,7 @@ impl TextEdit<'_> {
                     .saturating_add(gutter_w.round() as i8);
             }
 
-            let min_height = min_inner_height + frame.total_margin().sum().y;
+            let min_height = min_size.y.max(min_inner_height) + frame.total_margin().sum().y;
 
             // This wrap mode only affects the hint_text
             let wrap_mode = if multiline {
@@ -789,6 +789,16 @@ impl TextEdit<'_> {
             state.text_offset = align_offset;
         }
 
+        let current_row_idx = state
+            .cursor
+            .range(&galley)
+            .map(|r| galley.layout_from_cursor(r.primary).row)
+            .unwrap_or_else(|| {
+                gutter_config
+                    .as_ref()
+                    .map_or(0, |g| g.current_line.saturating_sub(1))
+            });
+
         let selection_changed = if let (Some(cursor_range), Some(prev_cursor_range)) =
             (cursor_range, prev_cursor_range)
         {
@@ -810,6 +820,30 @@ impl TextEdit<'_> {
             {
                 // Add text selection rectangles to the galley:
                 paint_text_selection(&mut galley, ui.visuals(), &cursor_range, None);
+            }
+
+            if let Some(ref gutter) = gutter_config {
+                let pinned_text_left = inner_rect.left() + gutter_scroll_x;
+                let gutter_rect = Rect::from_min_max(
+                    pos2(ui.clip_rect().left(), response.rect.top()),
+                    pos2(
+                        pinned_text_left - 1.0,
+                        response.rect.bottom().max(response.rect.top()),
+                    ),
+                );
+                ui.painter().rect_filled(gutter_rect, 0.0, gutter.background_color);
+
+                let row = galley.rows.get(current_row_idx);
+                let row_y = row.map_or(galley_pos.y, |row| galley_pos.y + row.pos.y);
+                let bar_rect = Rect::from_min_max(
+                    pos2(ui.clip_rect().left(), row_y),
+                    pos2(response.rect.right(), row_y + row_height),
+                );
+                ui.painter().rect_filled(
+                    bar_rect,
+                    0.0,
+                    gutter.current_line_color.gamma_multiply(0.14),
+                );
             }
 
             painter.galley(
@@ -874,19 +908,11 @@ impl TextEdit<'_> {
         if let Some(ref gutter) = gutter_config {
             let gutter_painter = ui.painter();
             let pinned_text_left = inner_rect.left() + gutter_scroll_x;
-            let gutter_rect = Rect::from_min_max(
-                pos2(ui.clip_rect().left(), response.rect.top()),
-                pos2(
-                    pinned_text_left - 1.0,
-                    response.rect.bottom().max(response.rect.top()),
-                ),
-            );
-            gutter_painter.rect_filled(gutter_rect, 0.0, gutter.background_color);
 
             for (i, row) in galley.rows.iter().enumerate() {
                 let line_num = i + 1;
                 let line_y = galley_pos.y + row.pos.y;
-                let is_current = line_num == gutter.current_line;
+                let is_current = line_num == current_row_idx + 1;
                 let color = if is_current {
                     gutter.current_line_color
                 } else {
