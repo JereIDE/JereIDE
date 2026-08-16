@@ -92,6 +92,9 @@ struct Settings {
     window_height: f32,
 
     dialog_width: f32,
+
+    log_max_file_size: usize,
+    log_max_retention: usize,
 }
 
 impl Default for Settings {
@@ -143,6 +146,9 @@ impl Default for Settings {
             window_height: 600.0,
 
             dialog_width: 240.0,
+
+            log_max_file_size: 5 * 1024 * 1024,
+            log_max_retention: 5,
         }
     }
 }
@@ -245,6 +251,17 @@ fn apply_override(settings: &mut Settings, key: &str, value: &str) {
             )*
         };
     }
+    macro_rules! set_int {
+        ($($field:ident),* $(,)?) => {
+            $(
+                if key == stringify!($field) {
+                    if let Ok(i) = value.parse::<usize>() {
+                        settings.$field = i;
+                    }
+                }
+            )*
+        };
+    }
 
     set_color!(
         surface_bg,
@@ -290,6 +307,7 @@ fn apply_override(settings: &mut Settings, key: &str, value: &str) {
     {
         settings.bold_folders = b;
     }
+    set_int!(log_max_file_size, log_max_retention);
 }
 
 pub fn settings_file_path() -> PathBuf {
@@ -417,6 +435,13 @@ pub fn window_height() -> f32 {
 
 pub fn dialog_width() -> f32 {
     SETTINGS.dialog_width
+}
+
+pub fn log_max_file_size() -> usize {
+    SETTINGS.log_max_file_size
+}
+pub fn log_max_retention() -> usize {
+    SETTINGS.log_max_retention
 }
 
 #[cfg(test)]

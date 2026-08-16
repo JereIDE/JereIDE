@@ -5,9 +5,13 @@ use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-struct FileLogger {
-    file: Mutex<File>,
+struct OpenLog {
+    file: File,
     path: PathBuf,
+}
+
+struct FileLogger {
+    open: Mutex<OpenLog>,
 }
 
 static LOGGER: OnceLock<FileLogger> = OnceLock::new();
@@ -42,11 +46,20 @@ fn civil_from_days(z: i64) -> (i64, u32, u32) {
 
 impl FileLogger {
     fn write(&self, record: &Record) {
-        let Ok(mut file) = self.file.lock() else {
+        let Ok(mut open) = self.open.lock() else {
             return;
         };
+        let max = jereide_settings::log_max_file_size();
+        let rolled = match open.file.metadata() {
+            Ok(meta) => meta.len() as usize >= max,
+            Err(_) => false,
+        };
+        if rolled && let Some(next) = open_new_log() {
+            *open = next;
+            prune_old_logs(jereide_settings::log_max_retention());
+        }
         let _ = writeln!(
-            file,
+            open.file,
             "{} [{:<5}] [{}] {}",
             timestamp_now(),
             record.level(),
@@ -64,14 +77,46 @@ impl Log for FileLogger {
         self.write(record);
     }
     fn flush(&self) {
-        if let Ok(file) = self.file.lock() {
-            let _ = file.sync_all();
+        if let Ok(open) = self.open.lock() {
+            let _ = open.file.sync_all();
         }
     }
 }
 
 pub fn log_dir() -> PathBuf {
     jereide_settings::config_dir().join("logs")
+}
+
+fn open_new_log() -> Option<OpenLog> {
+    let filename = format!("jereide-{}.log", timestamp_now().replace([':', ' '], "-"));
+    let path = log_dir().join(filename);
+    let file = File::options().append(true).create(true).open(&path).ok()?;
+    Some(OpenLog { file, path })
+}
+
+fn prune_old_logs(retention: usize) {
+    let Ok(entries) = fs::read_dir(log_dir()) else {
+        return;
+    };
+    let mut logs: Vec<PathBuf> = entries
+        .filter_map(Result::ok)
+        .map(|e| e.path())
+        .filter(|p| {
+            let name = p
+                .file_name()
+                .map(|n| n.to_string_lossy())
+                .unwrap_or_default();
+            name.starts_with("jereide-") && name.ends_with(".log")
+        })
+        .collect();
+    if logs.len() <= retention {
+        return;
+    }
+    logs.sort();
+    let excess = logs.len().saturating_sub(retention);
+    for stale in logs.into_iter().take(excess) {
+        let _ = fs::remove_file(stale);
+    }
 }
 
 fn env_max_level() -> LevelFilter {
@@ -99,13 +144,11 @@ pub fn init() {
         log::set_max_level(LevelFilter::Off);
         return;
     }
-    let filename = format!("jereide-{}.log", timestamp_now().replace([':', ' '], "-"));
-    let path = dir.join(filename);
-    match File::create(&path) {
-        Ok(file) => {
+    match open_new_log() {
+        Some(open) => {
+            let path = open.path.clone();
             let logger = FileLogger {
-                file: Mutex::new(file),
-                path: path.clone(),
+                open: Mutex::new(open),
             };
             let _ = LOGGER.set(logger);
             if let Err(e) = log::set_logger(LOGGER.get().unwrap()) {
@@ -114,17 +157,20 @@ pub fn init() {
             }
             let level = env_max_level();
             log::set_max_level(level);
+            prune_old_logs(jereide_settings::log_max_retention());
             log::info!(
                 "==== JereIDE logging initialized -> {:?} (level {level}) ====",
                 path
             );
         }
-        Err(e) => {
-            eprintln!("jereide-logging: could not open log file {path:?}: {e}");
+        None => {
+            eprintln!("jereide-logging: could not open log file");
         }
     }
 }
 
 pub fn current_log_path() -> Option<PathBuf> {
-    LOGGER.get().map(|l| l.path.clone())
+    LOGGER
+        .get()
+        .and_then(|l| l.open.lock().ok().map(|o| o.path.clone()))
 }
