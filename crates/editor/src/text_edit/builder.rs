@@ -53,6 +53,7 @@ pub struct TextEdit<'t> {
     margin: Margin,
     multiline: bool,
     interactive: bool,
+    editable: bool,
     desired_width: Option<f32>,
     desired_height_rows: usize,
     event_filter: EventFilter,
@@ -110,6 +111,7 @@ impl<'t> TextEdit<'t> {
             margin: Margin::symmetric(4, 2),
             multiline: true,
             interactive: true,
+            editable: true,
             desired_width: None,
             desired_height_rows: 4,
             event_filter: EventFilter {
@@ -238,6 +240,14 @@ impl<'t> TextEdit<'t> {
     #[inline]
     pub fn interactive(mut self, interactive: bool) -> Self {
         self.interactive = interactive;
+        self
+    }
+
+    /// Default is `true`. If set to `false` you cannot edit the text, but the cursor and
+    /// selection still work so you can navigate, select, and copy.
+    #[inline]
+    pub fn editable(mut self, editable: bool) -> Self {
+        self.editable = editable;
         self
     }
 
@@ -385,6 +395,7 @@ impl TextEdit<'_> {
             margin,
             multiline,
             interactive,
+            editable,
             desired_width,
             desired_height_rows,
             event_filter,
@@ -508,6 +519,7 @@ impl TextEdit<'_> {
                     id,
                     wrap_width,
                     multiline,
+                    editable,
                     password,
                     default_cursor_range,
                     char_limit,
@@ -1046,6 +1058,7 @@ fn events(
     id: Id,
     wrap_width: f32,
     multiline: bool,
+    editable: bool,
     password: bool,
     default_cursor_range: CCursorRange,
     char_limit: usize,
@@ -1089,76 +1102,97 @@ fn events(
     }
 
     for event in &events {
-        let did_mutate_text = match event {
-            // First handle events that only changes the selection cursor, not the text:
-            event if cursor_range.on_event(os, event, galley, id) => None,
-
-            Event::Copy => {
+        let did_mutate_text = if !editable {
+            // Read-only: cursor navigation and copy still work, but text never changes.
+            if cursor_range.on_event(os, event, galley, id) {
+                None
+            } else if matches!(event, Event::Copy) {
                 if !cursor_range.is_empty() {
                     copy_if_not_password(ui, cursor_range.slice_str(text.as_str()).to_owned());
                 }
                 None
+            } else {
+                None
             }
-            Event::Cut => {
-                if cursor_range.is_empty() {
-                    None
-                } else {
-                    copy_if_not_password(ui, cursor_range.slice_str(text.as_str()).to_owned());
-                    Some(CursorMutation::Selection(CCursorRange::one(
-                        text.delete_selected(&cursor_range),
-                    )))
-                }
-            }
-            Event::Paste(text_to_insert) => {
-                if text_to_insert.is_empty() {
-                    None
-                } else {
-                    let mut ccursor = text.delete_selected(&cursor_range);
-                    if multiline {
-                        text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
-                    } else {
-                        let single_line = text_to_insert.replace(['\r', '\n'], " ");
-                        text.insert_text_at(&mut ccursor, &single_line, char_limit);
+        } else {
+            match event {
+                // First handle events that only changes the selection cursor, not the text:
+                event if cursor_range.on_event(os, event, galley, id) => None,
+
+                Event::Copy => {
+                    if !cursor_range.is_empty() {
+                        copy_if_not_password(ui, cursor_range.slice_str(text.as_str()).to_owned());
                     }
-
-                    Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
+                    None
                 }
-            }
-            Event::Text(text_to_insert) => {
-                // Newlines are handled by `Key::Enter`.
-                if !text_to_insert.is_empty() && text_to_insert != "\n" && text_to_insert != "\r" {
-                    let mut ccursor = text.delete_selected(&cursor_range);
+                Event::Cut => {
+                    if cursor_range.is_empty() {
+                        None
+                    } else {
+                        copy_if_not_password(ui, cursor_range.slice_str(text.as_str()).to_owned());
+                        Some(CursorMutation::Selection(CCursorRange::one(
+                            text.delete_selected(&cursor_range),
+                        )))
+                    }
+                }
+                Event::Paste(text_to_insert) => {
+                    if text_to_insert.is_empty() {
+                        None
+                    } else {
+                        let mut ccursor = text.delete_selected(&cursor_range);
+                        if multiline {
+                            text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
+                        } else {
+                            let single_line = text_to_insert.replace(['\r', '\n'], " ");
+                            text.insert_text_at(&mut ccursor, &single_line, char_limit);
+                        }
 
-                    if autopair && text_to_insert.chars().count() == 1 {
-                        let c = text_to_insert.chars().next().unwrap();
-                        let (pair_char, is_opening) = match c {
-                            '(' => (Some(')'), true),
-                            '[' => (Some(']'), true),
-                            '{' => (Some('}'), true),
-                            '"' => (Some('"'), true),
-                            '\'' => (Some('\''), true),
-                            '`' => (Some('`'), true),
-                            ')' => (Some(')'), false),
-                            ']' => (Some(']'), false),
-                            '}' => (Some('}'), false),
-                            _ => (None, false),
-                        };
-                        if let Some(pair_char) = pair_char {
-                            let next = text.as_str().chars().nth(usize::from(ccursor.index));
-                            let overtype = !matches!(c, '(' | '[' | '{') && next == Some(pair_char);
-                            if overtype {
-                                Some(CursorMutation::Selection(CCursorRange::one(CCursor::new(
-                                    usize::from(ccursor.index + 1),
-                                ))))
-                            } else if is_opening {
-                                text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
-                                let between = ccursor;
-                                text.insert_text_at(
-                                    &mut ccursor,
-                                    &pair_char.to_string(),
-                                    char_limit,
-                                );
-                                Some(CursorMutation::Selection(CCursorRange::one(between)))
+                        Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
+                    }
+                }
+                Event::Text(text_to_insert) => {
+                    // Newlines are handled by `Key::Enter`.
+                    if !text_to_insert.is_empty()
+                        && text_to_insert != "\n"
+                        && text_to_insert != "\r"
+                    {
+                        let mut ccursor = text.delete_selected(&cursor_range);
+
+                        if autopair && text_to_insert.chars().count() == 1 {
+                            let c = text_to_insert.chars().next().unwrap();
+                            let (pair_char, is_opening) = match c {
+                                '(' => (Some(')'), true),
+                                '[' => (Some(']'), true),
+                                '{' => (Some('}'), true),
+                                '"' => (Some('"'), true),
+                                '\'' => (Some('\''), true),
+                                '`' => (Some('`'), true),
+                                ')' => (Some(')'), false),
+                                ']' => (Some(']'), false),
+                                '}' => (Some('}'), false),
+                                _ => (None, false),
+                            };
+                            if let Some(pair_char) = pair_char {
+                                let next = text.as_str().chars().nth(usize::from(ccursor.index));
+                                let overtype =
+                                    !matches!(c, '(' | '[' | '{') && next == Some(pair_char);
+                                if overtype {
+                                    Some(CursorMutation::Selection(CCursorRange::one(
+                                        CCursor::new(usize::from(ccursor.index + 1)),
+                                    )))
+                                } else if is_opening {
+                                    text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
+                                    let between = ccursor;
+                                    text.insert_text_at(
+                                        &mut ccursor,
+                                        &pair_char.to_string(),
+                                        char_limit,
+                                    );
+                                    Some(CursorMutation::Selection(CCursorRange::one(between)))
+                                } else {
+                                    text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
+                                    Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
+                                }
                             } else {
                                 text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
                                 Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
@@ -1168,174 +1202,176 @@ fn events(
                             Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
                         }
                     } else {
-                        text.insert_text_at(&mut ccursor, text_to_insert, char_limit);
-                        Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
+                        None
                     }
-                } else {
-                    None
                 }
-            }
-            Event::Key {
-                key: Key::Tab,
-                pressed: true,
-                modifiers,
-                ..
-            } if multiline => {
-                let mut ccursor = text.delete_selected(&cursor_range);
-                if modifiers.shift {
-                    // TODO(emilk): support removing indentation over a selection?
-                    text.decrease_indentation(&mut ccursor);
-                } else {
-                    text.insert_text_at(&mut ccursor, "\t", char_limit);
-                }
-                Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
-            }
-            Event::Key {
-                key,
-                pressed: true,
-                modifiers,
-                ..
-            } if return_key.is_some_and(|return_key| {
-                *key == return_key.logical_key && modifiers.matches_logically(return_key.modifiers)
-            }) =>
-            {
-                if multiline {
+                Event::Key {
+                    key: Key::Tab,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } if multiline => {
                     let mut ccursor = text.delete_selected(&cursor_range);
-                    text.insert_text_at(&mut ccursor, "\n", char_limit);
-                    if autopair {
-                        let indent =
-                            indent_of_previous_line(text.as_str(), usize::from(ccursor.index));
-                        if !indent.is_empty() {
-                            text.insert_text_at(&mut ccursor, &indent, char_limit);
-                        }
+                    if modifiers.shift {
+                        // TODO(emilk): support removing indentation over a selection?
+                        text.decrease_indentation(&mut ccursor);
+                    } else {
+                        text.insert_text_at(&mut ccursor, "\t", char_limit);
                     }
                     Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
-                } else {
-                    ui.memory_mut(|mem| mem.surrender_focus(id)); // End input with enter
-                    break;
                 }
-            }
-
-            Event::Key {
-                key,
-                pressed: true,
-                modifiers,
-                ..
-            } if (modifiers.matches_logically(Modifiers::COMMAND) && *key == Key::Y)
-                || (modifiers.matches_logically(Modifiers::SHIFT | Modifiers::COMMAND)
-                    && *key == Key::Z) =>
-            {
-                if let Some((redo_ccursor_range, redo_txt)) = state
-                    .undoer
-                    .lock()
-                    .redo(&(cursor_range, text.as_str().to_owned()))
+                Event::Key {
+                    key,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } if return_key.is_some_and(|return_key| {
+                    *key == return_key.logical_key
+                        && modifiers.matches_logically(return_key.modifiers)
+                }) =>
                 {
-                    text.replace_with(redo_txt);
-                    Some(CursorMutation::Selection(*redo_ccursor_range))
-                } else {
-                    None
-                }
-            }
-
-            Event::Key {
-                key: Key::Z,
-                pressed: true,
-                modifiers,
-                ..
-            } if modifiers.matches_logically(Modifiers::COMMAND) => {
-                if let Some((undo_ccursor_range, undo_txt)) = state
-                    .undoer
-                    .lock()
-                    .undo(&(cursor_range, text.as_str().to_owned()))
-                {
-                    text.replace_with(undo_txt);
-                    Some(CursorMutation::Selection(*undo_ccursor_range))
-                } else {
-                    None
-                }
-            }
-
-            Event::Key {
-                modifiers,
-                key,
-                pressed: true,
-                ..
-            } => check_for_mutating_key_press(os, &cursor_range, text, galley, modifiers, *key)
-                .map(CursorMutation::Selection),
-
-            Event::Ime(ime_event) if owns_ime_events => {
-                /// Both `ImeEvent::Preedit("")` and `ImeEvent::Commit("")`
-                /// might be emitted from different integrations to signify that
-                /// the current IME composition should be cleared.
-                fn clear_preedit_text(
-                    text: &mut dyn TextBuffer,
-                    preedit_range: &CCursorRange,
-                ) -> CCursor {
-                    text.delete_selected(preedit_range)
-                }
-
-                match ime_event {
-                    #[expect(deprecated)]
-                    ImeEvent::Enabled | ImeEvent::Disabled => None,
-                    // Ignore `Preedit`/`Commit` events with empty text when
-                    // there is no active IME composition.
-                    ImeEvent::Preedit {
-                        text: composition_text,
-                        ..
-                    }
-                    | ImeEvent::Commit(composition_text)
-                        if composition_text.is_empty()
-                            && !state.cursor_purpose.is_ime_composition() =>
-                    {
-                        None
-                    }
-                    ImeEvent::Preedit {
-                        text: composition_text,
-                        ..
-                    }
-                    | ImeEvent::Commit(composition_text)
-                        if composition_text == "\n" || composition_text == "\r" =>
-                    {
-                        None
-                    }
-                    ImeEvent::Preedit {
-                        text: preedit_text,
-                        active_range_chars,
-                    } => {
-                        let mut ccursor = clear_preedit_text(text, &cursor_range);
-
-                        if preedit_text.is_empty() {
-                            Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
-                        } else {
-                            let start_cursor = ccursor;
-                            text.insert_text_at(&mut ccursor, preedit_text, char_limit);
-                            Some(CursorMutation::ImeComposition {
-                                cursor_range: CCursorRange::two(start_cursor, ccursor),
-                                active_range: active_range_chars.clone().map(|range| {
-                                    CCursor::new(range.start)..CCursor::new(range.end)
-                                }),
-                            })
+                    if multiline {
+                        let mut ccursor = text.delete_selected(&cursor_range);
+                        text.insert_text_at(&mut ccursor, "\n", char_limit);
+                        if autopair {
+                            let indent =
+                                indent_of_previous_line(text.as_str(), usize::from(ccursor.index));
+                            if !indent.is_empty() {
+                                text.insert_text_at(&mut ccursor, &indent, char_limit);
+                            }
                         }
-                    }
-                    ImeEvent::Commit(commit_text) => {
-                        let mut ccursor = clear_preedit_text(text, &cursor_range);
-
-                        if !commit_text.is_empty() {
-                            text.insert_text_at(&mut ccursor, commit_text, char_limit);
-                        }
-
                         Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
+                    } else {
+                        ui.memory_mut(|mem| mem.surrender_focus(id)); // End input with enter
+                        break;
                     }
-                    ImeEvent::DeleteSurrounding {
-                        before_chars,
-                        after_chars,
-                    } => Some(CursorMutation::ImeCompositionCursorRange(
-                        text.delete_surrounding_chars(cursor_range, *before_chars, *after_chars),
-                    )),
                 }
-            }
 
-            _ => None,
+                Event::Key {
+                    key,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } if (modifiers.matches_logically(Modifiers::COMMAND) && *key == Key::Y)
+                    || (modifiers.matches_logically(Modifiers::SHIFT | Modifiers::COMMAND)
+                        && *key == Key::Z) =>
+                {
+                    if let Some((redo_ccursor_range, redo_txt)) = state
+                        .undoer
+                        .lock()
+                        .redo(&(cursor_range, text.as_str().to_owned()))
+                    {
+                        text.replace_with(redo_txt);
+                        Some(CursorMutation::Selection(*redo_ccursor_range))
+                    } else {
+                        None
+                    }
+                }
+
+                Event::Key {
+                    key: Key::Z,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } if modifiers.matches_logically(Modifiers::COMMAND) => {
+                    if let Some((undo_ccursor_range, undo_txt)) = state
+                        .undoer
+                        .lock()
+                        .undo(&(cursor_range, text.as_str().to_owned()))
+                    {
+                        text.replace_with(undo_txt);
+                        Some(CursorMutation::Selection(*undo_ccursor_range))
+                    } else {
+                        None
+                    }
+                }
+
+                Event::Key {
+                    modifiers,
+                    key,
+                    pressed: true,
+                    ..
+                } => check_for_mutating_key_press(os, &cursor_range, text, galley, modifiers, *key)
+                    .map(CursorMutation::Selection),
+
+                Event::Ime(ime_event) if owns_ime_events => {
+                    /// Both `ImeEvent::Preedit("")` and `ImeEvent::Commit("")`
+                    /// might be emitted from different integrations to signify that
+                    /// the current IME composition should be cleared.
+                    fn clear_preedit_text(
+                        text: &mut dyn TextBuffer,
+                        preedit_range: &CCursorRange,
+                    ) -> CCursor {
+                        text.delete_selected(preedit_range)
+                    }
+
+                    match ime_event {
+                        #[expect(deprecated)]
+                        ImeEvent::Enabled | ImeEvent::Disabled => None,
+                        // Ignore `Preedit`/`Commit` events with empty text when
+                        // there is no active IME composition.
+                        ImeEvent::Preedit {
+                            text: composition_text,
+                            ..
+                        }
+                        | ImeEvent::Commit(composition_text)
+                            if composition_text.is_empty()
+                                && !state.cursor_purpose.is_ime_composition() =>
+                        {
+                            None
+                        }
+                        ImeEvent::Preedit {
+                            text: composition_text,
+                            ..
+                        }
+                        | ImeEvent::Commit(composition_text)
+                            if composition_text == "\n" || composition_text == "\r" =>
+                        {
+                            None
+                        }
+                        ImeEvent::Preedit {
+                            text: preedit_text,
+                            active_range_chars,
+                        } => {
+                            let mut ccursor = clear_preedit_text(text, &cursor_range);
+
+                            if preedit_text.is_empty() {
+                                Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
+                            } else {
+                                let start_cursor = ccursor;
+                                text.insert_text_at(&mut ccursor, preedit_text, char_limit);
+                                Some(CursorMutation::ImeComposition {
+                                    cursor_range: CCursorRange::two(start_cursor, ccursor),
+                                    active_range: active_range_chars.clone().map(|range| {
+                                        CCursor::new(range.start)..CCursor::new(range.end)
+                                    }),
+                                })
+                            }
+                        }
+                        ImeEvent::Commit(commit_text) => {
+                            let mut ccursor = clear_preedit_text(text, &cursor_range);
+
+                            if !commit_text.is_empty() {
+                                text.insert_text_at(&mut ccursor, commit_text, char_limit);
+                            }
+
+                            Some(CursorMutation::Selection(CCursorRange::one(ccursor)))
+                        }
+                        ImeEvent::DeleteSurrounding {
+                            before_chars,
+                            after_chars,
+                        } => Some(CursorMutation::ImeCompositionCursorRange(
+                            text.delete_surrounding_chars(
+                                cursor_range,
+                                *before_chars,
+                                *after_chars,
+                            ),
+                        )),
+                    }
+                }
+
+                _ => None,
+            }
         };
 
         if let Some(cursor_mutation) = did_mutate_text {

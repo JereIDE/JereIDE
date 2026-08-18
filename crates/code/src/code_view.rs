@@ -51,6 +51,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
 
     let active_idx = state.active_tab_index;
     let tab_id = state.tabs[active_idx].id;
+    let read_only = state.tabs[active_idx].read_only;
     let extension: Option<String> = state.tabs[active_idx]
         .file_path
         .as_ref()
@@ -118,6 +119,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 jereide_editor::TextEdit::multiline(&mut state.tabs[active_idx].text),
             )
             .id(egui::Id::new(("editor", tab_id)))
+            .editable(!read_only)
             .desired_width(f32::INFINITY)
             .min_size(egui::vec2(0.0, viewport.y))
             .frame(egui::Frame {

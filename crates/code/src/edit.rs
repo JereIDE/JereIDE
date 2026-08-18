@@ -6,6 +6,14 @@ pub fn handle_edit_action(state: &mut AppState, ctx: &egui::Context, action: &st
     if state.tabs.is_empty() {
         return;
     }
+    let read_only = state.current_tab().read_only;
+    let mutates = matches!(
+        action,
+        "editor: cut" | "editor: paste" | "editor: undo" | "editor: redo"
+    );
+    if read_only && mutates {
+        return;
+    }
     match action {
         "editor: select all" => action_select_all(state, ctx),
         "editor: copy" => action_copy(state, ctx),
@@ -137,6 +145,18 @@ mod tests {
         let mut state = AppState::new();
         let ctx = eframe::egui::Context::default();
         handle_edit_action(&mut state, &ctx, "");
+    }
+
+    #[test]
+    fn read_only_tab_mutations_are_noops() {
+        let mut state = AppState::new();
+        state.open_read_only("/plans.md".into(), "keep this".into());
+        let ctx = eframe::egui::Context::default();
+        state.selected_text = Some("this".to_string());
+        handle_edit_action(&mut state, &ctx, "editor: cut");
+        handle_edit_action(&mut state, &ctx, "editor: undo");
+        handle_edit_action(&mut state, &ctx, "editor: redo");
+        assert_eq!(state.current_tab().text, "keep this");
     }
 
     #[test]

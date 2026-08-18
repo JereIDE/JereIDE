@@ -113,6 +113,7 @@ impl AppMenu {
         help_menu
             .append_items(&[
                 &MenuItem::with_id("jereide: star on github", "Star on GitHub", true, None),
+                &MenuItem::with_id("jereide: view log", "View Log", true, None),
                 &MenuItem::with_id("jereide: open docs", "Documentation", true, None),
             ])
             .ok();

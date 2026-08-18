@@ -25,7 +25,7 @@ pub fn replace_range(
     end: usize,
     replacement: &str,
 ) -> bool {
-    if state.tabs.is_empty() {
+    if state.tabs.is_empty() || state.current_tab().read_only {
         return false;
     }
     let idx = state.active_tab_index;
@@ -51,7 +51,7 @@ pub fn replace_all(
     match_case: bool,
     whole_word: bool,
 ) -> usize {
-    if state.tabs.is_empty() || find.is_empty() {
+    if state.tabs.is_empty() || state.current_tab().read_only || find.is_empty() {
         return 0;
     }
     let idx = state.active_tab_index;

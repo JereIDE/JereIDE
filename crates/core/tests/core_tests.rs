@@ -260,6 +260,9 @@ fn app_state_open_read_only_already_open_switches() {
     assert_eq!(idx, 0);
     assert!(!state.current_tab().read_only);
 }
+
+#[test]
+fn app_state_switch_to_view_changes_view() {
     let mut state = AppState::new();
     assert_eq!(state.current_view, CurrentView::Code);
     state.switch_to_view(CurrentView::Compose);

@@ -2139,6 +2139,7 @@ dependencies = [
  "jereide-compose",
  "jereide-core",
  "jereide-fs",
+ "jereide-logging",
  "jereide-menu",
  "jereide-settings",
  "jereide-text",

@@ -239,9 +239,28 @@ impl JereIDEApp {
         self.state.open_file(path.display().to_string(), content);
     }
 
+    fn handle_view_log(&mut self) {
+        let Some(path) = jereide_logging::current_log_path() else {
+            log::warn!("view log requested but no log file is open");
+            return;
+        };
+        let content = read_file_at(&path).unwrap_or_default();
+        log::info!(
+            "opening log file {:?} in read-only tab ({} chars)",
+            path,
+            content.chars().count()
+        );
+        self.state
+            .open_read_only(path.display().to_string(), content);
+    }
+
     fn handle_save(&mut self) {
         if self.state.tabs.is_empty() {
             log::debug!("save requested but no tabs open");
+            return;
+        }
+        if self.state.current_tab().read_only {
+            log::info!("save requested on read-only tab; ignoring");
             return;
         }
         let path = self.state.current_tab().file_path.clone();
@@ -271,6 +290,10 @@ impl JereIDEApp {
     fn handle_save_as(&mut self) {
         if self.state.tabs.is_empty() {
             log::debug!("save-as requested but no tabs open");
+            return;
+        }
+        if self.state.current_tab().read_only {
+            log::info!("save-as requested on read-only tab; ignoring");
             return;
         }
         log::info!("user requested 'save as' dialog");
@@ -368,6 +391,7 @@ impl JereIDEApp {
                     new_tab: true,
                 });
             }
+            "jereide: view log" => self.handle_view_log(),
             "jereide: about" => {
                 self.state.show_about_dialog = true;
             }
