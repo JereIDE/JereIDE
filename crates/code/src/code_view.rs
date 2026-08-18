@@ -15,11 +15,12 @@ use jereide_settings::{
 use jereide_text::{char_index_to_line_col, char_range_substring, find_matches};
 
 use jereide_syntax::SyntaxHighlighter;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 thread_local! {
     static HIGHLIGHTERS: RefCell<HashMap<usize, SyntaxHighlighter>> = RefCell::new(HashMap::new());
     static FIND_CACHE: RefCell<HashMap<usize, FindCache>> = RefCell::new(HashMap::new());
     static PREV_TEXT: RefCell<HashMap<usize, String>> = RefCell::new(HashMap::new());
+    static EDITOR_STATE_TABS: RefCell<HashSet<usize>> = RefCell::new(HashSet::new());
 }
 
 struct FindCache {
@@ -78,6 +79,15 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         let mut cache = cache.borrow_mut();
         cache.retain(|id, _| valid_ids.contains(id));
     });
+    EDITOR_STATE_TABS.with(|tabs| {
+        let mut tabs = tabs.borrow_mut();
+        for &closed in tabs.iter().filter(|id| !valid_ids.contains(id)) {
+            let id = egui::Id::new(("editor", closed));
+            ctx.data_mut(|d| d.remove::<jereide_editor::TextEditState>(id));
+        }
+        tabs.retain(|id| valid_ids.contains(id));
+        tabs.insert(tab_id);
+    });
 
     let font_id = egui::FontId::monospace(editor_font_size());
     let cursor_line = state.tabs[active_idx].cursor_line;
@@ -92,13 +102,13 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
             })
         };
 
-    let scroll_area_id = ui.make_persistent_id(egui::IdSalt::new("editor_scroll"));
+    let scroll_area_id = ui.make_persistent_id(egui::IdSalt::new(("editor_scroll", tab_id)));
     let gutter_scroll_x = egui::containers::scroll_area::State::load(ui.ctx(), scroll_area_id)
         .map(|s| s.offset.x)
         .unwrap_or(0.0);
 
     let text_edit_output = egui::ScrollArea::both()
-        .id_salt("editor_scroll")
+        .id_salt(("editor_scroll", tab_id))
         .auto_shrink(false)
         .show(ui, |ui| {
             let viewport = ui.max_rect().size();
@@ -107,7 +117,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
             let text_output = jereide_editor::TextEdit::code_editor(
                 jereide_editor::TextEdit::multiline(&mut state.tabs[active_idx].text),
             )
-            .id_source("editor")
+            .id(egui::Id::new(("editor", tab_id)))
             .desired_width(f32::INFINITY)
             .min_size(egui::vec2(0.0, viewport.y))
             .frame(egui::Frame {
@@ -287,7 +297,6 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
             text_output
         })
         .inner;
-    state.editor_id = text_edit_output.response.id;
     state.selected_text = text_edit_output
         .state
         .cursor

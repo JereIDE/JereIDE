@@ -264,3 +264,15 @@ fn tab_file_name_no_extension_duplicate() {
     let tab = Tab::with_path_and_content("/path/to/Makefile".into(), String::new());
     assert_eq!(tab.file_name(), "Makefile");
 }
+
+#[test]
+fn app_state_editor_id_changes_with_active_tab() {
+    let mut state = AppState::new();
+    state.new_tab();
+    state.new_tab();
+    state.active_tab_index = 0;
+    let id0 = state.editor_id();
+    state.active_tab_index = 1;
+    let id1 = state.editor_id();
+    assert_ne!(id0, id1);
+}

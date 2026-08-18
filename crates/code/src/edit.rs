@@ -18,18 +18,18 @@ pub fn handle_edit_action(state: &mut AppState, ctx: &egui::Context, action: &st
 }
 
 fn action_select_all(state: &AppState, ctx: &egui::Context) {
-    if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id) {
+    if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id()) {
         let len = state.current_tab().text.chars().count();
         use egui::text::{CCursor, CCursorRange};
         edit_state
             .cursor
             .set_char_range(Some(CCursorRange::two(CCursor::new(0), CCursor::new(len))));
-        edit_state.store(ctx, state.editor_id);
+        edit_state.store(ctx, state.editor_id());
     }
 }
 
 fn action_copy(state: &AppState, ctx: &egui::Context) {
-    if let Some(edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id) {
+    if let Some(edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id()) {
         if let Some(range) = edit_state.cursor.char_range() {
             let start: usize = range.primary.index.min(range.secondary.index).into();
             let end: usize = range.primary.index.max(range.secondary.index).into();
@@ -42,7 +42,7 @@ fn action_copy(state: &AppState, ctx: &egui::Context) {
 }
 
 fn action_cut(state: &mut AppState, ctx: &egui::Context) {
-    if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id) {
+    if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id()) {
         if let Some(range) = edit_state.cursor.char_range() {
             let start: usize = range.primary.index.min(range.secondary.index).into();
             let end: usize = range.primary.index.max(range.secondary.index).into();
@@ -58,7 +58,7 @@ fn action_cut(state: &mut AppState, ctx: &egui::Context) {
                 .set_char_range(Some(egui::text::CCursorRange::one(
                     egui::text::CCursor::new(start),
                 )));
-            edit_state.store(ctx, state.editor_id);
+            edit_state.store(ctx, state.editor_id());
         }
     }
 }
@@ -68,7 +68,7 @@ fn action_paste(_state: &mut AppState, ctx: &egui::Context) {
 }
 
 fn action_undo(state: &mut AppState, ctx: &egui::Context) {
-    if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id) {
+    if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id()) {
         let idx = state.active_tab_index;
         let current = (
             edit_state
@@ -82,13 +82,13 @@ fn action_undo(state: &mut AppState, ctx: &egui::Context) {
             state.tabs[idx].text = text;
             edit_state.cursor.set_char_range(Some(cursor_range));
             edit_state.set_undoer(undoer);
-            edit_state.store(ctx, state.editor_id);
+            edit_state.store(ctx, state.editor_id());
         }
     }
 }
 
 fn action_redo(state: &mut AppState, ctx: &egui::Context) {
-    if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id) {
+    if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id()) {
         let idx = state.active_tab_index;
         let current = (
             edit_state
@@ -102,7 +102,7 @@ fn action_redo(state: &mut AppState, ctx: &egui::Context) {
             state.tabs[idx].text = text;
             edit_state.cursor.set_char_range(Some(cursor_range));
             edit_state.set_undoer(undoer);
-            edit_state.store(ctx, state.editor_id);
+            edit_state.store(ctx, state.editor_id());
         }
     }
 }

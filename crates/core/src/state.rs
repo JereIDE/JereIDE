@@ -79,7 +79,6 @@ pub struct AppState {
     pub go_to_line_scroll_to: Option<usize>,
     pub active_tab_index: usize,
     pub editor_focused: bool,
-    pub editor_id: egui::Id,
     pub current_view: CurrentView,
     pub was_fullscreen: bool,
     pub document_edited: bool,
@@ -123,7 +122,6 @@ impl AppState {
             go_to_line_scroll_to: None,
             active_tab_index: 0,
             editor_focused: false,
-            editor_id: egui::Id::new("editor"),
             current_view: CurrentView::Code,
             was_fullscreen: false,
             document_edited: false,
@@ -142,6 +140,10 @@ impl AppState {
 
     pub fn current_tab(&self) -> &Tab {
         &self.tabs[self.active_tab_index]
+    }
+
+    pub fn editor_id(&self) -> egui::Id {
+        egui::Id::new(("editor", self.tabs[self.active_tab_index].id))
     }
 
     pub fn current_tab_mut(&mut self) -> &mut Tab {

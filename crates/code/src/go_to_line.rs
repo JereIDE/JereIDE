@@ -5,7 +5,7 @@ pub fn go_to_line(state: &mut AppState, ctx: &egui::Context, char_index: usize) 
     if state.tabs.is_empty() {
         return;
     }
-    let id = state.editor_id;
+    let id = state.editor_id();
     if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, id) {
         edit_state
             .cursor

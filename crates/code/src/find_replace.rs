@@ -6,7 +6,7 @@ pub fn select_match(state: &mut AppState, ctx: &egui::Context, start: usize, end
     if state.tabs.is_empty() {
         return;
     }
-    let id = state.editor_id;
+    let id = state.editor_id();
     if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, id) {
         edit_state
             .cursor
@@ -78,7 +78,7 @@ pub fn replace_all(
 }
 
 fn record_edit(state: &mut AppState, ctx: &egui::Context, old_text: String, cursor: usize) {
-    let id = state.editor_id;
+    let id = state.editor_id();
     if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, id) {
         let old_cursor = edit_state
             .cursor
