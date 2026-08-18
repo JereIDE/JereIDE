@@ -116,15 +116,14 @@ pub fn init() {
     }
     let path = log_dir().join(LOG_FILE_NAME);
     if let Err(e) = fs::create_dir_all(log_dir()) {
-        eprintln!("jereide-logging: could not create log dir {:?}: {e}", log_dir());
+        eprintln!(
+            "jereide-logging: could not create log dir {:?}: {e}",
+            log_dir()
+        );
         log::set_max_level(LevelFilter::Off);
         return;
     }
-    let mut file = match File::options()
-        .append(true)
-        .create(true)
-        .open(&path)
-    {
+    let mut file = match File::options().append(true).create(true).open(&path) {
         Ok(f) => f,
         Err(e) => {
             eprintln!("jereide-logging: could not open log file {path:?}: {e}");
