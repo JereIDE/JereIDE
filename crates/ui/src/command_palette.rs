@@ -52,6 +52,9 @@ pub fn items() -> Vec<PaletteItem> {
             code: "jereide: open settings",
         },
         PaletteItem {
+            code: "jereide: open docs",
+        },
+        PaletteItem {
             code: "jereide: toggle fullscreen",
         },
         PaletteItem {

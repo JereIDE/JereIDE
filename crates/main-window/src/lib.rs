@@ -356,6 +356,12 @@ impl JereIDEApp {
             "jereide: toggle fullscreen" => {
                 toggle_fullscreen(ctx, frame);
             }
+            "jereide: open docs" => {
+                ctx.open_url(egui::OpenUrl {
+                    url: String::from("https://jereide.github.io/docs"),
+                    new_tab: true,
+                });
+            }
             "jereide: star on github" => {
                 ctx.open_url(egui::OpenUrl {
                     url: String::from("https://github.com/jeremy-qian/jereide"),
