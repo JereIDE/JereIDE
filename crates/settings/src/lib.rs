@@ -94,7 +94,6 @@ struct Settings {
     dialog_width: f32,
 
     log_max_file_size: usize,
-    log_max_retention: usize,
 }
 
 impl Default for Settings {
@@ -148,7 +147,6 @@ impl Default for Settings {
             dialog_width: 240.0,
 
             log_max_file_size: 5 * 1024 * 1024,
-            log_max_retention: 5,
         }
     }
 }
@@ -307,7 +305,7 @@ fn apply_override(settings: &mut Settings, key: &str, value: &str) {
     {
         settings.bold_folders = b;
     }
-    set_int!(log_max_file_size, log_max_retention);
+    set_int!(log_max_file_size);
 }
 
 pub fn settings_file_path() -> PathBuf {
@@ -439,9 +437,6 @@ pub fn dialog_width() -> f32 {
 
 pub fn log_max_file_size() -> usize {
     SETTINGS.log_max_file_size
-}
-pub fn log_max_retention() -> usize {
-    SETTINGS.log_max_retention
 }
 
 #[cfg(test)]
