@@ -21,6 +21,7 @@ pub struct Tab {
 
     pub saved_text: String,
     pub file_path: Option<String>,
+    pub read_only: bool,
     pub cursor_line: usize,
     pub cursor_col: usize,
 }
@@ -32,6 +33,7 @@ impl Tab {
             text: String::new(),
             saved_text: String::new(),
             file_path: None,
+            read_only: false,
             cursor_line: 1,
             cursor_col: 1,
         }
@@ -43,13 +45,26 @@ impl Tab {
             saved_text: content.clone(),
             text: content,
             file_path: Some(path),
+            read_only: false,
+            cursor_line: 1,
+            cursor_col: 1,
+        }
+    }
+
+    pub fn with_path_and_content_read_only(path: String, content: String) -> Self {
+        Self {
+            id: next_tab_id(),
+            saved_text: content.clone(),
+            text: content,
+            file_path: Some(path),
+            read_only: true,
             cursor_line: 1,
             cursor_col: 1,
         }
     }
 
     pub fn is_modified(&self) -> bool {
-        self.text != self.saved_text
+        !self.read_only && self.text != self.saved_text
     }
 
     pub fn mark_saved(&mut self) {
@@ -159,6 +174,14 @@ impl AppState {
     }
 
     pub fn open_file(&mut self, path: String, content: String) -> usize {
+        self.open_path(path, content, false)
+    }
+
+    pub fn open_read_only(&mut self, path: String, content: String) -> usize {
+        self.open_path(path, content, true)
+    }
+
+    fn open_path(&mut self, path: String, content: String, read_only: bool) -> usize {
         // This thingie checks if this file is already open
         for (i, tab) in self.tabs.iter().enumerate() {
             if tab.file_path.as_deref() == Some(&path) {
@@ -172,7 +195,11 @@ impl AppState {
             }
         }
         // If it isn't, I probably need a new tab
-        let tab = Tab::with_path_and_content(path.clone(), content.clone());
+        let tab = if read_only {
+            Tab::with_path_and_content_read_only(path.clone(), content.clone())
+        } else {
+            Tab::with_path_and_content(path.clone(), content.clone())
+        };
         self.tabs.push(tab);
         let idx = self.tabs.len() - 1;
         self.active_tab_index = idx;

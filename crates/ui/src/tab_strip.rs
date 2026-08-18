@@ -20,7 +20,18 @@ struct TabLayout {
     text_pos: Pos2,
     has_dot: bool,
     dot_pos: Pos2,
+    is_read_only: bool,
+    lock_rect: Rect,
     galley: Arc<egui::Galley>,
+}
+
+const TAB_LOCK_ICON_SIZE: f32 = 12.0;
+
+fn lock_image() -> egui::Image<'static> {
+    let bytes = jereide_data::data_dir()
+        .map(|dir| std::fs::read(dir.join("lock.png")).unwrap_or_default())
+        .unwrap_or_default();
+    egui::Image::from_bytes("lock.png", bytes).max_height(TAB_LOCK_ICON_SIZE)
 }
 
 pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
@@ -28,6 +39,7 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
     let available_w = ui.available_width();
 
     let font_id = FontId::monospace(tab_font_size());
+    let lock_image = lock_image();
 
     // Layout tabs in content coordinates (starting from x = 0).
     let mut layouts: Vec<TabLayout> = Vec::with_capacity(state.tabs.len());
@@ -48,8 +60,11 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
         let text_h = galley.size().y;
 
         let has_dot = tab.is_modified();
+        let is_read_only = tab.read_only;
         let dot_extra = if has_dot {
             TAB_MODIFIED_DOT_RADIUS * 2.0
+        } else if is_read_only {
+            TAB_LOCK_ICON_SIZE
         } else {
             0.0
         };
@@ -69,6 +84,11 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
 
         let dot_pos = Pos2::new(tab_rect.left() + side / 2.0, tab_rect.center().y);
 
+        let lock_rect = Rect::from_center_size(
+            Pos2::new(tab_rect.left() + side / 2.0, tab_rect.center().y),
+            Vec2::splat(TAB_LOCK_ICON_SIZE),
+        );
+
         let close_rect = Rect::from_center_size(
             Pos2::new(
                 tab_rect.right() - TAB_PAD_RIGHT - TAB_CLOSE_BTN_SIZE / 2.0,
@@ -83,6 +103,8 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
             text_pos,
             has_dot,
             dot_pos,
+            is_read_only,
+            lock_rect,
             galley,
         });
         cursor_x = tab_rect.right();
@@ -114,6 +136,8 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                     Rect::from_min_size(origin + l.close_rect.min.to_vec2(), l.close_rect.size());
                 let text_pos = origin + l.text_pos.to_vec2();
                 let dot_pos = origin + l.dot_pos.to_vec2();
+                let lock_rect =
+                    Rect::from_min_size(origin + l.lock_rect.min.to_vec2(), l.lock_rect.size());
 
                 let is_active = idx == state.active_tab_index;
                 let bg = if is_active {
@@ -133,6 +157,8 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
 
                 if l.has_dot {
                     painter.circle_filled(dot_pos, TAB_MODIFIED_DOT_RADIUS, accent());
+                } else if l.is_read_only {
+                    lock_image.paint_at(ui, lock_rect);
                 }
 
                 let tab_resp = ui

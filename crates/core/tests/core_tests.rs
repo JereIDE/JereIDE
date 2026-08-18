@@ -226,7 +226,40 @@ fn app_state_close_tab_above_active_no_change() {
 }
 
 #[test]
-fn app_state_switch_to_view_changes_view() {
+fn tab_with_path_and_content_read_only() {
+    let tab = Tab::with_path_and_content_read_only("/plans.md".into(), "# plan".into());
+    assert_eq!(tab.text, "# plan");
+    assert_eq!(tab.saved_text, "# plan");
+    assert_eq!(tab.file_path, Some("/plans.md".into()));
+    assert!(tab.read_only);
+    assert!(!tab.is_modified());
+}
+
+#[test]
+fn read_only_tab_never_modified() {
+    let mut tab = Tab::with_path_and_content_read_only("/plans.md".into(), "# plan".into());
+    tab.text = "edited anyway".to_string();
+    assert!(!tab.is_modified());
+}
+
+#[test]
+fn app_state_open_read_only_new() {
+    let mut state = AppState::new();
+    let idx = state.open_read_only("/plans.md".into(), "# plan".into());
+    assert_eq!(idx, 0);
+    assert_eq!(state.tabs.len(), 1);
+    assert!(state.current_tab().read_only);
+    assert_eq!(state.current_tab().text, "# plan");
+}
+
+#[test]
+fn app_state_open_read_only_already_open_switches() {
+    let mut state = AppState::new();
+    state.open_file("/a.rs".into(), "code".into());
+    let idx = state.open_read_only("/a.rs".into(), "code".into());
+    assert_eq!(idx, 0);
+    assert!(!state.current_tab().read_only);
+}
     let mut state = AppState::new();
     assert_eq!(state.current_view, CurrentView::Code);
     state.switch_to_view(CurrentView::Compose);
