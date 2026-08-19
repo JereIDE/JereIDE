@@ -209,7 +209,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                             egui::Id::new("bracket_highlight"),
                         ));
                     let highlight_at = |char_index: usize| {
-                        if char_index >= tab_text.len() {
+                        if char_index >= tab_text.chars().count() {
                             return;
                         }
                         let lc = galley.layout_from_cursor(CCursor::new(char_index));
@@ -333,7 +333,13 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
             // Smart bracket deletion, so deleting will delete... like, deleting the opening will delete
             // the closing bracket.
             if should_delete_bracket_pair(&old_text, &state.tabs[active_idx].text, cursor_idx) {
-                state.tabs[active_idx].text.remove(cursor_idx);
+                let byte_idx = state.tabs[active_idx]
+                    .text
+                    .char_indices()
+                    .nth(cursor_idx)
+                    .map(|(i, _)| i)
+                    .unwrap_or(state.tabs[active_idx].text.len());
+                state.tabs[active_idx].text.remove(byte_idx);
                 if let Some(mut edit_state) =
                     jereide_editor::TextEdit::load_state(&ctx, text_edit_output.response.id)
                 {
@@ -493,11 +499,10 @@ fn gutter_width(line_count: usize) -> f32 {
 }
 
 fn find_matching_bracket(text: &str, cursor_char_index: usize) -> Option<(usize, usize)> {
-    let bytes = text.as_bytes();
+    let chars: Vec<char> = text.chars().collect();
 
     let check_at = |idx: usize| -> Option<(usize, usize)> {
-        let c = bytes[idx] as char;
-        match c {
+        match chars[idx] {
             '(' => find_match_forward(text, idx + 1, '(', ')').map(|m| (idx, m)),
             ')' => find_match_backward(text, idx, '(', ')').map(|m| (m, idx)),
             '[' => find_match_forward(text, idx + 1, '[', ']').map(|m| (idx, m)),
@@ -508,9 +513,8 @@ fn find_matching_bracket(text: &str, cursor_char_index: usize) -> Option<(usize,
         }
     };
 
-    if cursor_char_index < text.len() {
-        let c = bytes[cursor_char_index] as char;
-        if matches!(c, '(' | ')' | '[' | ']' | '{' | '}') {
+    if cursor_char_index < chars.len() {
+        if matches!(chars[cursor_char_index], '(' | ')' | '[' | ']' | '{' | '}') {
             if let Some(pair) = check_at(cursor_char_index) {
                 return Some(pair);
             }
@@ -518,8 +522,7 @@ fn find_matching_bracket(text: &str, cursor_char_index: usize) -> Option<(usize,
     }
 
     if cursor_char_index > 0 {
-        let c = bytes[cursor_char_index - 1] as char;
-        if matches!(c, '(' | ')' | '[' | ']' | '{' | '}') {
+        if matches!(chars[cursor_char_index - 1], '(' | ')' | '[' | ']' | '{' | '}') {
             if let Some(pair) = check_at(cursor_char_index - 1) {
                 return Some(pair);
             }
@@ -530,10 +533,8 @@ fn find_matching_bracket(text: &str, cursor_char_index: usize) -> Option<(usize,
 }
 
 fn find_match_forward(text: &str, start: usize, open: char, close: char) -> Option<usize> {
-    let bytes = text.as_bytes();
     let mut depth = 1;
-    for i in start..text.len() {
-        let c = bytes[i] as char;
+    for (i, c) in text.chars().enumerate().skip(start) {
         if c == open {
             depth += 1;
         } else if c == close {
@@ -547,10 +548,10 @@ fn find_match_forward(text: &str, start: usize, open: char, close: char) -> Opti
 }
 
 fn find_match_backward(text: &str, start: usize, open: char, close: char) -> Option<usize> {
-    let bytes = text.as_bytes();
+    let chars: Vec<char> = text.chars().collect();
     let mut depth = 1;
     for i in (0..start).rev() {
-        let c = bytes[i] as char;
+        let c = chars[i];
         if c == close {
             depth += 1;
         } else if c == open {
@@ -564,11 +565,11 @@ fn find_match_backward(text: &str, start: usize, open: char, close: char) -> Opt
 }
 
 fn should_delete_bracket_pair(old_text: &str, new_text: &str, cursor_idx: usize) -> bool {
-    if new_text.len() + 1 != old_text.len() {
+    if new_text.chars().count() + 1 != old_text.chars().count() {
         return false;
     }
-    let old = old_text.as_bytes();
-    let closing = match old.get(cursor_idx).map(|&b| b as char) {
+    let old: Vec<char> = old_text.chars().collect();
+    let closing = match old.get(cursor_idx) {
         Some('(') => Some(')'),
         Some('[') => Some(']'),
         Some('{') => Some('}'),
@@ -578,7 +579,7 @@ fn should_delete_bracket_pair(old_text: &str, new_text: &str, cursor_idx: usize)
         _ => None,
     };
     match closing {
-        Some(closing) => old.get(cursor_idx + 1) == Some(&(closing as u8)),
+        Some(closing) => old.get(cursor_idx + 1) == Some(&closing),
         None => false,
     }
 }
@@ -762,5 +763,38 @@ mod tests {
     #[test]
     fn should_delete_bracket_pair_wrong_deleted_char() {
         assert!(!should_delete_bracket_pair("a}", "}", 0));
+    }
+
+    #[test]
+    fn should_delete_bracket_pair_multibyte_paren() {
+        assert!(should_delete_bracket_pair("😀()", "😀)", 1));
+    }
+
+    #[test]
+    fn should_delete_bracket_pair_multibyte_quote() {
+        assert!(should_delete_bracket_pair("é\"\"", "é\"", 1));
+    }
+
+    #[test]
+    fn should_delete_bracket_pair_multibyte_not_pair() {
+        assert!(!should_delete_bracket_pair("😀(a)", "😀a)", 1));
+    }
+
+    #[test]
+    fn find_matching_bracket_multibyte_before_paren() {
+        let text = "é(x)中";
+        assert_eq!(find_matching_bracket(text, 4), Some((1, 3)));
+    }
+
+    #[test]
+    fn find_match_forward_multibyte_paren() {
+        let text = "é( | )";
+        assert_eq!(find_match_forward(text, 2, '(', ')'), Some(5));
+    }
+
+    #[test]
+    fn find_match_backward_multibyte_paren() {
+        let text = "é( )";
+        assert_eq!(find_match_backward(text, 3, '(', ')'), Some(1));
     }
 }
