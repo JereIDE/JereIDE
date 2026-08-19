@@ -142,6 +142,15 @@ impl JereIDEApp {
         self.state.new_tab();
     }
 
+    fn begin_quit(&mut self, ctx: &egui::Context) {
+        if let Some(idx) = self.state.first_dirty_tab_index() {
+            self.state.pending_quit = true;
+            self.state.pending_close_index = Some(idx);
+        } else {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+    }
+
     fn toggle_find_palette(&mut self) {
         if self.state.tabs.is_empty() {
             return;
@@ -374,7 +383,7 @@ impl JereIDEApp {
             "view: compose" => self.state.switch_to_view(CurrentView::Compose),
             "jereide: open settings" => self.handle_settings(),
             "jereide: quit" => {
-                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                self.begin_quit(&ctx);
             }
             "jereide: toggle fullscreen" => {
                 toggle_fullscreen(ctx, frame);
@@ -649,6 +658,16 @@ impl eframe::App for JereIDEApp {
 
         use jereide_ui::dialog::{CloseConfirmAction, LargeFileAction};
 
+        let close_requested = ctx.input(|i| i.viewport().close_requested());
+        if close_requested && !self.state.pending_quit && !self.state.pending_close_index.is_some()
+        {
+            if let Some(idx) = self.state.first_dirty_tab_index() {
+                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+                self.state.pending_quit = true;
+                self.state.pending_close_index = Some(idx);
+            }
+        }
+
         if let Some(action) = jereide_ui::dialog::render_close_confirm_modal(&mut self.state, &ctx)
         {
             match action {
@@ -656,15 +675,26 @@ impl eframe::App for JereIDEApp {
                     if self.save_tab(idx) {
                         self.state.close_tab(idx);
                     }
-                    self.state.pending_close_index = None;
                 }
                 CloseConfirmAction::Discard(idx) => {
                     self.state.close_tab(idx);
-                    self.state.pending_close_index = None;
                 }
                 CloseConfirmAction::Cancel => {
+                    self.state.pending_quit = false;
                     self.state.pending_close_index = None;
                 }
+            }
+
+            if self.state.pending_quit {
+                if let Some(next) = self.state.first_dirty_tab_index() {
+                    self.state.pending_close_index = Some(next);
+                } else {
+                    self.state.pending_quit = false;
+                    self.state.pending_close_index = None;
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+            } else {
+                self.state.pending_close_index = None;
             }
         }
 

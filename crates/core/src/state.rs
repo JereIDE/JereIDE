@@ -100,6 +100,8 @@ pub struct AppState {
 
     pub pending_close_index: Option<usize>,
 
+    pub pending_quit: bool,
+
     pub pending_large_file_blocked: Option<u64>,
     pub pending_large_file_warn: Option<(String, u64)>,
 
@@ -141,6 +143,7 @@ impl AppState {
             was_fullscreen: false,
             document_edited: false,
             pending_close_index: None,
+            pending_quit: false,
             pending_large_file_blocked: None,
             pending_large_file_warn: None,
             command_palette_open: false,
@@ -239,6 +242,10 @@ impl AppState {
             self.tabs.len(),
             self.active_tab_index
         );
+    }
+
+    pub fn first_dirty_tab_index(&self) -> Option<usize> {
+        self.tabs.iter().position(|t| t.is_modified())
     }
 
     pub fn switch_to_view(&mut self, target: CurrentView) {
