@@ -572,6 +572,9 @@ fn should_delete_bracket_pair(old_text: &str, new_text: &str, cursor_idx: usize)
         Some('(') => Some(')'),
         Some('[') => Some(']'),
         Some('{') => Some('}'),
+        Some('"') => Some('"'),
+        Some('\'') => Some('\''),
+        Some('`') => Some('`'),
         _ => None,
     };
     match closing {
