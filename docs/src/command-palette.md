@@ -78,6 +78,14 @@ Switches to the compose mode.
 
 Opens settings.toml in a new tab. Also invokable by App Menu or `Cmd/Ctrl+,`.
 
+## `jereide: open docs`
+
+Opens the docs in the default browser.
+
+## `jereide: view log`
+
+This opens the read-only logs in a new editor tab.
+
 ## `jereide: toggle fullscreen`
 
 Toggles fullscreen, literally.
