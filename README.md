@@ -23,7 +23,7 @@ _JereIDE as an open-source, cross-platform editor built in Rust with frequent up
 ---
 
 <kbd>
-  <img src=".github/images/macos-0.28.0.jpg" alt="JereIDE Screenshot" width="397.6" height="317.6">
+  <img src=".github/images/macos-0.28.0.jpg" alt="JereIDE Screenshot">
 </kbd>
 
 </div>
