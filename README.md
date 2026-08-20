@@ -23,7 +23,7 @@ _JereIDE as an open-source, cross-platform editor built in Rust with frequent up
 ---
 
 <kbd>
-  <img src=".github/images/macos-0.25.1.jpg" alt="JereIDE Screenshot" width="600" height="400">
+  <img src=".github/images/macos-0.28.0.jpg" alt="JereIDE Screenshot" width="397.6" height="317.6">
 </kbd>
 
 </div>
@@ -33,13 +33,13 @@ _JereIDE as an open-source, cross-platform editor built in Rust with frequent up
 A simple code editor with syntax highlighting
 
 > [!NOTE]
-> JereIDE is still in beta and is not for production use. Check out [Zed](https://zed.dev) if you want a production-ready code editor. I am not responsible for any data loss or damage caused by using JereIDE.
+> JereIDE is still in a very early stage and is not for production use. Check out [Zed](https://zed.dev) if you want a production-ready code editor. I am not responsible for any data loss or damage caused by using JereIDE.
 
 ## Installation
 
 ### Releases
 
-You could go to the [Releases](https://github.com/JereIDE/JereIDE/releases) page to download the latest version.
+You could go to the [Releases](https://github.com/JereIDE/JereIDE/releases) page to download any version of JereIDE.
 
 **macOS 12+ and Windows 10+ required.**
 Linux support is not planned in the near future.

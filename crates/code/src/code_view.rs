@@ -522,7 +522,10 @@ fn find_matching_bracket(text: &str, cursor_char_index: usize) -> Option<(usize,
     }
 
     if cursor_char_index > 0 {
-        if matches!(chars[cursor_char_index - 1], '(' | ')' | '[' | ']' | '{' | '}') {
+        if matches!(
+            chars[cursor_char_index - 1],
+            '(' | ')' | '[' | ']' | '{' | '}'
+        ) {
             if let Some(pair) = check_at(cursor_char_index - 1) {
                 return Some(pair);
             }
