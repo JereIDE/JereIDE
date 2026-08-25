@@ -206,6 +206,45 @@ pub fn render_large_file_warning(
     }
 }
 
+pub fn render_binary_file_dialog(ctx: &egui::Context, _path: &str) -> bool {
+    let dim_rect = ctx.viewport_rect();
+    let dim_layer = egui::LayerId::new(egui::Order::Foreground, egui::Id::new("modal_dimmer"));
+    let dim_painter = ctx.layer_painter(dim_layer);
+    dim_painter.rect_filled(dim_rect, 0.0, egui::Color32::from_black_alpha(90));
+    egui::Area::new(egui::Id::new("modal_dimmer_interact"))
+        .order(egui::Order::Foreground)
+        .fixed_pos(dim_rect.min)
+        .show(ctx, |ui| {
+            ui.allocate_rect(dim_rect, egui::Sense::click());
+        });
+    let mut dismissed = false;
+    egui::Window::new("Binary File")
+        .title_bar(false)
+        .collapsible(false)
+        .resizable(false)
+        .max_width(dialog_width())
+        .order(egui::Order::Tooltip)
+        .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+        .show(ctx, |ui| {
+            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                ui.colored_label(text_default(), "Could not open file");
+                ui.colored_label(text_muted(), "Binary files are not supported");
+            });
+            ui.add_space(10.0);
+            let btn_w = ui.available_width();
+            if ui
+                .add_sized(
+                    egui::vec2(btn_w, 0.0),
+                    egui::Button::new("OK").fill(accent()),
+                )
+                .clicked()
+            {
+                dismissed = true;
+            }
+        });
+    dismissed
+}
+
 pub fn render_about_dialog(ctx: &egui::Context, open: &mut bool) {
     if !*open {
         return;
