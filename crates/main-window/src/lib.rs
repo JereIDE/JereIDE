@@ -210,6 +210,7 @@ impl JereIDEApp {
 
         let Some(content) = read_file_at(&path) else {
             log::error!("failed to read file contents: {}", path.display());
+            self.state.pending_binary_file = Some(path.display().to_string());
             return;
         };
         log::debug!("read {} bytes from {}", content.len(), path.display());
@@ -713,11 +714,20 @@ impl eframe::App for JereIDEApp {
                         log::info!("user chose to open large file anyway: {}", path_str);
                         let pb = std::path::PathBuf::from(&path_str);
                         if let Some(content) = read_file_at(&pb) {
-                            self.state.open_file(path_str, content);
+                            self.state.open_file(path_str.clone(), content);
+                        } else {
+                            log::error!("failed to read file contents: {}", path_str);
+                            self.state.pending_binary_file = Some(path_str);
                         }
                     }
                     LargeFileAction::Cancel => {}
                 }
+            }
+        }
+
+        if let Some(path) = self.state.pending_binary_file.clone() {
+            if jereide_ui::dialog::render_binary_file_dialog(&ctx, &path) {
+                self.state.pending_binary_file = None;
             }
         }
 
