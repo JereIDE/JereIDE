@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 use std::sync::LazyLock;
+use std::sync::RwLock;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use eframe::egui;
 use eframe::egui::Color32;
@@ -152,7 +154,8 @@ impl Default for Settings {
     }
 }
 
-static SETTINGS: LazyLock<Settings> = LazyLock::new(load);
+static SETTINGS: LazyLock<RwLock<Settings>> = LazyLock::new(|| RwLock::new(load()));
+static SETTINGS_VERSION: AtomicUsize = AtomicUsize::new(0);
 
 fn config_base_dir() -> PathBuf {
     #[cfg(target_os = "windows")]
@@ -317,127 +320,155 @@ pub fn settings_file_path() -> PathBuf {
     path
 }
 
+/// Lock the live settings for mutation. Bumps the version so the app can
+/// re-apply visuals that were derived once at startup.
+pub(crate) fn update_settings(f: impl FnOnce(&mut Settings)) {
+    if let Ok(mut guard) = SETTINGS.write() {
+        f(&mut guard);
+        SETTINGS_VERSION.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+/// Persist the current live settings to `settings.toml` as plain (uncommented)
+/// TOML. These values are re-read by `apply_overrides` on the next launch.
+pub fn save_settings() {
+    if let Ok(guard) = SETTINGS.read() {
+        if let Some(parent) = settings_path().parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        if let Ok(rendered) = toml::to_string(&*guard) {
+            let _ = std::fs::write(settings_path(), rendered);
+        }
+    }
+}
+
+/// Monotonic counter incremented on every `update_settings`. Lets the app
+/// detect when it must re-apply startup-only visuals (selection color, shadow).
+pub fn settings_version() -> usize {
+    SETTINGS_VERSION.load(Ordering::SeqCst)
+}
+
 pub fn surface_bg() -> Color32 {
-    SETTINGS.surface_bg.0
+    SETTINGS.read().unwrap().surface_bg.0
 }
 pub fn elevated_bg() -> Color32 {
-    SETTINGS.elevated_bg.0
+    SETTINGS.read().unwrap().elevated_bg.0
 }
 pub fn hover_bg() -> Color32 {
-    SETTINGS.hover_bg.0
+    SETTINGS.read().unwrap().hover_bg.0
 }
 pub fn compose_bg() -> Color32 {
-    SETTINGS.compose_bg.0
+    SETTINGS.read().unwrap().compose_bg.0
 }
 
 pub fn text_default() -> Color32 {
-    SETTINGS.text_default.0
+    SETTINGS.read().unwrap().text_default.0
 }
 pub fn text_primary() -> Color32 {
-    SETTINGS.text_primary.0
+    SETTINGS.read().unwrap().text_primary.0
 }
 pub fn text_secondary() -> Color32 {
-    SETTINGS.text_secondary.0
+    SETTINGS.read().unwrap().text_secondary.0
 }
 pub fn text_muted() -> Color32 {
-    SETTINGS.text_muted.0
+    SETTINGS.read().unwrap().text_muted.0
 }
 pub fn current_line_highlighting() -> Color32 {
-    SETTINGS.current_line_highlighting.0
+    SETTINGS.read().unwrap().current_line_highlighting.0
 }
 pub fn compose_text() -> Color32 {
-    SETTINGS.compose_text.0
+    SETTINGS.read().unwrap().compose_text.0
 }
 
 pub fn border() -> Color32 {
-    SETTINGS.border.0
+    SETTINGS.read().unwrap().border.0
 }
 
 pub fn syntax_keyword() -> Color32 {
-    SETTINGS.syntax_keyword.0
+    SETTINGS.read().unwrap().syntax_keyword.0
 }
 pub fn syntax_keyword2() -> Color32 {
-    SETTINGS.syntax_keyword2.0
+    SETTINGS.read().unwrap().syntax_keyword2.0
 }
 pub fn syntax_string() -> Color32 {
-    SETTINGS.syntax_string.0
+    SETTINGS.read().unwrap().syntax_string.0
 }
 pub fn syntax_comment() -> Color32 {
-    SETTINGS.syntax_comment.0
+    SETTINGS.read().unwrap().syntax_comment.0
 }
 pub fn syntax_number() -> Color32 {
-    SETTINGS.syntax_number.0
+    SETTINGS.read().unwrap().syntax_number.0
 }
 pub fn syntax_operator() -> Color32 {
-    SETTINGS.syntax_operator.0
+    SETTINGS.read().unwrap().syntax_operator.0
 }
 pub fn syntax_function() -> Color32 {
-    SETTINGS.syntax_function.0
+    SETTINGS.read().unwrap().syntax_function.0
 }
 pub fn syntax_literal() -> Color32 {
-    SETTINGS.syntax_literal.0
+    SETTINGS.read().unwrap().syntax_literal.0
 }
 pub fn syntax_heading() -> Color32 {
-    SETTINGS.syntax_heading.0
+    SETTINGS.read().unwrap().syntax_heading.0
 }
 pub fn syntax_code() -> Color32 {
-    SETTINGS.syntax_code.0
+    SETTINGS.read().unwrap().syntax_code.0
 }
 pub fn syntax_emphasis() -> Color32 {
-    SETTINGS.syntax_emphasis.0
+    SETTINGS.read().unwrap().syntax_emphasis.0
 }
 pub fn syntax_link() -> Color32 {
-    SETTINGS.syntax_link.0
+    SETTINGS.read().unwrap().syntax_link.0
 }
 
 pub fn accent() -> Color32 {
-    SETTINGS.accent.0
+    SETTINGS.read().unwrap().accent.0
 }
 pub fn destructive() -> Color32 {
-    SETTINGS.destructive.0
+    SETTINGS.read().unwrap().destructive.0
 }
 
 pub fn bracket_match() -> Color32 {
-    SETTINGS.bracket_match.0
+    SETTINGS.read().unwrap().bracket_match.0
 }
 
 pub fn find_highlight() -> Color32 {
-    SETTINGS.find_highlight.0
+    SETTINGS.read().unwrap().find_highlight.0
 }
 pub fn find_highlight_current() -> Color32 {
-    SETTINGS.find_highlight_current.0
+    SETTINGS.read().unwrap().find_highlight_current.0
 }
 
 pub fn bold_folders() -> bool {
-    SETTINGS.bold_folders
+    SETTINGS.read().unwrap().bold_folders
 }
 
 pub fn title_bar_font_size() -> f32 {
-    SETTINGS.title_bar_font_size
+    SETTINGS.read().unwrap().title_bar_font_size
 }
 pub fn tab_font_size() -> f32 {
-    SETTINGS.tab_font_size
+    SETTINGS.read().unwrap().tab_font_size
 }
 pub fn editor_font_size() -> f32 {
-    SETTINGS.editor_font_size
+    SETTINGS.read().unwrap().editor_font_size
 }
 pub fn compose_view_font_size() -> f32 {
-    SETTINGS.compose_view_font_size
+    SETTINGS.read().unwrap().compose_view_font_size
 }
 
 pub fn window_width() -> f32 {
-    SETTINGS.window_width
+    SETTINGS.read().unwrap().window_width
 }
 pub fn window_height() -> f32 {
-    SETTINGS.window_height
+    SETTINGS.read().unwrap().window_height
 }
 
 pub fn dialog_width() -> f32 {
-    SETTINGS.dialog_width
+    SETTINGS.read().unwrap().dialog_width
 }
 
 pub fn log_max_file_size() -> usize {
-    SETTINGS.log_max_file_size
+    SETTINGS.read().unwrap().log_max_file_size
 }
 
 pub fn render_settings_window(ctx: &egui::Context) {
@@ -460,7 +491,128 @@ pub fn render_settings_window(ctx: &egui::Context) {
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
-            ui.set_min_size(egui::vec2(440.0, 340.0));
+            ui.set_min_size(egui::vec2(480.0, 560.0));
+            ui.heading("JereIDE Settings");
+            ui.separator();
+
+            macro_rules! color_row {
+                ($ui:expr, $name:expr, $field:ident) => {
+                    $ui.horizontal(|ui| {
+                        ui.label($name);
+                        let mut c = SETTINGS.read().unwrap().$field.0;
+                        if egui::color_picker::color_edit_button_srgba(
+                            ui,
+                            &mut c,
+                            egui::color_picker::Alpha::BlendOrAdditive,
+                        )
+                        .changed()
+                        {
+                            update_settings(|s| s.$field.0 = c);
+                        }
+                    });
+                };
+            }
+            macro_rules! slider_row {
+                ($ui:expr, $name:expr, $field:ident, $range:expr) => {
+                    $ui.horizontal(|ui| {
+                        ui.label($name);
+                        let mut v = SETTINGS.read().unwrap().$field;
+                        if ui.add(egui::Slider::new(&mut v, $range)).changed() {
+                            update_settings(|s| s.$field = v);
+                        }
+                    });
+                };
+            }
+            macro_rules! check_row {
+                ($ui:expr, $name:expr, $field:ident) => {
+                    $ui.horizontal(|ui| {
+                        ui.label($name);
+                        let mut v = SETTINGS.read().unwrap().$field;
+                        if ui.checkbox(&mut v, "").changed() {
+                            update_settings(|s| s.$field = v);
+                        }
+                    });
+                };
+            }
+
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                ui.label(egui::RichText::new("Backgrounds").strong());
+                color_row!(ui, "Surface Background", surface_bg);
+                color_row!(ui, "Elevated Background", elevated_bg);
+                color_row!(ui, "Hover Background", hover_bg);
+                color_row!(ui, "Compose Background", compose_bg);
+
+                ui.separator();
+                ui.label(egui::RichText::new("Text").strong());
+                color_row!(ui, "Text Default", text_default);
+                color_row!(ui, "Text Primary", text_primary);
+                color_row!(ui, "Text Secondary", text_secondary);
+                color_row!(ui, "Text Muted", text_muted);
+                color_row!(ui, "Current Line Highlight", current_line_highlighting);
+                color_row!(ui, "Compose Text", compose_text);
+
+                ui.separator();
+                ui.label(egui::RichText::new("UI").strong());
+                color_row!(ui, "Border", border);
+                color_row!(ui, "Accent", accent);
+                color_row!(ui, "Destructive", destructive);
+                color_row!(ui, "Bracket Match", bracket_match);
+                color_row!(ui, "Find Highlight", find_highlight);
+                color_row!(ui, "Find Highlight Current", find_highlight_current);
+
+                ui.separator();
+                ui.label(egui::RichText::new("Syntax").strong());
+                color_row!(ui, "Syntax Keyword", syntax_keyword);
+                color_row!(ui, "Syntax Keyword 2", syntax_keyword2);
+                color_row!(ui, "Syntax String", syntax_string);
+                color_row!(ui, "Syntax Comment", syntax_comment);
+                color_row!(ui, "Syntax Number", syntax_number);
+                color_row!(ui, "Syntax Operator", syntax_operator);
+                color_row!(ui, "Syntax Function", syntax_function);
+                color_row!(ui, "Syntax Literal", syntax_literal);
+                color_row!(ui, "Syntax Heading", syntax_heading);
+                color_row!(ui, "Syntax Code", syntax_code);
+                color_row!(ui, "Syntax Emphasis", syntax_emphasis);
+                color_row!(ui, "Syntax Link", syntax_link);
+
+                ui.separator();
+                ui.label(egui::RichText::new("Font Sizes").strong());
+                slider_row!(ui, "Title Bar Font Size", title_bar_font_size, 8.0..=32.0);
+                slider_row!(ui, "Tab Font Size", tab_font_size, 8.0..=32.0);
+                slider_row!(ui, "Editor Font Size", editor_font_size, 8.0..=40.0);
+                slider_row!(
+                    ui,
+                    "Compose Font Size",
+                    compose_view_font_size,
+                    8.0..=48.0
+                );
+
+                ui.separator();
+                ui.label(egui::RichText::new("Window").strong());
+                slider_row!(ui, "Window Width", window_width, 400.0..=2400.0);
+                slider_row!(ui, "Window Height", window_height, 400.0..=2400.0);
+                slider_row!(ui, "Dialog Width", dialog_width, 200.0..=600.0);
+
+                ui.separator();
+                ui.label(egui::RichText::new("Misc").strong());
+                check_row!(ui, "Bold Folders", bold_folders);
+                slider_row!(
+                    ui,
+                    "Log Max File Size",
+                    log_max_file_size,
+                    1024..=20 * 1024 * 1024
+                );
+            });
+
+            ui.separator();
+            ui.horizontal(|ui| {
+                if ui.button("Reset to Defaults").clicked() {
+                    update_settings(|s| *s = Settings::default());
+                }
+                if ui.button("Save").clicked() {
+                    save_settings();
+                }
+            });
         });
 }
 

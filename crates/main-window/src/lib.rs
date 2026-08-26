@@ -121,6 +121,7 @@ pub struct JereIDEApp {
     go_to_line_palette: Option<GoToLinePalette>,
     go_to_line_open: bool,
     settings_window_open: bool,
+    last_settings_version: usize,
 }
 
 impl JereIDEApp {
@@ -138,6 +139,7 @@ impl JereIDEApp {
             go_to_line_palette: None,
             go_to_line_open: false,
             settings_window_open: false,
+            last_settings_version: 0,
         }
     }
 
@@ -425,7 +427,9 @@ impl eframe::App for JereIDEApp {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
 
-        if !self.visuals_initialized {
+        if !self.visuals_initialized
+            || jereide_settings::settings_version() != self.last_settings_version
+        {
             let mut visuals = ctx.global_style().visuals.clone();
             visuals.selection.bg_fill = accent();
             visuals.selection.stroke = egui::Stroke::new(1.0, jereide_settings::text_default());
@@ -436,6 +440,7 @@ impl eframe::App for JereIDEApp {
                 color: egui::Color32::from_black_alpha(90),
             };
             ctx.set_visuals(visuals);
+            self.last_settings_version = jereide_settings::settings_version();
             self.visuals_initialized = true;
         }
 
