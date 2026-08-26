@@ -19,13 +19,11 @@ fn app_icon() -> egui::Image<'static> {
 pub fn render_welcome_view(ui: &mut egui::Ui) {
     let rect = ui.max_rect();
     ui.painter().rect_filled(rect, 0.0, surface_bg());
-    ui.put(
-        egui::Rect::from_center_size(
-            egui::pos2(rect.center().x - 110.0, rect.center().y + 13.0),
-            egui::vec2(48.0, 48.0),
-        ),
-        app_icon(),
-    );
+
+    let cx = rect.center().x;
+    let cy = rect.center().y;
+    let icon_size = 48.0;
+
     let font = egui::FontId::proportional(compose_view_font_size());
     let version = format!("v{}", env!("CARGO_PKG_VERSION"));
     let main = "Welcome back to JereIDE ";
@@ -44,16 +42,58 @@ pub fn render_welcome_view(ui: &mut egui::Ui) {
         format: egui::TextFormat::simple(font, text_secondary()),
     });
     let galley = ui.fonts_mut(|f| f.layout_job(job));
-    let text_pos = egui::pos2(
-        rect.center().x - 70.0,
-        rect.center().y - galley.size().y / 2.0,
+
+    let sub_text = "The ready-to-use editor that nobody ever uses";
+    let sub_galley = ui.fonts_mut(|f| {
+        f.layout_job(egui::text::LayoutJob::simple(
+            sub_text.to_owned(),
+            egui::FontId::proportional(editor_font_size()),
+            text_muted(),
+            f32::INFINITY,
+        ))
+    });
+
+    let icon_cx = cx - 110.0;
+    let icon_cy = cy + 13.0;
+    let text_x = cx - 70.0;
+    let text_y = cy - galley.size().y / 2.0;
+    let sub_x = cx - 70.0;
+    let sub_cy = cy + 26.0;
+
+    let mut min_x = icon_cx - icon_size / 2.0;
+    let mut max_x = icon_cx + icon_size / 2.0;
+    min_x = min_x.min(text_x).min(sub_x);
+    max_x = max_x
+        .max(text_x + galley.size().x)
+        .max(sub_x + sub_galley.size().x);
+    let mut min_y = icon_cy - icon_size / 2.0;
+    let mut max_y = icon_cy + icon_size / 2.0;
+    min_y = min_y.min(text_y).min(sub_cy - sub_galley.size().y / 2.0);
+    max_y = max_y
+        .max(text_y + galley.size().y)
+        .max(sub_cy + sub_galley.size().y / 2.0);
+
+    let dx = cx - (min_x + max_x) / 2.0;
+    let dy = cy - (min_y + max_y) / 2.0;
+
+    ui.put(
+        egui::Rect::from_center_size(
+            egui::pos2(icon_cx + dx, icon_cy + dy),
+            egui::vec2(icon_size, icon_size),
+        ),
+        app_icon(),
     );
-    ui.painter().galley(text_pos, galley, text_primary());
+
+    ui.painter().galley(
+        egui::pos2(text_x + dx, text_y + dy),
+        galley,
+        text_primary(),
+    );
 
     ui.painter().text(
-        egui::Pos2::new(rect.center().x - 70.0, rect.center().y + 26.0),
+        egui::pos2(sub_x + dx, sub_cy + dy),
         egui::Align2::LEFT_CENTER,
-        "The ready-to-use editor that nobody ever uses",
+        sub_text,
         egui::FontId::proportional(editor_font_size()),
         text_muted(),
     );
