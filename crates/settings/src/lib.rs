@@ -534,6 +534,8 @@ pub fn render_settings_window(ctx: &egui::Context, open: &mut bool) {
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
         .max_height(max_h)
+        .min_width(480.0)
+        .max_width(480.0)
         .show(ctx, |ui| {
             ui.set_min_size(egui::vec2(480.0, 360.0));
             egui::Frame::new()
@@ -541,6 +543,7 @@ pub fn render_settings_window(ctx: &egui::Context, open: &mut bool) {
                 .show(ui, |ui| {
                     ui.heading("JereIDE Settings");
                     ui.separator();
+                });
 
             let mut snap = SETTINGS.read().unwrap().clone();
 
@@ -613,6 +616,10 @@ pub fn render_settings_window(ctx: &egui::Context, open: &mut bool) {
             egui::ScrollArea::vertical()
                 .max_height(max_h - 150.0)
                 .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        let bar = ui.style().spacing.scroll.bar_width;
+                        ui.add_space(7.0);
+                        ui.vertical(|ui| {
                     ui.label(egui::RichText::new("Backgrounds").strong());
                     color_row!(ui, "Surface Background", surface_bg, snap);
                     color_row!(ui, "Elevated Background", elevated_bg, snap);
@@ -690,17 +697,23 @@ pub fn render_settings_window(ctx: &egui::Context, open: &mut bool) {
                         "Log Max File Size",
                         log_max_file_size,
                         1024..=20 * 1024 * 1024,
-                        snap
+                         snap
                     );
+                        });
+                        ui.add_space(7.0 + bar);
+                    });
                 });
 
-            ui.separator();
-            ui.horizontal(|ui| {
-                if ui.button("Reset to Defaults").clicked() {
-                    update_settings(|s| *s = Settings::default());
-                    save_settings();
-                }
-            });
+            egui::Frame::new()
+                .inner_margin(egui::Margin::symmetric(7, 0))
+                .show(ui, |ui| {
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        if ui.button("Reset to Defaults").clicked() {
+                            update_settings(|s| *s = Settings::default());
+                            save_settings();
+                        }
+                    });
                 });
         });
 }
