@@ -500,19 +500,32 @@ fn settings_toggle(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
     response
 }
 
-pub fn render_settings_window(ctx: &egui::Context) {
+pub fn render_settings_window(ctx: &egui::Context, open: &mut bool) {
     let screen = ctx
         .input(|i| i.raw.screen_rect)
         .unwrap_or_else(|| ctx.viewport_rect());
-    egui::Area::new(egui::Id::new("settings_modal_blocker"))
+
+    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+        *open = false;
+        return;
+    }
+
+    let backdrop_clicked = egui::Area::new(egui::Id::new("settings_modal_blocker"))
         .order(egui::Order::Middle)
         .fixed_pos(screen.min)
         .show(ctx, |ui| {
             let rect = egui::Rect::from_min_size(egui::Pos2::ZERO, screen.size());
-            ui.allocate_rect(rect, egui::Sense::CLICK);
+            let r = ui.allocate_rect(rect, egui::Sense::CLICK);
             ui.painter()
                 .rect_filled(rect, 0.0, egui::Color32::from_black_alpha(110));
-        });
+            r.clicked()
+        })
+        .inner;
+    if backdrop_clicked {
+        *open = false;
+        return;
+    }
+
     let max_h = (screen.height() * 0.85).max(360.0);
     egui::Window::new("Settings")
         .title_bar(false)
@@ -523,8 +536,11 @@ pub fn render_settings_window(ctx: &egui::Context) {
         .max_height(max_h)
         .show(ctx, |ui| {
             ui.set_min_size(egui::vec2(480.0, 360.0));
-            ui.heading("JereIDE Settings");
-            ui.separator();
+            egui::Frame::new()
+                .inner_margin(egui::Margin::symmetric(7, 0))
+                .show(ui, |ui| {
+                    ui.heading("JereIDE Settings");
+                    ui.separator();
 
             let mut snap = SETTINGS.read().unwrap().clone();
 
@@ -532,19 +548,24 @@ pub fn render_settings_window(ctx: &egui::Context) {
                 ($ui:expr, $name:expr, $field:ident, $snap:expr) => {
                     $ui.horizontal(|ui| {
                         ui.label($name);
-                        let mut c = $snap.$field.0;
-                        let r = egui::color_picker::color_edit_button_srgba(
-                            ui,
-                            &mut c,
-                            egui::color_picker::Alpha::BlendOrAdditive,
+                        ui.with_layout(
+                            egui::Layout::right_to_left(egui::Align::Center),
+                            |ui| {
+                                let mut c = $snap.$field.0;
+                                let r = egui::color_picker::color_edit_button_srgba(
+                                    ui,
+                                    &mut c,
+                                    egui::color_picker::Alpha::BlendOrAdditive,
+                                );
+                                if r.changed() {
+                                    $snap.$field.0 = c;
+                                    update_settings(|s| s.$field.0 = c);
+                                }
+                                if r.lost_focus() || r.drag_stopped() {
+                                    save_settings();
+                                }
+                            },
                         );
-                        if r.changed() {
-                            $snap.$field.0 = c;
-                            update_settings(|s| s.$field.0 = c);
-                        }
-                        if r.lost_focus() || r.drag_stopped() {
-                            save_settings();
-                        }
                     });
                 };
             }
@@ -552,15 +573,20 @@ pub fn render_settings_window(ctx: &egui::Context) {
                 ($ui:expr, $name:expr, $field:ident, $range:expr, $snap:expr) => {
                     $ui.horizontal(|ui| {
                         ui.label($name);
-                        let mut v = $snap.$field;
-                        let r = ui.add(egui::Slider::new(&mut v, $range));
-                        if r.changed() {
-                            $snap.$field = v;
-                            update_settings(|s| s.$field = v);
-                        }
-                        if r.lost_focus() || r.drag_stopped() {
-                            save_settings();
-                        }
+                        ui.with_layout(
+                            egui::Layout::right_to_left(egui::Align::Center),
+                            |ui| {
+                                let mut v = $snap.$field;
+                                let r = ui.add(egui::Slider::new(&mut v, $range));
+                                if r.changed() {
+                                    $snap.$field = v;
+                                    update_settings(|s| s.$field = v);
+                                }
+                                if r.lost_focus() || r.drag_stopped() {
+                                    save_settings();
+                                }
+                            },
+                        );
                     });
                 };
             }
@@ -568,13 +594,18 @@ pub fn render_settings_window(ctx: &egui::Context) {
                 ($ui:expr, $name:expr, $field:ident, $snap:expr) => {
                     $ui.horizontal(|ui| {
                         ui.label($name);
-                        let mut v = $snap.$field;
-                        let r = settings_toggle(ui, &mut v);
-                        if r.changed() {
-                            $snap.$field = v;
-                            update_settings(|s| s.$field = v);
-                            save_settings();
-                        }
+                        ui.with_layout(
+                            egui::Layout::right_to_left(egui::Align::Center),
+                            |ui| {
+                                let mut v = $snap.$field;
+                                let r = settings_toggle(ui, &mut v);
+                                if r.changed() {
+                                    $snap.$field = v;
+                                    update_settings(|s| s.$field = v);
+                                    save_settings();
+                                }
+                            },
+                        );
                     });
                 };
             }
@@ -670,6 +701,7 @@ pub fn render_settings_window(ctx: &egui::Context) {
                     save_settings();
                 }
             });
+                });
         });
 }
 

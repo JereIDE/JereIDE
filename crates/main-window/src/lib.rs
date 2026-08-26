@@ -902,7 +902,7 @@ impl eframe::App for JereIDEApp {
         jereide_ui::dialog::render_about_dialog(&ctx, &mut self.state.show_about_dialog);
 
         if self.settings_window_open {
-            jereide_settings::render_settings_window(&ctx);
+            jereide_settings::render_settings_window(&ctx, &mut self.settings_window_open);
         }
     }
 }
