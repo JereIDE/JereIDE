@@ -47,7 +47,7 @@ impl Serialize for HexColor {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 struct Settings {
     surface_bg: HexColor,
     elevated_bg: HexColor,
@@ -471,6 +471,35 @@ pub fn log_max_file_size() -> usize {
     SETTINGS.read().unwrap().log_max_file_size
 }
 
+/// Inline iOS-style toggle (the canonical widget lives in `jereide-widgets`,
+/// which depends on this crate, so we can't depend back on it here).
+fn settings_toggle(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
+    let desired_size = ui.spacing().interact_size.y * egui::vec2(2.0, 1.0);
+    let (rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
+    if response.clicked() {
+        *on = !*on;
+        response.mark_changed();
+    }
+    if ui.is_rect_visible(rect) {
+        let how_on = ui.ctx().animate_bool_responsive(response.id, *on);
+        let visuals = ui.style().interact_selectable(&response, *on);
+        let rect = rect.expand(visuals.expansion);
+        let radius = 0.5 * rect.height();
+        ui.painter().rect(
+            rect,
+            radius,
+            visuals.bg_fill,
+            visuals.bg_stroke,
+            egui::StrokeKind::Inside,
+        );
+        let circle_x = egui::lerp((rect.left() + radius)..=(rect.right() - radius), how_on);
+        let center = egui::pos2(circle_x, rect.center().y);
+        ui.painter()
+            .circle(center, 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
+    }
+    response
+}
+
 pub fn render_settings_window(ctx: &egui::Context) {
     let screen = ctx
         .input(|i| i.raw.screen_rect)
@@ -484,132 +513,149 @@ pub fn render_settings_window(ctx: &egui::Context) {
             ui.painter()
                 .rect_filled(rect, 0.0, egui::Color32::from_black_alpha(110));
         });
+    let max_h = (screen.height() * 0.85).max(360.0);
     egui::Window::new("Settings")
         .title_bar(false)
         .resizable(false)
         .collapsible(false)
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+        .max_height(max_h)
         .show(ctx, |ui| {
-            ui.set_min_size(egui::vec2(480.0, 560.0));
+            ui.set_min_size(egui::vec2(480.0, 360.0));
             ui.heading("JereIDE Settings");
             ui.separator();
 
+            let mut snap = SETTINGS.read().unwrap().clone();
+
             macro_rules! color_row {
-                ($ui:expr, $name:expr, $field:ident) => {
+                ($ui:expr, $name:expr, $field:ident, $snap:expr) => {
                     $ui.horizontal(|ui| {
                         ui.label($name);
-                        let mut c = SETTINGS.read().unwrap().$field.0;
-                        if egui::color_picker::color_edit_button_srgba(
+                        let mut c = $snap.$field.0;
+                        let r = egui::color_picker::color_edit_button_srgba(
                             ui,
                             &mut c,
                             egui::color_picker::Alpha::BlendOrAdditive,
-                        )
-                        .changed()
-                        {
+                        );
+                        if r.changed() {
+                            $snap.$field.0 = c;
                             update_settings(|s| s.$field.0 = c);
+                        }
+                        if r.lost_focus() || r.drag_stopped() {
+                            save_settings();
                         }
                     });
                 };
             }
             macro_rules! slider_row {
-                ($ui:expr, $name:expr, $field:ident, $range:expr) => {
+                ($ui:expr, $name:expr, $field:ident, $range:expr, $snap:expr) => {
                     $ui.horizontal(|ui| {
                         ui.label($name);
-                        let mut v = SETTINGS.read().unwrap().$field;
-                        if ui.add(egui::Slider::new(&mut v, $range)).changed() {
+                        let mut v = $snap.$field;
+                        let r = ui.add(egui::Slider::new(&mut v, $range));
+                        if r.changed() {
+                            $snap.$field = v;
                             update_settings(|s| s.$field = v);
+                        }
+                        if r.lost_focus() || r.drag_stopped() {
+                            save_settings();
                         }
                     });
                 };
             }
-            macro_rules! check_row {
-                ($ui:expr, $name:expr, $field:ident) => {
+            macro_rules! toggle_row {
+                ($ui:expr, $name:expr, $field:ident, $snap:expr) => {
                     $ui.horizontal(|ui| {
                         ui.label($name);
-                        let mut v = SETTINGS.read().unwrap().$field;
-                        if ui.checkbox(&mut v, "").changed() {
+                        let mut v = $snap.$field;
+                        let r = settings_toggle(ui, &mut v);
+                        if r.changed() {
+                            $snap.$field = v;
                             update_settings(|s| s.$field = v);
+                            save_settings();
                         }
                     });
                 };
             }
 
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                ui.label(egui::RichText::new("Backgrounds").strong());
-                color_row!(ui, "Surface Background", surface_bg);
-                color_row!(ui, "Elevated Background", elevated_bg);
-                color_row!(ui, "Hover Background", hover_bg);
-                color_row!(ui, "Compose Background", compose_bg);
+            egui::ScrollArea::vertical()
+                .max_height(max_h - 150.0)
+                .show(ui, |ui| {
+                    ui.label(egui::RichText::new("Backgrounds").strong());
+                    color_row!(ui, "Surface Background", surface_bg, snap);
+                    color_row!(ui, "Elevated Background", elevated_bg, snap);
+                    color_row!(ui, "Hover Background", hover_bg, snap);
+                    color_row!(ui, "Compose Background", compose_bg, snap);
 
-                ui.separator();
-                ui.label(egui::RichText::new("Text").strong());
-                color_row!(ui, "Text Default", text_default);
-                color_row!(ui, "Text Primary", text_primary);
-                color_row!(ui, "Text Secondary", text_secondary);
-                color_row!(ui, "Text Muted", text_muted);
-                color_row!(ui, "Current Line Highlight", current_line_highlighting);
-                color_row!(ui, "Compose Text", compose_text);
+                    ui.separator();
+                    ui.label(egui::RichText::new("Text").strong());
+                    color_row!(ui, "Text Default", text_default, snap);
+                    color_row!(ui, "Text Primary", text_primary, snap);
+                    color_row!(ui, "Text Secondary", text_secondary, snap);
+                    color_row!(ui, "Text Muted", text_muted, snap);
+                    color_row!(ui, "Current Line Highlight", current_line_highlighting, snap);
+                    color_row!(ui, "Compose Text", compose_text, snap);
 
-                ui.separator();
-                ui.label(egui::RichText::new("UI").strong());
-                color_row!(ui, "Border", border);
-                color_row!(ui, "Accent", accent);
-                color_row!(ui, "Destructive", destructive);
-                color_row!(ui, "Bracket Match", bracket_match);
-                color_row!(ui, "Find Highlight", find_highlight);
-                color_row!(ui, "Find Highlight Current", find_highlight_current);
+                    ui.separator();
+                    ui.label(egui::RichText::new("UI").strong());
+                    color_row!(ui, "Border", border, snap);
+                    color_row!(ui, "Accent", accent, snap);
+                    color_row!(ui, "Destructive", destructive, snap);
+                    color_row!(ui, "Bracket Match", bracket_match, snap);
+                    color_row!(ui, "Find Highlight", find_highlight, snap);
+                    color_row!(ui, "Find Highlight Current", find_highlight_current, snap);
 
-                ui.separator();
-                ui.label(egui::RichText::new("Syntax").strong());
-                color_row!(ui, "Syntax Keyword", syntax_keyword);
-                color_row!(ui, "Syntax Keyword 2", syntax_keyword2);
-                color_row!(ui, "Syntax String", syntax_string);
-                color_row!(ui, "Syntax Comment", syntax_comment);
-                color_row!(ui, "Syntax Number", syntax_number);
-                color_row!(ui, "Syntax Operator", syntax_operator);
-                color_row!(ui, "Syntax Function", syntax_function);
-                color_row!(ui, "Syntax Literal", syntax_literal);
-                color_row!(ui, "Syntax Heading", syntax_heading);
-                color_row!(ui, "Syntax Code", syntax_code);
-                color_row!(ui, "Syntax Emphasis", syntax_emphasis);
-                color_row!(ui, "Syntax Link", syntax_link);
+                    ui.separator();
+                    ui.label(egui::RichText::new("Syntax").strong());
+                    color_row!(ui, "Syntax Keyword", syntax_keyword, snap);
+                    color_row!(ui, "Syntax Keyword 2", syntax_keyword2, snap);
+                    color_row!(ui, "Syntax String", syntax_string, snap);
+                    color_row!(ui, "Syntax Comment", syntax_comment, snap);
+                    color_row!(ui, "Syntax Number", syntax_number, snap);
+                    color_row!(ui, "Syntax Operator", syntax_operator, snap);
+                    color_row!(ui, "Syntax Function", syntax_function, snap);
+                    color_row!(ui, "Syntax Literal", syntax_literal, snap);
+                    color_row!(ui, "Syntax Heading", syntax_heading, snap);
+                    color_row!(ui, "Syntax Code", syntax_code, snap);
+                    color_row!(ui, "Syntax Emphasis", syntax_emphasis, snap);
+                    color_row!(ui, "Syntax Link", syntax_link, snap);
 
-                ui.separator();
-                ui.label(egui::RichText::new("Font Sizes").strong());
-                slider_row!(ui, "Title Bar Font Size", title_bar_font_size, 8.0..=32.0);
-                slider_row!(ui, "Tab Font Size", tab_font_size, 8.0..=32.0);
-                slider_row!(ui, "Editor Font Size", editor_font_size, 8.0..=40.0);
-                slider_row!(
-                    ui,
-                    "Compose Font Size",
-                    compose_view_font_size,
-                    8.0..=48.0
-                );
+                    ui.separator();
+                    ui.label(egui::RichText::new("Font Sizes").strong());
+                    slider_row!(ui, "Title Bar Font Size", title_bar_font_size, 8.0..=32.0, snap);
+                    slider_row!(ui, "Tab Font Size", tab_font_size, 8.0..=32.0, snap);
+                    slider_row!(ui, "Editor Font Size", editor_font_size, 8.0..=40.0, snap);
+                    slider_row!(
+                        ui,
+                        "Compose Font Size",
+                        compose_view_font_size,
+                        8.0..=48.0,
+                        snap
+                    );
 
-                ui.separator();
-                ui.label(egui::RichText::new("Window").strong());
-                slider_row!(ui, "Window Width", window_width, 400.0..=2400.0);
-                slider_row!(ui, "Window Height", window_height, 400.0..=2400.0);
-                slider_row!(ui, "Dialog Width", dialog_width, 200.0..=600.0);
+                    ui.separator();
+                    ui.label(egui::RichText::new("Window").strong());
+                    slider_row!(ui, "Window Width", window_width, 400.0..=2400.0, snap);
+                    slider_row!(ui, "Window Height", window_height, 400.0..=2400.0, snap);
+                    slider_row!(ui, "Dialog Width", dialog_width, 200.0..=600.0, snap);
 
-                ui.separator();
-                ui.label(egui::RichText::new("Misc").strong());
-                check_row!(ui, "Bold Folders", bold_folders);
-                slider_row!(
-                    ui,
-                    "Log Max File Size",
-                    log_max_file_size,
-                    1024..=20 * 1024 * 1024
-                );
-            });
+                    ui.separator();
+                    ui.label(egui::RichText::new("Misc").strong());
+                    toggle_row!(ui, "Bold Folders", bold_folders, snap);
+                    slider_row!(
+                        ui,
+                        "Log Max File Size",
+                        log_max_file_size,
+                        1024..=20 * 1024 * 1024,
+                        snap
+                    );
+                });
 
             ui.separator();
             ui.horizontal(|ui| {
                 if ui.button("Reset to Defaults").clicked() {
                     update_settings(|s| *s = Settings::default());
-                }
-                if ui.button("Save").clicked() {
                     save_settings();
                 }
             });
