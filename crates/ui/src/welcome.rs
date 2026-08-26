@@ -26,7 +26,7 @@ pub fn render_welcome_view(ui: &mut egui::Ui) {
 
     let font = egui::FontId::proportional(compose_view_font_size());
     let version = format!("v{}", env!("CARGO_PKG_VERSION"));
-    let main = "Welcome back to JereIDE ";
+    let main = "Welcome to JereIDE ";
     let full_text = format!("{}{}", main, version);
     let mut job = egui::text::LayoutJob::default();
     job.text = full_text;
@@ -43,7 +43,7 @@ pub fn render_welcome_view(ui: &mut egui::Ui) {
     });
     let galley = ui.fonts_mut(|f| f.layout_job(job));
 
-    let sub_text = "The ready-to-use editor that nobody ever uses";
+    let sub_text = "The ready-to-use editor nobody uses";
     let sub_galley = ui.fonts_mut(|f| {
         f.layout_job(egui::text::LayoutJob::simple(
             sub_text.to_owned(),
@@ -84,11 +84,8 @@ pub fn render_welcome_view(ui: &mut egui::Ui) {
         app_icon(),
     );
 
-    ui.painter().galley(
-        egui::pos2(text_x + dx, text_y + dy),
-        galley,
-        text_primary(),
-    );
+    ui.painter()
+        .galley(egui::pos2(text_x + dx, text_y + dy), galley, text_primary());
 
     ui.painter().text(
         egui::pos2(sub_x + dx, sub_cy + dy),
