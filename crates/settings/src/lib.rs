@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 use std::sync::LazyLock;
+use std::sync::RwLock;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
+use eframe::egui;
 use eframe::egui::Color32;
 use serde::{Serialize, Serializer};
 
@@ -44,7 +47,7 @@ impl Serialize for HexColor {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 struct Settings {
     surface_bg: HexColor,
     elevated_bg: HexColor,
@@ -151,7 +154,8 @@ impl Default for Settings {
     }
 }
 
-static SETTINGS: LazyLock<Settings> = LazyLock::new(load);
+static SETTINGS: LazyLock<RwLock<Settings>> = LazyLock::new(|| RwLock::new(load()));
+static SETTINGS_VERSION: AtomicUsize = AtomicUsize::new(0);
 
 fn config_base_dir() -> PathBuf {
     #[cfg(target_os = "windows")]
@@ -316,127 +320,393 @@ pub fn settings_file_path() -> PathBuf {
     path
 }
 
+/// Lock the live settings for mutation. Bumps the version so the app can
+/// re-apply visuals that were derived once at startup.
+pub(crate) fn update_settings(f: impl FnOnce(&mut Settings)) {
+    if let Ok(mut guard) = SETTINGS.write() {
+        f(&mut guard);
+        SETTINGS_VERSION.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+/// Persist the current live settings to `settings.toml` as plain (uncommented)
+/// TOML. These values are re-read by `apply_overrides` on the next launch.
+pub fn save_settings() {
+    if let Ok(guard) = SETTINGS.read() {
+        if let Some(parent) = settings_path().parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        if let Ok(rendered) = toml::to_string(&*guard) {
+            let _ = std::fs::write(settings_path(), rendered);
+        }
+    }
+}
+
+/// Monotonic counter incremented on every `update_settings`. Lets the app
+/// detect when it must re-apply startup-only visuals (selection color, shadow).
+pub fn settings_version() -> usize {
+    SETTINGS_VERSION.load(Ordering::SeqCst)
+}
+
 pub fn surface_bg() -> Color32 {
-    SETTINGS.surface_bg.0
+    SETTINGS.read().unwrap().surface_bg.0
 }
 pub fn elevated_bg() -> Color32 {
-    SETTINGS.elevated_bg.0
+    SETTINGS.read().unwrap().elevated_bg.0
 }
 pub fn hover_bg() -> Color32 {
-    SETTINGS.hover_bg.0
+    SETTINGS.read().unwrap().hover_bg.0
 }
 pub fn compose_bg() -> Color32 {
-    SETTINGS.compose_bg.0
+    SETTINGS.read().unwrap().compose_bg.0
 }
 
 pub fn text_default() -> Color32 {
-    SETTINGS.text_default.0
+    SETTINGS.read().unwrap().text_default.0
 }
 pub fn text_primary() -> Color32 {
-    SETTINGS.text_primary.0
+    SETTINGS.read().unwrap().text_primary.0
 }
 pub fn text_secondary() -> Color32 {
-    SETTINGS.text_secondary.0
+    SETTINGS.read().unwrap().text_secondary.0
 }
 pub fn text_muted() -> Color32 {
-    SETTINGS.text_muted.0
+    SETTINGS.read().unwrap().text_muted.0
 }
 pub fn current_line_highlighting() -> Color32 {
-    SETTINGS.current_line_highlighting.0
+    SETTINGS.read().unwrap().current_line_highlighting.0
 }
 pub fn compose_text() -> Color32 {
-    SETTINGS.compose_text.0
+    SETTINGS.read().unwrap().compose_text.0
 }
 
 pub fn border() -> Color32 {
-    SETTINGS.border.0
+    SETTINGS.read().unwrap().border.0
 }
 
 pub fn syntax_keyword() -> Color32 {
-    SETTINGS.syntax_keyword.0
+    SETTINGS.read().unwrap().syntax_keyword.0
 }
 pub fn syntax_keyword2() -> Color32 {
-    SETTINGS.syntax_keyword2.0
+    SETTINGS.read().unwrap().syntax_keyword2.0
 }
 pub fn syntax_string() -> Color32 {
-    SETTINGS.syntax_string.0
+    SETTINGS.read().unwrap().syntax_string.0
 }
 pub fn syntax_comment() -> Color32 {
-    SETTINGS.syntax_comment.0
+    SETTINGS.read().unwrap().syntax_comment.0
 }
 pub fn syntax_number() -> Color32 {
-    SETTINGS.syntax_number.0
+    SETTINGS.read().unwrap().syntax_number.0
 }
 pub fn syntax_operator() -> Color32 {
-    SETTINGS.syntax_operator.0
+    SETTINGS.read().unwrap().syntax_operator.0
 }
 pub fn syntax_function() -> Color32 {
-    SETTINGS.syntax_function.0
+    SETTINGS.read().unwrap().syntax_function.0
 }
 pub fn syntax_literal() -> Color32 {
-    SETTINGS.syntax_literal.0
+    SETTINGS.read().unwrap().syntax_literal.0
 }
 pub fn syntax_heading() -> Color32 {
-    SETTINGS.syntax_heading.0
+    SETTINGS.read().unwrap().syntax_heading.0
 }
 pub fn syntax_code() -> Color32 {
-    SETTINGS.syntax_code.0
+    SETTINGS.read().unwrap().syntax_code.0
 }
 pub fn syntax_emphasis() -> Color32 {
-    SETTINGS.syntax_emphasis.0
+    SETTINGS.read().unwrap().syntax_emphasis.0
 }
 pub fn syntax_link() -> Color32 {
-    SETTINGS.syntax_link.0
+    SETTINGS.read().unwrap().syntax_link.0
 }
 
 pub fn accent() -> Color32 {
-    SETTINGS.accent.0
+    SETTINGS.read().unwrap().accent.0
 }
 pub fn destructive() -> Color32 {
-    SETTINGS.destructive.0
+    SETTINGS.read().unwrap().destructive.0
 }
 
 pub fn bracket_match() -> Color32 {
-    SETTINGS.bracket_match.0
+    SETTINGS.read().unwrap().bracket_match.0
 }
 
 pub fn find_highlight() -> Color32 {
-    SETTINGS.find_highlight.0
+    SETTINGS.read().unwrap().find_highlight.0
 }
 pub fn find_highlight_current() -> Color32 {
-    SETTINGS.find_highlight_current.0
+    SETTINGS.read().unwrap().find_highlight_current.0
 }
 
 pub fn bold_folders() -> bool {
-    SETTINGS.bold_folders
+    SETTINGS.read().unwrap().bold_folders
 }
 
 pub fn title_bar_font_size() -> f32 {
-    SETTINGS.title_bar_font_size
+    SETTINGS.read().unwrap().title_bar_font_size
 }
 pub fn tab_font_size() -> f32 {
-    SETTINGS.tab_font_size
+    SETTINGS.read().unwrap().tab_font_size
 }
 pub fn editor_font_size() -> f32 {
-    SETTINGS.editor_font_size
+    SETTINGS.read().unwrap().editor_font_size
 }
 pub fn compose_view_font_size() -> f32 {
-    SETTINGS.compose_view_font_size
+    SETTINGS.read().unwrap().compose_view_font_size
 }
 
 pub fn window_width() -> f32 {
-    SETTINGS.window_width
+    SETTINGS.read().unwrap().window_width
 }
 pub fn window_height() -> f32 {
-    SETTINGS.window_height
+    SETTINGS.read().unwrap().window_height
 }
 
 pub fn dialog_width() -> f32 {
-    SETTINGS.dialog_width
+    SETTINGS.read().unwrap().dialog_width
 }
 
 pub fn log_max_file_size() -> usize {
-    SETTINGS.log_max_file_size
+    SETTINGS.read().unwrap().log_max_file_size
+}
+
+/// Inline iOS-style toggle (the canonical widget lives in `jereide-widgets`,
+/// which depends on this crate, so we can't depend back on it here).
+fn settings_toggle(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
+    let desired_size = ui.spacing().interact_size.y * egui::vec2(2.0, 1.0);
+    let (rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
+    if response.clicked() {
+        *on = !*on;
+        response.mark_changed();
+    }
+    if ui.is_rect_visible(rect) {
+        let how_on = ui.ctx().animate_bool_responsive(response.id, *on);
+        let visuals = ui.style().interact_selectable(&response, *on);
+        let rect = rect.expand(visuals.expansion);
+        let radius = 0.5 * rect.height();
+        ui.painter().rect(
+            rect,
+            radius,
+            visuals.bg_fill,
+            visuals.bg_stroke,
+            egui::StrokeKind::Inside,
+        );
+        let circle_x = egui::lerp((rect.left() + radius)..=(rect.right() - radius), how_on);
+        let center = egui::pos2(circle_x, rect.center().y);
+        ui.painter()
+            .circle(center, 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
+    }
+    response
+}
+
+pub fn render_settings_window(ctx: &egui::Context, open: &mut bool) {
+    let screen = ctx
+        .input(|i| i.raw.screen_rect)
+        .unwrap_or_else(|| ctx.viewport_rect());
+
+    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+        *open = false;
+        return;
+    }
+
+    let backdrop_clicked = egui::Area::new(egui::Id::new("settings_modal_blocker"))
+        .order(egui::Order::Middle)
+        .fixed_pos(screen.min)
+        .show(ctx, |ui| {
+            let rect = egui::Rect::from_min_size(egui::Pos2::ZERO, screen.size());
+            let r = ui.allocate_rect(rect, egui::Sense::CLICK);
+            ui.painter()
+                .rect_filled(rect, 0.0, egui::Color32::from_black_alpha(110));
+            r.clicked()
+        })
+        .inner;
+    if backdrop_clicked {
+        *open = false;
+        return;
+    }
+
+    let max_h = (screen.height() * 0.85).max(360.0);
+    egui::Window::new("Settings")
+        .title_bar(false)
+        .resizable(false)
+        .collapsible(false)
+        .order(egui::Order::Foreground)
+        .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+        .max_height(max_h)
+        .min_width(480.0)
+        .max_width(480.0)
+        .show(ctx, |ui| {
+            ui.set_min_size(egui::vec2(480.0, 360.0));
+            egui::Frame::new()
+                .inner_margin(egui::Margin::symmetric(7, 0))
+                .show(ui, |ui| {
+                    ui.heading("JereIDE Settings");
+                    ui.separator();
+                });
+
+            let mut snap = SETTINGS.read().unwrap().clone();
+
+            macro_rules! color_row {
+                ($ui:expr, $name:expr, $field:ident, $snap:expr) => {
+                    $ui.horizontal(|ui| {
+                        ui.label($name);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            let mut c = $snap.$field.0;
+                            let r = egui::color_picker::color_edit_button_srgba(
+                                ui,
+                                &mut c,
+                                egui::color_picker::Alpha::BlendOrAdditive,
+                            );
+                            if r.changed() {
+                                $snap.$field.0 = c;
+                                update_settings(|s| s.$field.0 = c);
+                            }
+                            if r.lost_focus() || r.drag_stopped() {
+                                save_settings();
+                            }
+                        });
+                    });
+                };
+            }
+            macro_rules! slider_row {
+                ($ui:expr, $name:expr, $field:ident, $range:expr, $snap:expr) => {
+                    $ui.horizontal(|ui| {
+                        ui.label($name);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            let mut v = $snap.$field;
+                            let r = ui.add(egui::Slider::new(&mut v, $range));
+                            if r.changed() {
+                                $snap.$field = v;
+                                update_settings(|s| s.$field = v);
+                            }
+                            if r.lost_focus() || r.drag_stopped() {
+                                save_settings();
+                            }
+                        });
+                    });
+                };
+            }
+            macro_rules! toggle_row {
+                ($ui:expr, $name:expr, $field:ident, $snap:expr) => {
+                    $ui.horizontal(|ui| {
+                        ui.label($name);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            let mut v = $snap.$field;
+                            let r = settings_toggle(ui, &mut v);
+                            if r.changed() {
+                                $snap.$field = v;
+                                update_settings(|s| s.$field = v);
+                                save_settings();
+                            }
+                        });
+                    });
+                };
+            }
+
+            egui::ScrollArea::vertical()
+                .max_height(max_h - 150.0)
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        let bar = ui.style().spacing.scroll.bar_width;
+                        ui.add_space(7.0);
+                        ui.vertical(|ui| {
+                            ui.label(egui::RichText::new("Backgrounds").strong());
+                            color_row!(ui, "Surface Background", surface_bg, snap);
+                            color_row!(ui, "Elevated Background", elevated_bg, snap);
+                            color_row!(ui, "Hover Background", hover_bg, snap);
+                            color_row!(ui, "Compose Background", compose_bg, snap);
+
+                            ui.separator();
+                            ui.label(egui::RichText::new("Text").strong());
+                            color_row!(ui, "Text Default", text_default, snap);
+                            color_row!(ui, "Text Primary", text_primary, snap);
+                            color_row!(ui, "Text Secondary", text_secondary, snap);
+                            color_row!(ui, "Text Muted", text_muted, snap);
+                            color_row!(
+                                ui,
+                                "Current Line Highlight",
+                                current_line_highlighting,
+                                snap
+                            );
+                            color_row!(ui, "Compose Text", compose_text, snap);
+
+                            ui.separator();
+                            ui.label(egui::RichText::new("UI").strong());
+                            color_row!(ui, "Border", border, snap);
+                            color_row!(ui, "Accent", accent, snap);
+                            color_row!(ui, "Destructive", destructive, snap);
+                            color_row!(ui, "Bracket Match", bracket_match, snap);
+                            color_row!(ui, "Find Highlight", find_highlight, snap);
+                            color_row!(ui, "Find Highlight Current", find_highlight_current, snap);
+
+                            ui.separator();
+                            ui.label(egui::RichText::new("Syntax").strong());
+                            color_row!(ui, "Syntax Keyword", syntax_keyword, snap);
+                            color_row!(ui, "Syntax Keyword 2", syntax_keyword2, snap);
+                            color_row!(ui, "Syntax String", syntax_string, snap);
+                            color_row!(ui, "Syntax Comment", syntax_comment, snap);
+                            color_row!(ui, "Syntax Number", syntax_number, snap);
+                            color_row!(ui, "Syntax Operator", syntax_operator, snap);
+                            color_row!(ui, "Syntax Function", syntax_function, snap);
+                            color_row!(ui, "Syntax Literal", syntax_literal, snap);
+                            color_row!(ui, "Syntax Heading", syntax_heading, snap);
+                            color_row!(ui, "Syntax Code", syntax_code, snap);
+                            color_row!(ui, "Syntax Emphasis", syntax_emphasis, snap);
+                            color_row!(ui, "Syntax Link", syntax_link, snap);
+
+                            ui.separator();
+                            ui.label(egui::RichText::new("Font Sizes").strong());
+                            slider_row!(
+                                ui,
+                                "Title Bar Font Size",
+                                title_bar_font_size,
+                                8.0..=32.0,
+                                snap
+                            );
+                            slider_row!(ui, "Tab Font Size", tab_font_size, 8.0..=32.0, snap);
+                            slider_row!(ui, "Editor Font Size", editor_font_size, 8.0..=40.0, snap);
+                            slider_row!(
+                                ui,
+                                "Compose Font Size",
+                                compose_view_font_size,
+                                8.0..=48.0,
+                                snap
+                            );
+
+                            ui.separator();
+                            ui.label(egui::RichText::new("Window").strong());
+                            slider_row!(ui, "Window Width", window_width, 400.0..=2400.0, snap);
+                            slider_row!(ui, "Window Height", window_height, 400.0..=2400.0, snap);
+                            slider_row!(ui, "Dialog Width", dialog_width, 200.0..=600.0, snap);
+
+                            ui.separator();
+                            ui.label(egui::RichText::new("Misc").strong());
+                            toggle_row!(ui, "Bold Folders", bold_folders, snap);
+                            slider_row!(
+                                ui,
+                                "Log Max File Size",
+                                log_max_file_size,
+                                1024..=20 * 1024 * 1024,
+                                snap
+                            );
+                        });
+                        ui.add_space(7.0 + bar);
+                    });
+                });
+
+            egui::Frame::new()
+                .inner_margin(egui::Margin::symmetric(7, 0))
+                .show(ui, |ui| {
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        if ui.button("Reset to Defaults").clicked() {
+                            update_settings(|s| *s = Settings::default());
+                            save_settings();
+                        }
+                    });
+                });
+        });
 }
 
 #[cfg(test)]
