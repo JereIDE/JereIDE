@@ -897,27 +897,7 @@ impl eframe::App for JereIDEApp {
         jereide_ui::dialog::render_about_dialog(&ctx, &mut self.state.show_about_dialog);
 
         if self.settings_window_open {
-            let screen = ctx
-                .input(|i| i.raw.screen_rect)
-                .unwrap_or_else(|| ui.max_rect());
-            egui::Area::new(egui::Id::new("settings_modal_blocker"))
-                .order(egui::Order::Middle)
-                .fixed_pos(screen.min)
-                .show(&ctx, |ui| {
-                    let rect =
-                        egui::Rect::from_min_size(egui::Pos2::ZERO, screen.size());
-                    ui.allocate_rect(rect, egui::Sense::CLICK);
-                    ui.painter().rect_filled(rect, 0.0, egui::Color32::from_black_alpha(110));
-                });
-            egui::Window::new("Settings")
-                .title_bar(false)
-                .resizable(false)
-                .collapsible(false)
-                .order(egui::Order::Foreground)
-                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
-                .show(&ctx, |ui| {
-                    ui.set_min_size(egui::vec2(440.0, 340.0));
-                });
+            jereide_settings::render_settings_window(&ctx);
         }
     }
 }

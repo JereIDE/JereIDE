@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::sync::LazyLock;
 
+use eframe::egui;
 use eframe::egui::Color32;
 use serde::{Serialize, Serializer};
 
@@ -437,6 +438,30 @@ pub fn dialog_width() -> f32 {
 
 pub fn log_max_file_size() -> usize {
     SETTINGS.log_max_file_size
+}
+
+pub fn render_settings_window(ctx: &egui::Context) {
+    let screen = ctx
+        .input(|i| i.raw.screen_rect)
+        .unwrap_or_else(|| ctx.viewport_rect());
+    egui::Area::new(egui::Id::new("settings_modal_blocker"))
+        .order(egui::Order::Middle)
+        .fixed_pos(screen.min)
+        .show(ctx, |ui| {
+            let rect = egui::Rect::from_min_size(egui::Pos2::ZERO, screen.size());
+            ui.allocate_rect(rect, egui::Sense::CLICK);
+            ui.painter()
+                .rect_filled(rect, 0.0, egui::Color32::from_black_alpha(110));
+        });
+    egui::Window::new("Settings")
+        .title_bar(false)
+        .resizable(false)
+        .collapsible(false)
+        .order(egui::Order::Foreground)
+        .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+        .show(ctx, |ui| {
+            ui.set_min_size(egui::vec2(440.0, 340.0));
+        });
 }
 
 #[cfg(test)]
