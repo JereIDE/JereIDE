@@ -9,8 +9,8 @@ use jereide_core::constants::{
     GUTTER_PADDING_LEFT, GUTTER_PADDING_RIGHT, SCROLL_BAR_WIDTH,
 };
 use jereide_settings::{
-    bracket_match, editor_font_size, find_highlight, find_highlight_current, surface_bg,
-    text_current_line, text_muted,
+    bracket_match, current_line_highlighting, editor_font_size, find_highlight,
+    find_highlight_current, surface_bg, text_muted,
 };
 use jereide_text::{char_index_to_line_col, char_range_substring, find_matches};
 
@@ -138,7 +138,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                 padding_right: GUTTER_PADDING_RIGHT,
                 digit_width: GUTTER_DIGIT_WIDTH,
                 line_number_right_offset: GUTTER_LINE_NUMBER_RIGHT_OFFSET,
-                current_line_color: text_current_line(),
+                current_line_color: current_line_highlighting(),
                 muted_color: text_muted(),
                 background_color: surface_bg(),
                 font_id: font_id.clone(),

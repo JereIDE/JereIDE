@@ -55,7 +55,7 @@ struct Settings {
     text_primary: HexColor,
     text_secondary: HexColor,
     text_muted: HexColor,
-    text_current_line: HexColor,
+    current_line_highlighting: HexColor,
     compose_text: HexColor,
 
     border: HexColor,
@@ -108,7 +108,7 @@ impl Default for Settings {
             text_primary: HexColor(Color32::from_rgb(30, 30, 30)),
             text_secondary: HexColor(Color32::from_rgb(90, 90, 90)),
             text_muted: HexColor(Color32::from_rgb(175, 175, 175)),
-            text_current_line: HexColor(Color32::from_rgb(48, 48, 48)),
+            current_line_highlighting: HexColor(Color32::from_rgb(48, 48, 48)),
             compose_text: HexColor(Color32::from_gray(20)),
 
             border: HexColor(Color32::from_rgb(200, 200, 200)),
@@ -270,7 +270,7 @@ fn apply_override(settings: &mut Settings, key: &str, value: &str) {
         text_primary,
         text_secondary,
         text_muted,
-        text_current_line,
+        current_line_highlighting,
         compose_text,
         border,
         syntax_keyword,
@@ -341,8 +341,8 @@ pub fn text_secondary() -> Color32 {
 pub fn text_muted() -> Color32 {
     SETTINGS.text_muted.0
 }
-pub fn text_current_line() -> Color32 {
-    SETTINGS.text_current_line.0
+pub fn current_line_highlighting() -> Color32 {
+    SETTINGS.current_line_highlighting.0
 }
 pub fn compose_text() -> Color32 {
     SETTINGS.compose_text.0
@@ -476,7 +476,7 @@ mod tests {
         );
         assert_eq!(s.editor_font_size, 18.0);
         assert_eq!(s.text_muted.0, hex(0xAABBCC));
-        assert_eq!(s.text_current_line.0, hex(0x303030));
+        assert_eq!(s.current_line_highlighting.0, hex(0x303030));
     }
 
     #[test]
