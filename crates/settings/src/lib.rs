@@ -594,7 +594,12 @@ pub fn render_settings_window(ctx: &egui::Context) {
                     color_row!(ui, "Text Primary", text_primary, snap);
                     color_row!(ui, "Text Secondary", text_secondary, snap);
                     color_row!(ui, "Text Muted", text_muted, snap);
-                    color_row!(ui, "Current Line Highlight", current_line_highlighting, snap);
+                    color_row!(
+                        ui,
+                        "Current Line Highlight",
+                        current_line_highlighting,
+                        snap
+                    );
                     color_row!(ui, "Compose Text", compose_text, snap);
 
                     ui.separator();
@@ -623,7 +628,13 @@ pub fn render_settings_window(ctx: &egui::Context) {
 
                     ui.separator();
                     ui.label(egui::RichText::new("Font Sizes").strong());
-                    slider_row!(ui, "Title Bar Font Size", title_bar_font_size, 8.0..=32.0, snap);
+                    slider_row!(
+                        ui,
+                        "Title Bar Font Size",
+                        title_bar_font_size,
+                        8.0..=32.0,
+                        snap
+                    );
                     slider_row!(ui, "Tab Font Size", tab_font_size, 8.0..=32.0, snap);
                     slider_row!(ui, "Editor Font Size", editor_font_size, 8.0..=40.0, snap);
                     slider_row!(
