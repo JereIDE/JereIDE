@@ -40,6 +40,9 @@ pub fn save_to_path(content: &str, path: &PathBuf) -> Result<(), std::io::Error>
 
     let result = (|| {
         std::fs::write(&temp_path, content)?;
+        if let Ok(metadata) = std::fs::metadata(path) {
+            let _ = std::fs::set_permissions(&temp_path, metadata.permissions());
+        }
         std::fs::rename(&temp_path, path)
     })();
     if result.is_err() {
