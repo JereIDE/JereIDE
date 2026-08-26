@@ -11,6 +11,7 @@ use jereide_settings::{accent, surface_bg};
 use jereide_ui::find_replace_palette::{FindReplaceAction, FindReplacePalette};
 use jereide_ui::go_to_line_palette::GoToLinePalette;
 use jereide_ui::sidebar::clear_ls_cache;
+use jereide_widgets::toggle_switch::toggle_ui;
 use jereide_widgets::widget_palette::WidgetPalette;
 use raw_window_handle::HasWindowHandle;
 
@@ -751,7 +752,7 @@ impl eframe::App for JereIDEApp {
                 &ctx,
                 "Widget Palette",
                 &mut self.widget_palette_open,
-                |ui, filter| {
+                |palette, ui, filter| {
                     ui.heading("Widget Palette");
                     ui.add_space(4.0);
                     ui.label("A label and some buttons:");
@@ -776,6 +777,13 @@ impl eframe::App for JereIDEApp {
                     ui.checkbox(&mut b, "Option B");
                     ui.checkbox(&mut c, "Option C");
                     ui.add_space(8.0);
+                    ui.separator();
+                    ui.label("Toggle switch:");
+                    ui.horizontal(|ui| {
+                        let on = palette.toggle_state();
+                        toggle_ui(ui, on);
+                        ui.label(if *on { "On" } else { "Off" });
+                    });
                     ui.separator();
                     ui.label("A slider and a progress bar:");
                     let mut value = 0.5;

@@ -6,6 +6,7 @@ pub struct WidgetPalette {
     search_focused: bool,
     previous_focus: Option<egui::Id>,
     was_open: bool,
+    toggle_state: bool,
 }
 
 impl WidgetPalette {
@@ -15,6 +16,7 @@ impl WidgetPalette {
             search_focused: false,
             previous_focus: None,
             was_open: false,
+            toggle_state: false,
         }
     }
 
@@ -22,9 +24,13 @@ impl WidgetPalette {
         &self.filter
     }
 
+    pub fn toggle_state(&mut self) -> &mut bool {
+        &mut self.toggle_state
+    }
+
     pub fn render<F>(&mut self, ctx: &egui::Context, title: &str, open: &mut bool, mut content: F)
     where
-        F: FnMut(&mut egui::Ui, &str),
+        F: FnMut(&mut Self, &mut egui::Ui, &str),
     {
         if !*open {
             if self.was_open {
@@ -94,7 +100,7 @@ impl WidgetPalette {
                     .max_height(240.0)
                     .auto_shrink([false, true])
                     .show(ui, |ui| {
-                        content(ui, &filter);
+                        content(self, ui, &filter);
                     });
             });
     }
