@@ -120,6 +120,7 @@ pub struct JereIDEApp {
     find_palette_open: bool,
     go_to_line_palette: Option<GoToLinePalette>,
     go_to_line_open: bool,
+    settings_window_open: bool,
 }
 
 impl JereIDEApp {
@@ -136,6 +137,7 @@ impl JereIDEApp {
             find_palette_open: false,
             go_to_line_palette: None,
             go_to_line_open: false,
+            settings_window_open: false,
         }
     }
 
@@ -383,7 +385,7 @@ impl JereIDEApp {
             }
             "view: code" => self.state.switch_to_view(CurrentView::Code),
             "view: compose" => self.state.switch_to_view(CurrentView::Compose),
-            "jereide: open settings" => self.handle_settings(),
+            "jereide: open settings file" => self.handle_settings(),
             "jereide: quit" => {
                 self.begin_quit(&ctx);
             }
@@ -544,19 +546,34 @@ impl eframe::App for JereIDEApp {
             if want_toggle_sidebar {
                 self.handle_action("view: toggle sidebar", &ctx, frame);
             }
-            if want_widget_palette {
+            if want_widget_palette && !self.settings_window_open {
                 self.widget_palette_open = !self.widget_palette_open;
             }
-            if want_find_replace {
+            if want_find_replace && !self.settings_window_open {
                 self.toggle_find_palette();
             }
             if want_open_settings {
-                self.handle_settings();
+                if self.settings_window_open {
+                    self.settings_window_open = false;
+                } else {
+                    self.settings_window_open = true;
+                    ctx.memory_mut(|m| {
+                        if let Some(id) = m.focused() {
+                            m.surrender_focus(id);
+                        }
+                    });
+                    self.state.command_palette_open = false;
+                    self.palette = None;
+                    self.widget_palette_open = false;
+                    self.find_palette_open = false;
+                    self.go_to_line_open = false;
+                    self.go_to_line_palette = None;
+                }
             }
-            if want_go_to_line {
+            if want_go_to_line && !self.settings_window_open {
                 self.toggle_go_to_line();
             }
-            if want_command_palette {
+            if want_command_palette && !self.settings_window_open {
                 self.state.command_palette_open = !self.state.command_palette_open;
                 if self.state.command_palette_open {
                     self.palette = Some(Palette::new(jereide_ui::command_palette::items()));
@@ -583,9 +600,11 @@ impl eframe::App for JereIDEApp {
         for event_id in self.app_menu.poll_events() {
             match event_id.as_ref() {
                 "command palette: toggle" => {
-                    self.state.command_palette_open = !self.state.command_palette_open;
-                    if self.state.command_palette_open {
-                        self.palette = Some(Palette::new(jereide_ui::command_palette::items()));
+                    if !self.settings_window_open {
+                        self.state.command_palette_open = !self.state.command_palette_open;
+                        if self.state.command_palette_open {
+                            self.palette = Some(Palette::new(jereide_ui::command_palette::items()));
+                        }
                     }
                 }
                 other => self.handle_action(other, &ctx, frame),
@@ -876,6 +895,30 @@ impl eframe::App for JereIDEApp {
         }
 
         jereide_ui::dialog::render_about_dialog(&ctx, &mut self.state.show_about_dialog);
+
+        if self.settings_window_open {
+            let screen = ctx
+                .input(|i| i.raw.screen_rect)
+                .unwrap_or_else(|| ui.max_rect());
+            egui::Area::new(egui::Id::new("settings_modal_blocker"))
+                .order(egui::Order::Middle)
+                .fixed_pos(screen.min)
+                .show(&ctx, |ui| {
+                    let rect =
+                        egui::Rect::from_min_size(egui::Pos2::ZERO, screen.size());
+                    ui.allocate_rect(rect, egui::Sense::CLICK);
+                    ui.painter().rect_filled(rect, 0.0, egui::Color32::from_black_alpha(110));
+                });
+            egui::Window::new("Settings")
+                .title_bar(false)
+                .resizable(false)
+                .collapsible(false)
+                .order(egui::Order::Foreground)
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .show(&ctx, |ui| {
+                    ui.set_min_size(egui::vec2(440.0, 340.0));
+                });
+        }
     }
 }
 

@@ -49,7 +49,7 @@ pub fn items() -> Vec<PaletteItem> {
             code: "view: compose",
         },
         PaletteItem {
-            code: "jereide: open settings",
+            code: "jereide: open settings file",
         },
         PaletteItem {
             code: "jereide: open docs",
