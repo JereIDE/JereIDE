@@ -13,6 +13,7 @@ Syntax definitions are stored as JSON files in the app's `data` directory. The f
 - Python
 - HTML
 - Markdown
+- JSON
 
 Other languages are coming, but if you really need support for one look below.
 

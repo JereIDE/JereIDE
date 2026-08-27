@@ -1,0 +1,19 @@
+{
+  "syntax": {
+    "name": "JSON",
+    "files": ["\\.json$"],
+    "symbols": {
+      "true": "literal",
+      "false": "literal",
+      "null": "literal"
+    },
+    "patterns": [
+      { "type": "string", "pattern": "\"(\\\\.|[^\"\\\\])*\"*" },
+      { "type": "comment", "pattern": "//.*" },
+      { "type": "comment", "start": "/\\*", "end": "\\*/" },
+      { "type": "number", "pattern": "-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?" },
+      { "type": "symbol", "pattern": "[a-zA-Z_][a-zA-Z0-9_]*" },
+      { "type": "operator", "pattern": "[][{},:]" }
+    ]
+  }
+}
