@@ -28,7 +28,7 @@
       "extensions": ["json"],
       "name": "JSON",
       "indent_after": ["{", "["],
-      "file": null
+      "file": "json"
     },
     {
       "extensions": ["html"],

@@ -1,4 +1,25 @@
 use jereide_syntax::SyntaxHighlighter;
+use jereide_settings::{syntax_number, syntax_string};
+
+#[test]
+fn syntax_highlighter_json() {
+    let mut hl = SyntaxHighlighter::new(14.0, Some("json"));
+    let job = hl.highlight("{\"key\": 42, \"ok\": true}").clone();
+    assert_eq!(job.text, "{\"key\": 42, \"ok\": true}");
+
+    let mut saw_string = false;
+    let mut saw_number = false;
+    for s in &job.sections {
+        if s.format.color == syntax_string() {
+            saw_string = true;
+        }
+        if s.format.color == syntax_number() {
+            saw_number = true;
+        }
+    }
+    assert!(saw_string, "expected JSON strings to be highlighted");
+    assert!(saw_number, "expected JSON numbers to be highlighted");
+}
 
 #[test]
 fn syntax_highlighter_empty_text() {
