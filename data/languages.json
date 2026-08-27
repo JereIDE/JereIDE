@@ -25,7 +25,7 @@
       "file": null
     },
     {
-      "extensions": ["json"],
+      "extensions": ["json", "jsonc", "ndjson", "jsonl", "json5", "ipynb"],
       "name": "JSON",
       "indent_after": ["{", "["],
       "file": "json"
