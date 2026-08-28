@@ -103,13 +103,13 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui, tab_index: usiz
             })
         };
 
-    let scroll_area_id = ui.make_persistent_id(egui::IdSalt::new(("editor_scroll", tab_id)));
+    let scroll_area_id = ui.make_persistent_id(egui::IdSalt::new(("editor_scroll", pane_id, tab_id)));
     let gutter_scroll_x = egui::containers::scroll_area::State::load(ui.ctx(), scroll_area_id)
         .map(|s| s.offset.x)
         .unwrap_or(0.0);
 
     let text_edit_output = egui::ScrollArea::both()
-        .id_salt(("editor_scroll", tab_id))
+        .id_salt(("editor_scroll", pane_id, tab_id))
         .auto_shrink(false)
         .show(ui, |ui| {
             let viewport = ui.max_rect().size();
@@ -118,7 +118,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui, tab_index: usiz
             let text_output = jereide_editor::TextEdit::code_editor(
                 jereide_editor::TextEdit::multiline(&mut state.tabs[active_idx].text),
             )
-            .id(egui::Id::new(("editor", tab_id)))
+            .id(egui::Id::new(("editor", pane_id, tab_id)))
             .editable(!read_only)
             .desired_width(f32::INFINITY)
             .min_size(egui::vec2(0.0, viewport.y))
@@ -183,6 +183,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui, tab_index: usiz
                         &matches,
                         hl.current_match,
                         text_output.text_clip_rect,
+                        pane_id,
                     );
                     if let Some(target) = hl.scroll_to {
                         let gutter_w = gutter_width(galley.rows.len());
@@ -206,7 +207,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui, tab_index: usiz
                         .painter_at(text_output.text_clip_rect.expand(1.0))
                         .with_layer_id(egui::LayerId::new(
                             egui::Order::Background,
-                            egui::Id::new("bracket_highlight"),
+                            egui::Id::new(("bracket_highlight", pane_id)),
                         ));
                     let highlight_at = |char_index: usize| {
                         if char_index >= tab_text.chars().count() {
@@ -272,7 +273,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui, tab_index: usiz
                 }
             };
 
-            let tracker_id = egui::Id::new("editor_context_menu");
+            let tracker_id = egui::Id::new(("editor_context_menu", pane_id));
             let was_menu_open = ctx
                 .data(|d| d.get_temp::<bool>(tracker_id))
                 .unwrap_or(false);
@@ -390,12 +391,13 @@ fn paint_find_highlights(
     matches: &[(usize, usize)],
     current: usize,
     text_clip_rect: egui::Rect,
+    pane_id: usize,
 ) {
     let painter = ui
         .painter_at(text_clip_rect.expand(1.0))
         .with_layer_id(egui::LayerId::new(
             egui::Order::Background,
-            egui::Id::new("find_highlight"),
+            egui::Id::new(("find_highlight", pane_id)),
         ));
     for (i, &(s, e)) in matches.iter().enumerate() {
         if s >= e {
