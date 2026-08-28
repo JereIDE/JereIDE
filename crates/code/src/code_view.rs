@@ -31,7 +31,7 @@ struct FindCache {
     matches: Vec<(usize, usize)>,
 }
 
-pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
+pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui, tab_index: usize, pane_id: usize) {
     if state.tabs.is_empty() {
         return;
     }
@@ -49,7 +49,7 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         s
     };
 
-    let active_idx = state.active_tab_index;
+    let active_idx = tab_index;
     let tab_id = state.tabs[active_idx].id;
     let read_only = state.tabs[active_idx].read_only;
     let extension: Option<String> = state.tabs[active_idx]
@@ -596,8 +596,9 @@ mod tests {
         let mut state = AppState::new();
         state.new_tab();
         state.tabs[0].text = "fn main() {}".to_string();
+        let pane_id = state.get_focused_pane().id;
         egui::__run_test_ui(|ui| {
-            render_code_view(&mut state, ui);
+            render_code_view(&mut state, ui, 0, pane_id);
         });
     }
 
@@ -605,8 +606,9 @@ mod tests {
     fn render_code_view_empty_tabs_no_panic() {
         let mut state = AppState::new();
         state.tabs.clear();
+        let pane_id = state.get_focused_pane().id;
         egui::__run_test_ui(|ui| {
-            render_code_view(&mut state, ui);
+            render_code_view(&mut state, ui, 0, pane_id);
         });
     }
 

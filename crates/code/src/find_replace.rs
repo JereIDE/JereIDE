@@ -28,7 +28,7 @@ pub fn replace_range(
     if state.tabs.is_empty() || state.current_tab().read_only {
         return false;
     }
-    let idx = state.active_tab_index;
+    let idx = state.focused_tab_index();
     let old_text = state.tabs[idx].text.clone();
     let char_count = old_text.chars().count();
     if start >= end || start > char_count || end > char_count {
@@ -54,7 +54,7 @@ pub fn replace_all(
     if state.tabs.is_empty() || state.current_tab().read_only || find.is_empty() {
         return 0;
     }
-    let idx = state.active_tab_index;
+    let idx = state.focused_tab_index();
     let old_text = state.tabs[idx].text.clone();
     let matches = find_matches(&old_text, find, match_case, whole_word);
     if matches.is_empty() {

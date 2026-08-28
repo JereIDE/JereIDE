@@ -55,7 +55,7 @@ fn action_cut(state: &mut AppState, ctx: &egui::Context) {
             let start: usize = range.primary.index.min(range.secondary.index).into();
             let end: usize = range.primary.index.max(range.secondary.index).into();
             if end > start {
-                let idx = state.active_tab_index;
+                let idx = state.focused_tab_index();
                 let text = char_range_substring(&state.tabs[idx].text, start, end);
                 ctx.copy_text(text);
                 let new_text = delete_char_range(&state.tabs[idx].text, start, end);
@@ -77,8 +77,7 @@ fn action_paste(_state: &mut AppState, ctx: &egui::Context) {
 
 fn action_undo(state: &mut AppState, ctx: &egui::Context) {
     if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id()) {
-        let idx = state.active_tab_index;
-        let current = (
+        let idx = state.focused_tab_index();        let current = (
             edit_state
                 .cursor
                 .char_range()
@@ -97,8 +96,7 @@ fn action_undo(state: &mut AppState, ctx: &egui::Context) {
 
 fn action_redo(state: &mut AppState, ctx: &egui::Context) {
     if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id()) {
-        let idx = state.active_tab_index;
-        let current = (
+        let idx = state.focused_tab_index();        let current = (
             edit_state
                 .cursor
                 .char_range()

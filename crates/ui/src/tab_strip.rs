@@ -139,7 +139,7 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                 let lock_rect =
                     Rect::from_min_size(origin + l.lock_rect.min.to_vec2(), l.lock_rect.size());
 
-                let is_active = idx == state.active_tab_index;
+                let is_active = idx == state.focused_tab_index();
                 let bg = if is_active {
                     surface_bg()
                 } else {
@@ -247,7 +247,7 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                 border(),
             );
 
-            if let Some(active) = layouts.get(state.active_tab_index) {
+            if let Some(active) = layouts.get(state.focused_tab_index()) {
                 let active_rect =
                     Rect::from_min_size(origin + active.rect.min.to_vec2(), active.rect.size());
                 painter.rect_filled(
@@ -276,6 +276,6 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
         }
     }
     if let Some(idx) = click_tab {
-        state.active_tab_index = idx;
+        state.get_focused_pane_mut().active_tab_index = idx;
     }
 }
