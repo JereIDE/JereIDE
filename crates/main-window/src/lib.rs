@@ -374,10 +374,11 @@ impl JereIDEApp {
             "file: close tab" => {
                 if !self.state.tabs.is_empty() {
                     let idx = self.state.focused_tab_index();
+                    let pane_id = self.state.focused_pane_id;
                     if self.state.tabs[idx].is_modified() {
                         self.state.pending_close_index = Some(idx);
                     } else {
-                        self.state.close_tab(idx);
+                        self.state.close_tab(idx, pane_id);
                     }
                 }
             }
@@ -726,11 +727,27 @@ impl eframe::App for JereIDEApp {
             match action {
                 CloseConfirmAction::Save(idx) => {
                     if self.save_tab(idx) {
-                        self.state.close_tab(idx);
+                        let pane_id = self
+                            .state
+                            .pane_layout
+                            .iter_panes()
+                            .iter()
+                            .find(|p| p.tab_indices.contains(&idx))
+                            .map(|p| p.id)
+                            .unwrap_or(self.state.focused_pane_id);
+                        self.state.close_tab(idx, pane_id);
                     }
                 }
                 CloseConfirmAction::Discard(idx) => {
-                    self.state.close_tab(idx);
+                    let pane_id = self
+                        .state
+                        .pane_layout
+                        .iter_panes()
+                        .iter()
+                        .find(|p| p.tab_indices.contains(&idx))
+                        .map(|p| p.id)
+                        .unwrap_or(self.state.focused_pane_id);
+                    self.state.close_tab(idx, pane_id);
                 }
                 CloseConfirmAction::Cancel => {
                     self.state.pending_quit = false;
@@ -974,6 +991,7 @@ fn render_pane_layout_inner(state: &mut AppState, ui: &mut egui::Ui, layout: &Pa
             }
         }
         PaneLayout::Split {
+            id: split_id,
             direction,
             first,
             second,
@@ -1024,7 +1042,7 @@ fn render_pane_layout_inner(state: &mut AppState, ui: &mut egui::Ui, layout: &Pa
 
                     let drag_resp = ui.interact(
                         divider_rect,
-                        egui::Id::new("split_divider_h"),
+                        egui::Id::new(("split_divider_h", split_id)),
                         egui::Sense::click_and_drag(),
                     );
                     if drag_resp.dragged() {
@@ -1078,7 +1096,7 @@ fn render_pane_layout_inner(state: &mut AppState, ui: &mut egui::Ui, layout: &Pa
 
                     let drag_resp = ui.interact(
                         divider_rect,
-                        egui::Id::new("split_divider_v"),
+                        egui::Id::new(("split_divider_v", split_id)),
                         egui::Sense::click_and_drag(),
                     );
                     if drag_resp.dragged() {

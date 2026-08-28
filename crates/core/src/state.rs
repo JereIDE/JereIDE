@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 static NEXT_TAB_ID: AtomicUsize = AtomicUsize::new(0);
 static NEXT_PANE_ID: AtomicUsize = AtomicUsize::new(0);
+static NEXT_SPLIT_ID: AtomicUsize = AtomicUsize::new(0);
 
 fn next_tab_id() -> usize {
     NEXT_TAB_ID.fetch_add(1, Ordering::Relaxed)
@@ -10,6 +11,10 @@ fn next_tab_id() -> usize {
 
 fn next_pane_id() -> usize {
     NEXT_PANE_ID.fetch_add(1, Ordering::Relaxed)
+}
+
+fn next_split_id() -> usize {
+    NEXT_SPLIT_ID.fetch_add(1, Ordering::Relaxed)
 }
 
 #[derive(PartialEq, Clone, Copy, Debug)]
@@ -39,12 +44,21 @@ impl Pane {
             tab_indices: vec![tab_index],
         }
     }
+
+    pub fn new_empty() -> Self {
+        Self {
+            id: next_pane_id(),
+            active_tab_index: 0,
+            tab_indices: vec![],
+        }
+    }
 }
 
 #[derive(Clone)]
 pub enum PaneLayout {
     Single(Pane),
     Split {
+        id: usize,
         direction: SplitDirection,
         first: Box<PaneLayout>,
         second: Box<PaneLayout>,
@@ -54,18 +68,15 @@ pub enum PaneLayout {
 
 impl PaneLayout {
     pub fn new() -> Self {
-        PaneLayout::Single(Pane::new(0))
+        PaneLayout::Single(Pane::new_empty())
     }
 
     pub fn split(&mut self, direction: SplitDirection) {
-        let mut current = std::mem::replace(self, PaneLayout::new());
+        let current = std::mem::replace(self, PaneLayout::new());
         let current_tab = current.get_active_pane().active_tab_index;
-        current
-            .get_active_pane_mut()
-            .tab_indices
-            .retain(|&i| i != current_tab);
         let new_pane = Pane::new(current_tab);
         *self = PaneLayout::Split {
+            id: next_split_id(),
             direction,
             first: Box::new(current),
             second: Box::new(PaneLayout::Single(new_pane)),
@@ -139,6 +150,14 @@ impl PaneLayout {
                 panes
             }
         }
+    }
+
+    pub fn empty_pane_ids(&self) -> Vec<usize> {
+        self.iter_panes()
+            .iter()
+            .filter(|p| p.tab_indices.is_empty())
+            .map(|p| p.id)
+            .collect()
     }
 
     pub fn iter_panes_mut(&mut self) -> Vec<&mut Pane> {
@@ -288,6 +307,8 @@ pub struct FindHighlight {
 /// Starts an AppState with all the default stuff
 impl AppState {
     pub fn new() -> Self {
+        let pane_layout = PaneLayout::new();
+        let focused_pane_id = pane_layout.get_active_pane().id;
         Self {
             tabs: vec![],
             current_project_dir: None,
@@ -311,8 +332,8 @@ impl AppState {
             pending_open: false,
             pending_open_project: false,
             pending_open_file: None,
-            pane_layout: PaneLayout::new(),
-            focused_pane_id: 0,
+            pane_layout,
+            focused_pane_id,
         }
     }
 
@@ -447,43 +468,79 @@ impl AppState {
         idx
     }
 
-    pub fn close_tab(&mut self, index: usize) {
+    pub fn close_tab(&mut self, index: usize, pane_id: usize) {
         let path = self.tabs[index].file_path.clone();
-        self.tabs.remove(index);
 
-        // Update all panes to handle the removed tab
-        let new_tab_count = self.tabs.len();
-        for pane in self.pane_layout.iter_panes_mut() {
+        // Remove the tab index from the closing pane's tab_indices only
+        if let Some(pane) = self.get_pane_mut(pane_id) {
             pane.tab_indices.retain(|&i| i != index);
-            pane.tab_indices.iter_mut().for_each(|i| {
-                if *i > index {
-                    *i -= 1;
+        }
+
+        // Check if any pane still references this tab
+        let still_referenced = self
+            .pane_layout
+            .iter_panes()
+            .iter()
+            .any(|p| p.tab_indices.contains(&index));
+
+        if !still_referenced {
+            self.tabs.remove(index);
+
+            // Adjust indices in all panes
+            let new_tab_count = self.tabs.len();
+            for pane in self.pane_layout.iter_panes_mut() {
+                pane.tab_indices.iter_mut().for_each(|i| {
+                    if *i > index {
+                        *i -= 1;
+                    }
+                });
+                if pane.active_tab_index == index {
+                    if new_tab_count == 0 {
+                        pane.active_tab_index = 0;
+                    } else if index >= new_tab_count {
+                        pane.active_tab_index = new_tab_count - 1;
+                    } else {
+                        pane.active_tab_index = index;
+                    }
+                } else if pane.active_tab_index > index {
+                    pane.active_tab_index -= 1;
                 }
-            });
-            if pane.active_tab_index == index {
-                // If this pane was viewing the closed tab, move to a safe position
-                if new_tab_count == 0 {
-                    pane.active_tab_index = 0;
-                } else if index >= new_tab_count {
-                    pane.active_tab_index = new_tab_count - 1;
-                } else {
-                    pane.active_tab_index = index;
+                // Ensure active_tab_index is in tab_indices
+                if !pane.tab_indices.is_empty()
+                    && !pane.tab_indices.contains(&pane.active_tab_index)
+                {
+                    pane.active_tab_index = *pane.tab_indices.last().unwrap_or(&0);
                 }
-            } else if pane.active_tab_index > index {
-                // If this pane was viewing a tab after the closed one, shift index
-                pane.active_tab_index -= 1;
             }
-            // Ensure active_tab_index is in tab_indices
-            if !pane.tab_indices.is_empty() && !pane.tab_indices.contains(&pane.active_tab_index) {
-                pane.active_tab_index = *pane.tab_indices.last().unwrap_or(&0);
+        } else {
+            // Tab is still referenced by other panes; just fix the closing pane
+            if let Some(pane) = self.get_pane_mut(pane_id) {
+                if pane.active_tab_index == index {
+                    if let Some(&last) = pane.tab_indices.last() {
+                        pane.active_tab_index = last;
+                    }
+                } else if pane.active_tab_index > index {
+                    pane.active_tab_index -= 1;
+                }
             }
         }
 
         log::info!(
-            "closed tab {index} (was {:?}); now {} tabs",
+            "closed tab {index} from pane {pane_id} (was {:?}); now {} tabs",
             path,
             self.tabs.len()
         );
+
+        // Close any panes that have no tabs left
+        let empty_ids = self.pane_layout.empty_pane_ids();
+        for pid in empty_ids {
+            self.pane_layout.close_pane(pid);
+        }
+
+        // Update focused pane if needed
+        if let Some(pane) = self.pane_layout.iter_panes().first() {
+            self.focused_pane_id = pane.id;
+        }
     }
 
     pub fn first_dirty_tab_index(&self) -> Option<usize> {

@@ -162,7 +162,8 @@ fn app_state_close_tab_removes() {
     state.new_tab();
     state.new_tab();
     assert_eq!(state.tabs.len(), 2);
-    state.close_tab(1);
+    let pane_id = state.focused_pane_id;
+    state.close_tab(1, pane_id);
     assert_eq!(state.tabs.len(), 1);
 }
 
@@ -170,7 +171,8 @@ fn app_state_close_tab_removes() {
 fn app_state_close_last_tab_closes() {
     let mut state = AppState::new();
     state.new_tab();
-    state.close_tab(0);
+    let pane_id = state.focused_pane_id;
+    state.close_tab(0, pane_id);
     assert_eq!(state.tabs.len(), 0);
 }
 
@@ -178,7 +180,8 @@ fn app_state_close_last_tab_closes() {
 fn app_state_close_all_tabs_empties() {
     let mut state = AppState::new();
     state.new_tab();
-    state.close_tab(0);
+    let pane_id = state.focused_pane_id;
+    state.close_tab(0, pane_id);
     assert!(state.tabs.is_empty());
     assert_eq!(state.focused_tab_index(), 0);
 }
@@ -193,7 +196,8 @@ fn app_state_close_tab_adjusts_active_index_down() {
         let pane = state.get_focused_pane_mut();
         pane.active_tab_index = 2;
     }
-    state.close_tab(0);
+    let pane_id = state.focused_pane_id;
+    state.close_tab(0, pane_id);
     assert_eq!(state.focused_tab_index(), 1);
 }
 
@@ -206,7 +210,8 @@ fn app_state_close_tab_clamps_active_index() {
         let pane = state.get_focused_pane_mut();
         pane.active_tab_index = 1;
     }
-    state.close_tab(1);
+    let pane_id = state.focused_pane_id;
+    state.close_tab(1, pane_id);
     assert_eq!(state.focused_tab_index(), 0);
 }
 
@@ -216,7 +221,8 @@ fn app_state_close_tab_decrements_active_index() {
     state.new_tab();
     state.new_tab();
     assert_eq!(state.focused_tab_index(), 1);
-    state.close_tab(1);
+    let pane_id = state.focused_pane_id;
+    state.close_tab(1, pane_id);
     assert_eq!(state.focused_tab_index(), 0);
 }
 
@@ -229,7 +235,8 @@ fn app_state_close_tab_above_active_no_change() {
         let pane = state.get_focused_pane_mut();
         pane.active_tab_index = 0;
     }
-    state.close_tab(1);
+    let pane_id = state.focused_pane_id;
+    state.close_tab(1, pane_id);
     assert_eq!(state.focused_tab_index(), 0);
 }
 

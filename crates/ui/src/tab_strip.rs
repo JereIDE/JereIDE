@@ -282,7 +282,7 @@ pub fn render_tab_strip(
         if state.tabs[idx].is_modified() {
             state.pending_close_index = Some(idx);
         } else {
-            state.close_tab(idx);
+            state.close_tab(idx, pane_id);
         }
     }
     if let Some(idx) = click_tab {
