@@ -103,7 +103,8 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui, tab_index: usiz
             })
         };
 
-    let scroll_area_id = ui.make_persistent_id(egui::IdSalt::new(("editor_scroll", pane_id, tab_id)));
+    let scroll_area_id =
+        ui.make_persistent_id(egui::IdSalt::new(("editor_scroll", pane_id, tab_id)));
     let gutter_scroll_x = egui::containers::scroll_area::State::load(ui.ctx(), scroll_area_id)
         .map(|s| s.offset.x)
         .unwrap_or(0.0);

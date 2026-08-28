@@ -1,7 +1,7 @@
 use eframe::egui;
 use jereide_core::{
-    AppState, CurrentView, PaneLayout, SplitDirection, ITEM_SPACING_Y, MAX_FILE_SIZE, TITLE_BAR_HEIGHT,
-    TRAFFIC_LIGHT_OFFSET_X, TRAFFIC_LIGHT_OFFSET_Y, WARN_FILE_SIZE,
+    AppState, CurrentView, ITEM_SPACING_Y, MAX_FILE_SIZE, PaneLayout, SplitDirection,
+    TITLE_BAR_HEIGHT, TRAFFIC_LIGHT_OFFSET_X, TRAFFIC_LIGHT_OFFSET_Y, WARN_FILE_SIZE,
 };
 use jereide_fs::{
     file_size, pick_directory, pick_file, read_file_at, save_as_dialog, save_to_path,
@@ -388,10 +388,12 @@ impl JereIDEApp {
             "view: code" => self.state.switch_to_view(CurrentView::Code),
             "view: compose" => self.state.switch_to_view(CurrentView::Compose),
             "view: split right" => {
-                self.state.split_pane(jereide_core::SplitDirection::Vertical);
+                self.state
+                    .split_pane(jereide_core::SplitDirection::Vertical);
             }
             "view: split down" => {
-                self.state.split_pane(jereide_core::SplitDirection::Horizontal);
+                self.state
+                    .split_pane(jereide_core::SplitDirection::Horizontal);
             }
             "view: close pane" => {
                 self.state.close_current_pane();
@@ -600,10 +602,12 @@ impl eframe::App for JereIDEApp {
                 }
             }
             if want_split_right && !self.settings_window_open {
-                self.state.split_pane(jereide_core::SplitDirection::Vertical);
+                self.state
+                    .split_pane(jereide_core::SplitDirection::Vertical);
             }
             if (want_split_down || want_split_down2) && !self.settings_window_open {
-                self.state.split_pane(jereide_core::SplitDirection::Horizontal);
+                self.state
+                    .split_pane(jereide_core::SplitDirection::Horizontal);
             }
 
             if self.state.pending_open {
@@ -665,10 +669,6 @@ impl eframe::App for JereIDEApp {
                     let style = ui.style_mut();
                     style.visuals.extreme_bg_color = surface_bg();
                     style.spacing.item_spacing.y = ITEM_SPACING_Y;
-
-                    if !state.tabs.is_empty() {
-                        jereide_ui::tab_strip::render_tab_strip(state, ui);
-                    }
 
                     let content_rect = ui.available_rect_before_wrap();
                     let mut code_ui = ui.new_child(
@@ -954,9 +954,15 @@ fn render_pane_layout_inner(state: &mut AppState, ui: &mut egui::Ui, layout: &Pa
                 return;
             }
 
-            let tab_index = pane.active_tab_index.min(state.tabs.len().saturating_sub(1));
             let pane_id = pane.id;
             let pane_rect = ui.max_rect();
+
+            // Render per-pane tab strip
+            jereide_ui::tab_strip::render_tab_strip(state, ui, &pane.tab_indices, pane_id);
+
+            let tab_index = pane
+                .active_tab_index
+                .min(state.tabs.len().saturating_sub(1));
             jereide_code::code_view::render_code_view(state, ui, tab_index, pane_id);
 
             if ui.input(|i| i.pointer.any_click()) {
@@ -979,10 +985,14 @@ fn render_pane_layout_inner(state: &mut AppState, ui: &mut egui::Ui, layout: &Pa
             match direction {
                 SplitDirection::Horizontal => {
                     let split_y = available.top() + available.height() * ratio;
-                    let top_rect =
-                        egui::Rect::from_min_max(available.min, egui::pos2(available.right(), split_y));
-                    let bottom_rect =
-                        egui::Rect::from_min_max(egui::pos2(available.left(), split_y), available.max);
+                    let top_rect = egui::Rect::from_min_max(
+                        available.min,
+                        egui::pos2(available.right(), split_y),
+                    );
+                    let bottom_rect = egui::Rect::from_min_max(
+                        egui::pos2(available.left(), split_y),
+                        available.max,
+                    );
 
                     let divider_rect = egui::Rect::from_min_max(
                         egui::pos2(available.left(), split_y - 1.0),
@@ -999,11 +1009,8 @@ fn render_pane_layout_inner(state: &mut AppState, ui: &mut egui::Ui, layout: &Pa
                         render_pane_layout_inner(state, &mut top_ui, first);
                     }
 
-                    ui.painter().rect_filled(
-                        divider_rect,
-                        0.0,
-                        jereide_settings::border(),
-                    );
+                    ui.painter()
+                        .rect_filled(divider_rect, 0.0, jereide_settings::border());
 
                     {
                         let mut bottom_ui = ui.new_child(
@@ -1023,7 +1030,8 @@ fn render_pane_layout_inner(state: &mut AppState, ui: &mut egui::Ui, layout: &Pa
                     if drag_resp.dragged() {
                         let delta = ui.input(|i| i.pointer.delta().y);
                         let new_ratio = (ratio + delta / available.height()).clamp(0.1, 0.9);
-                        if let Some(pane_layout) = get_split_mut(&mut state.pane_layout, first, second)
+                        if let Some(pane_layout) =
+                            get_split_mut(&mut state.pane_layout, first, second)
                         {
                             pane_layout.set_split_ratio(new_ratio);
                         }
@@ -1031,10 +1039,14 @@ fn render_pane_layout_inner(state: &mut AppState, ui: &mut egui::Ui, layout: &Pa
                 }
                 SplitDirection::Vertical => {
                     let split_x = available.left() + available.width() * ratio;
-                    let left_rect =
-                        egui::Rect::from_min_max(available.min, egui::pos2(split_x, available.bottom()));
-                    let right_rect =
-                        egui::Rect::from_min_max(egui::pos2(split_x, available.top()), available.max);
+                    let left_rect = egui::Rect::from_min_max(
+                        available.min,
+                        egui::pos2(split_x, available.bottom()),
+                    );
+                    let right_rect = egui::Rect::from_min_max(
+                        egui::pos2(split_x, available.top()),
+                        available.max,
+                    );
 
                     let divider_rect = egui::Rect::from_min_max(
                         egui::pos2(split_x - 1.0, available.top()),
@@ -1051,11 +1063,8 @@ fn render_pane_layout_inner(state: &mut AppState, ui: &mut egui::Ui, layout: &Pa
                         render_pane_layout_inner(state, &mut left_ui, first);
                     }
 
-                    ui.painter().rect_filled(
-                        divider_rect,
-                        0.0,
-                        jereide_settings::border(),
-                    );
+                    ui.painter()
+                        .rect_filled(divider_rect, 0.0, jereide_settings::border());
 
                     {
                         let mut right_ui = ui.new_child(
@@ -1075,7 +1084,8 @@ fn render_pane_layout_inner(state: &mut AppState, ui: &mut egui::Ui, layout: &Pa
                     if drag_resp.dragged() {
                         let delta = ui.input(|i| i.pointer.delta().x);
                         let new_ratio = (ratio + delta / available.width()).clamp(0.1, 0.9);
-                        if let Some(pane_layout) = get_split_mut(&mut state.pane_layout, first, second)
+                        if let Some(pane_layout) =
+                            get_split_mut(&mut state.pane_layout, first, second)
                         {
                             pane_layout.set_split_ratio(new_ratio);
                         }
@@ -1106,8 +1116,7 @@ fn get_split_mut<'a>(
             } else {
                 let ptr = layout as *mut PaneLayout;
                 let (f, s) = unsafe { (*ptr).as_split_mut() }?;
-                get_split_mut(f, first, second)
-                    .or_else(|| get_split_mut(s, first, second))
+                get_split_mut(f, first, second).or_else(|| get_split_mut(s, first, second))
             }
         }
         _ => None,

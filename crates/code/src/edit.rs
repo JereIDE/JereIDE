@@ -77,7 +77,8 @@ fn action_paste(_state: &mut AppState, ctx: &egui::Context) {
 
 fn action_undo(state: &mut AppState, ctx: &egui::Context) {
     if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id()) {
-        let idx = state.focused_tab_index();        let current = (
+        let idx = state.focused_tab_index();
+        let current = (
             edit_state
                 .cursor
                 .char_range()
@@ -96,7 +97,8 @@ fn action_undo(state: &mut AppState, ctx: &egui::Context) {
 
 fn action_redo(state: &mut AppState, ctx: &egui::Context) {
     if let Some(mut edit_state) = jereide_editor::TextEdit::load_state(ctx, state.editor_id()) {
-        let idx = state.focused_tab_index();        let current = (
+        let idx = state.focused_tab_index();
+        let current = (
             edit_state
                 .cursor
                 .char_range()

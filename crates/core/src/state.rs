@@ -28,13 +28,15 @@ pub enum SplitDirection {
 pub struct Pane {
     pub id: usize,
     pub active_tab_index: usize,
+    pub tab_indices: Vec<usize>,
 }
 
 impl Pane {
-    pub fn new() -> Self {
+    pub fn new(tab_index: usize) -> Self {
         Self {
             id: next_pane_id(),
-            active_tab_index: 0,
+            active_tab_index: tab_index,
+            tab_indices: vec![tab_index],
         }
     }
 }
@@ -52,12 +54,17 @@ pub enum PaneLayout {
 
 impl PaneLayout {
     pub fn new() -> Self {
-        PaneLayout::Single(Pane::new())
+        PaneLayout::Single(Pane::new(0))
     }
 
     pub fn split(&mut self, direction: SplitDirection) {
-        let current = std::mem::replace(self, PaneLayout::new());
-        let new_pane = Pane::new();
+        let mut current = std::mem::replace(self, PaneLayout::new());
+        let current_tab = current.get_active_pane().active_tab_index;
+        current
+            .get_active_pane_mut()
+            .tab_indices
+            .retain(|&i| i != current_tab);
+        let new_pane = Pane::new(current_tab);
         *self = PaneLayout::Split {
             direction,
             first: Box::new(current),
@@ -146,10 +153,7 @@ impl PaneLayout {
     }
 
     pub fn set_split_ratio(&mut self, ratio: f32) {
-        if let PaneLayout::Split {
-            split_ratio, ..
-        } = self
-        {
+        if let PaneLayout::Split { split_ratio, .. } = self {
             *split_ratio = ratio;
         }
     }
@@ -402,7 +406,11 @@ impl AppState {
                     path,
                     content.chars().count()
                 );
-                self.get_focused_pane_mut().active_tab_index = i;
+                let pane = self.get_focused_pane_mut();
+                pane.active_tab_index = i;
+                if !pane.tab_indices.contains(&i) {
+                    pane.tab_indices.push(i);
+                }
                 return i;
             }
         }
@@ -414,7 +422,9 @@ impl AppState {
         };
         self.tabs.push(tab);
         let idx = self.tabs.len() - 1;
-        self.get_focused_pane_mut().active_tab_index = idx;
+        let pane = self.get_focused_pane_mut();
+        pane.active_tab_index = idx;
+        pane.tab_indices.push(idx);
         log::info!(
             "opened {:?} in new tab {idx} ({} tabs, {} chars)",
             path,
@@ -427,7 +437,9 @@ impl AppState {
     pub fn new_tab(&mut self) -> usize {
         self.tabs.push(Tab::new());
         let idx = self.tabs.len() - 1;
-        self.get_focused_pane_mut().active_tab_index = idx;
+        let pane = self.get_focused_pane_mut();
+        pane.active_tab_index = idx;
+        pane.tab_indices.push(idx);
         log::info!(
             "created new blank tab {idx} ({} tabs total)",
             self.tabs.len()
@@ -442,6 +454,12 @@ impl AppState {
         // Update all panes to handle the removed tab
         let new_tab_count = self.tabs.len();
         for pane in self.pane_layout.iter_panes_mut() {
+            pane.tab_indices.retain(|&i| i != index);
+            pane.tab_indices.iter_mut().for_each(|i| {
+                if *i > index {
+                    *i -= 1;
+                }
+            });
             if pane.active_tab_index == index {
                 // If this pane was viewing the closed tab, move to a safe position
                 if new_tab_count == 0 {
@@ -454,6 +472,10 @@ impl AppState {
             } else if pane.active_tab_index > index {
                 // If this pane was viewing a tab after the closed one, shift index
                 pane.active_tab_index -= 1;
+            }
+            // Ensure active_tab_index is in tab_indices
+            if !pane.tab_indices.is_empty() && !pane.tab_indices.contains(&pane.active_tab_index) {
+                pane.active_tab_index = *pane.tab_indices.last().unwrap_or(&0);
             }
         }
 
