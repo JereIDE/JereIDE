@@ -1,7 +1,7 @@
 use eframe::egui;
 use jereide_core::{
-    AppState, CurrentView, ITEM_SPACING_Y, MAX_FILE_SIZE, TITLE_BAR_HEIGHT, TRAFFIC_LIGHT_OFFSET_X,
-    TRAFFIC_LIGHT_OFFSET_Y, WARN_FILE_SIZE,
+    AppState, CurrentView, ITEM_SPACING_Y, MAX_FILE_SIZE, PaneLayout, SplitDirection,
+    TITLE_BAR_HEIGHT, TRAFFIC_LIGHT_OFFSET_X, TRAFFIC_LIGHT_OFFSET_Y, WARN_FILE_SIZE,
 };
 use jereide_fs::{
     file_size, pick_directory, pick_file, read_file_at, save_as_dialog, save_to_path,
@@ -322,7 +322,7 @@ impl JereIDEApp {
                     self.state.current_tab().text.chars().count()
                 );
                 let path_str = path.display().to_string();
-                let idx = self.state.active_tab_index;
+                let idx = self.state.focused_tab_index();
                 self.state.tabs[idx].file_path = Some(path_str);
                 self.state.mark_saved();
             }
@@ -373,11 +373,12 @@ impl JereIDEApp {
             "file: open project" => self.handle_open_project(),
             "file: close tab" => {
                 if !self.state.tabs.is_empty() {
-                    let idx = self.state.active_tab_index;
+                    let idx = self.state.focused_tab_index();
+                    let pane_id = self.state.focused_pane_id;
                     if self.state.tabs[idx].is_modified() {
                         self.state.pending_close_index = Some(idx);
                     } else {
-                        self.state.close_tab(idx);
+                        self.state.close_tab(idx, pane_id);
                     }
                 }
             }
@@ -387,6 +388,17 @@ impl JereIDEApp {
             }
             "view: code" => self.state.switch_to_view(CurrentView::Code),
             "view: compose" => self.state.switch_to_view(CurrentView::Compose),
+            "view: split right" => {
+                self.state
+                    .split_pane(jereide_core::SplitDirection::Vertical);
+            }
+            "view: split down" => {
+                self.state
+                    .split_pane(jereide_core::SplitDirection::Horizontal);
+            }
+            "view: close pane" => {
+                self.state.close_current_pane();
+            }
             "jereide: open settings file" => self.handle_settings(),
             "jereide: quit" => {
                 self.begin_quit(&ctx);
@@ -486,6 +498,9 @@ impl eframe::App for JereIDEApp {
                     cmd && i.key_pressed(egui::Key::F),
                     cmd && i.key_pressed(egui::Key::Comma),
                     cmd && i.key_pressed(egui::Key::G),
+                    cmd && i.key_pressed(egui::Key::Backslash) && !i.modifiers.shift,
+                    cmd && i.modifiers.shift && i.key_pressed(egui::Key::Backslash),
+                    cmd && i.key_pressed(egui::Key::Backslash) && i.modifiers.shift,
                 )
             });
             let (
@@ -508,6 +523,9 @@ impl eframe::App for JereIDEApp {
                 want_find_replace,
                 want_open_settings,
                 want_go_to_line,
+                want_split_right,
+                want_split_down,
+                want_split_down2,
             ) = input;
             if want_new {
                 self.handle_action("file: new", &ctx, frame);
@@ -584,6 +602,14 @@ impl eframe::App for JereIDEApp {
                     self.palette = Some(Palette::new(jereide_ui::command_palette::items()));
                 }
             }
+            if want_split_right && !self.settings_window_open {
+                self.state
+                    .split_pane(jereide_core::SplitDirection::Vertical);
+            }
+            if (want_split_down || want_split_down2) && !self.settings_window_open {
+                self.state
+                    .split_pane(jereide_core::SplitDirection::Horizontal);
+            }
 
             if self.state.pending_open {
                 self.handle_action("file: open", &ctx, frame);
@@ -645,10 +671,6 @@ impl eframe::App for JereIDEApp {
                     style.visuals.extreme_bg_color = surface_bg();
                     style.spacing.item_spacing.y = ITEM_SPACING_Y;
 
-                    if !state.tabs.is_empty() {
-                        jereide_ui::tab_strip::render_tab_strip(state, ui);
-                    }
-
                     let content_rect = ui.available_rect_before_wrap();
                     let mut code_ui = ui.new_child(
                         egui::UiBuilder::new()
@@ -659,7 +681,7 @@ impl eframe::App for JereIDEApp {
                     if state.tabs.is_empty() {
                         jereide_ui::welcome::render_welcome_view(&mut code_ui);
                     } else {
-                        jereide_code::code_view::render_code_view(state, &mut code_ui);
+                        render_pane_layout(state, &mut code_ui);
                     }
                 });
 
@@ -705,11 +727,27 @@ impl eframe::App for JereIDEApp {
             match action {
                 CloseConfirmAction::Save(idx) => {
                     if self.save_tab(idx) {
-                        self.state.close_tab(idx);
+                        let pane_id = self
+                            .state
+                            .pane_layout
+                            .iter_panes()
+                            .iter()
+                            .find(|p| p.tab_indices.contains(&idx))
+                            .map(|p| p.id)
+                            .unwrap_or(self.state.focused_pane_id);
+                        self.state.close_tab(idx, pane_id);
                     }
                 }
                 CloseConfirmAction::Discard(idx) => {
-                    self.state.close_tab(idx);
+                    let pane_id = self
+                        .state
+                        .pane_layout
+                        .iter_panes()
+                        .iter()
+                        .find(|p| p.tab_indices.contains(&idx))
+                        .map(|p| p.id)
+                        .unwrap_or(self.state.focused_pane_id);
+                    self.state.close_tab(idx, pane_id);
                 }
                 CloseConfirmAction::Cancel => {
                     self.state.pending_quit = false;
@@ -836,7 +874,7 @@ impl eframe::App for JereIDEApp {
         }
 
         if self.find_palette_open && !self.state.tabs.is_empty() {
-            let idx = self.state.active_tab_index;
+            let idx = self.state.focused_tab_index();
             let text = self.state.tabs[idx].text.clone();
             let action = self
                 .find_palette
@@ -884,7 +922,7 @@ impl eframe::App for JereIDEApp {
         }
 
         if self.go_to_line_open && !self.state.tabs.is_empty() {
-            let idx = self.state.active_tab_index;
+            let idx = self.state.focused_tab_index();
             let total_lines = jereide_text::count_lines(&self.state.tabs[idx].text);
             if let Some(palette) = &mut self.go_to_line_palette {
                 if let Some(line) = palette.render(&ctx, total_lines, &mut self.go_to_line_open) {
@@ -918,5 +956,187 @@ fn toggle_fullscreen(ctx: &egui::Context, _frame: &mut eframe::Frame) {
     {
         let is_maximized = ctx.input(|i| i.viewport().maximized.unwrap_or(false));
         ctx.send_viewport_cmd(egui::ViewportCommand::Maximized(!is_maximized));
+    }
+}
+
+fn render_pane_layout(state: &mut AppState, ui: &mut egui::Ui) {
+    render_pane_layout_inner(state, ui, &mut state.pane_layout.clone());
+}
+
+fn render_pane_layout_inner(state: &mut AppState, ui: &mut egui::Ui, layout: &PaneLayout) {
+    match layout {
+        PaneLayout::Single(pane) => {
+            if state.tabs.is_empty() {
+                jereide_ui::welcome::render_welcome_view(ui);
+                return;
+            }
+
+            let pane_id = pane.id;
+            let pane_rect = ui.max_rect();
+
+            // Render per-pane tab strip
+            jereide_ui::tab_strip::render_tab_strip(state, ui, &pane.tab_indices, pane_id);
+
+            let tab_index = pane
+                .active_tab_index
+                .min(state.tabs.len().saturating_sub(1));
+            jereide_code::code_view::render_code_view(state, ui, tab_index, pane_id);
+
+            if ui.input(|i| i.pointer.any_click()) {
+                if let Some(pos) = ui.input(|i| i.pointer.hover_pos()) {
+                    if pane_rect.contains(pos) {
+                        state.set_focused_pane(pane_id);
+                    }
+                }
+            }
+        }
+        PaneLayout::Split {
+            id: split_id,
+            direction,
+            first,
+            second,
+            split_ratio,
+        } => {
+            let available = ui.available_rect_before_wrap();
+            let ratio = *split_ratio;
+
+            match direction {
+                SplitDirection::Horizontal => {
+                    let split_y = available.top() + available.height() * ratio;
+                    let top_rect = egui::Rect::from_min_max(
+                        available.min,
+                        egui::pos2(available.right(), split_y),
+                    );
+                    let bottom_rect = egui::Rect::from_min_max(
+                        egui::pos2(available.left(), split_y),
+                        available.max,
+                    );
+
+                    let divider_rect = egui::Rect::from_min_max(
+                        egui::pos2(available.left(), split_y - 1.0),
+                        egui::pos2(available.right(), split_y + 1.0),
+                    );
+
+                    {
+                        let mut top_ui = ui.new_child(
+                            egui::UiBuilder::new()
+                                .max_rect(top_rect)
+                                .layout(egui::Layout::top_down(egui::Align::LEFT)),
+                        );
+                        top_ui.set_clip_rect(top_rect);
+                        render_pane_layout_inner(state, &mut top_ui, first);
+                    }
+
+                    ui.painter()
+                        .rect_filled(divider_rect, 0.0, jereide_settings::border());
+
+                    {
+                        let mut bottom_ui = ui.new_child(
+                            egui::UiBuilder::new()
+                                .max_rect(bottom_rect)
+                                .layout(egui::Layout::top_down(egui::Align::LEFT)),
+                        );
+                        bottom_ui.set_clip_rect(bottom_rect);
+                        render_pane_layout_inner(state, &mut bottom_ui, second);
+                    }
+
+                    let drag_resp = ui.interact(
+                        divider_rect,
+                        egui::Id::new(("split_divider_h", split_id)),
+                        egui::Sense::click_and_drag(),
+                    );
+                    if drag_resp.dragged() {
+                        let delta = ui.input(|i| i.pointer.delta().y);
+                        let new_ratio = (ratio + delta / available.height()).clamp(0.1, 0.9);
+                        if let Some(pane_layout) =
+                            get_split_mut(&mut state.pane_layout, first, second)
+                        {
+                            pane_layout.set_split_ratio(new_ratio);
+                        }
+                    }
+                }
+                SplitDirection::Vertical => {
+                    let split_x = available.left() + available.width() * ratio;
+                    let left_rect = egui::Rect::from_min_max(
+                        available.min,
+                        egui::pos2(split_x, available.bottom()),
+                    );
+                    let right_rect = egui::Rect::from_min_max(
+                        egui::pos2(split_x, available.top()),
+                        available.max,
+                    );
+
+                    let divider_rect = egui::Rect::from_min_max(
+                        egui::pos2(split_x - 1.0, available.top()),
+                        egui::pos2(split_x + 1.0, available.bottom()),
+                    );
+
+                    {
+                        let mut left_ui = ui.new_child(
+                            egui::UiBuilder::new()
+                                .max_rect(left_rect)
+                                .layout(egui::Layout::top_down(egui::Align::LEFT)),
+                        );
+                        left_ui.set_clip_rect(left_rect);
+                        render_pane_layout_inner(state, &mut left_ui, first);
+                    }
+
+                    ui.painter()
+                        .rect_filled(divider_rect, 0.0, jereide_settings::border());
+
+                    {
+                        let mut right_ui = ui.new_child(
+                            egui::UiBuilder::new()
+                                .max_rect(right_rect)
+                                .layout(egui::Layout::top_down(egui::Align::LEFT)),
+                        );
+                        right_ui.set_clip_rect(right_rect);
+                        render_pane_layout_inner(state, &mut right_ui, second);
+                    }
+
+                    let drag_resp = ui.interact(
+                        divider_rect,
+                        egui::Id::new(("split_divider_v", split_id)),
+                        egui::Sense::click_and_drag(),
+                    );
+                    if drag_resp.dragged() {
+                        let delta = ui.input(|i| i.pointer.delta().x);
+                        let new_ratio = (ratio + delta / available.width()).clamp(0.1, 0.9);
+                        if let Some(pane_layout) =
+                            get_split_mut(&mut state.pane_layout, first, second)
+                        {
+                            pane_layout.set_split_ratio(new_ratio);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn get_split_mut<'a>(
+    layout: &'a mut PaneLayout,
+    first: &PaneLayout,
+    second: &PaneLayout,
+) -> Option<&'a mut PaneLayout> {
+    match layout {
+        PaneLayout::Split {
+            first: l_first,
+            second: l_second,
+            ..
+        } => {
+            let first_ptr = &**l_first as *const PaneLayout as usize;
+            let second_ptr = &**l_second as *const PaneLayout as usize;
+            let target_first = first as *const PaneLayout as usize;
+            let target_second = second as *const PaneLayout as usize;
+            if first_ptr == target_first && second_ptr == target_second {
+                Some(layout)
+            } else {
+                let ptr = layout as *mut PaneLayout;
+                let (f, s) = unsafe { (*ptr).as_split_mut() }?;
+                get_split_mut(f, first, second).or_else(|| get_split_mut(s, first, second))
+            }
+        }
+        _ => None,
     }
 }

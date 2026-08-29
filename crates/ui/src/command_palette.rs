@@ -49,6 +49,15 @@ pub fn items() -> Vec<PaletteItem> {
             code: "view: compose",
         },
         PaletteItem {
+            code: "view: split right",
+        },
+        PaletteItem {
+            code: "view: split down",
+        },
+        PaletteItem {
+            code: "view: close pane",
+        },
+        PaletteItem {
             code: "jereide: open settings file",
         },
         PaletteItem {

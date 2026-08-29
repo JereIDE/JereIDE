@@ -1,5 +1,5 @@
-use jereide_syntax::SyntaxHighlighter;
 use jereide_settings::{syntax_number, syntax_string};
+use jereide_syntax::SyntaxHighlighter;
 
 #[test]
 fn syntax_highlighter_json() {

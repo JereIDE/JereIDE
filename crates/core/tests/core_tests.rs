@@ -75,7 +75,7 @@ fn tab_file_name_various_paths() {
 fn app_state_new_has_no_tabs() {
     let state = AppState::new();
     assert_eq!(state.tabs.len(), 0);
-    assert_eq!(state.active_tab_index, 0);
+    assert_eq!(state.focused_tab_index(), 0);
     assert_eq!(state.current_view, CurrentView::Code);
 }
 
@@ -85,7 +85,7 @@ fn app_state_new_tab_creates_and_activates() {
     let idx = state.new_tab();
     assert_eq!(idx, 0);
     assert_eq!(state.tabs.len(), 1);
-    assert_eq!(state.active_tab_index, 0);
+    assert_eq!(state.focused_tab_index(), 0);
 }
 
 #[test]
@@ -101,7 +101,6 @@ fn app_state_new_tab_creates_with_defaults() {
 fn app_state_current_tab_returns_active() {
     let mut state = AppState::new();
     state.new_tab();
-    state.active_tab_index = 0;
     let tab = state.current_tab();
     assert_eq!(tab.text, "");
 }
@@ -120,7 +119,7 @@ fn app_state_open_file_new() {
     let idx = state.open_file("/path/to/test.rs".into(), "content".into());
     assert_eq!(idx, 0);
     assert_eq!(state.tabs.len(), 1);
-    assert_eq!(state.active_tab_index, 0);
+    assert_eq!(state.focused_tab_index(), 0);
     assert_eq!(state.current_tab().text, "content");
     assert_eq!(
         state.current_tab().file_path,
@@ -144,7 +143,7 @@ fn app_state_open_file_returns_correct_index() {
     let idx2 = state.open_file("/b.rs".into(), "// b".into());
     assert_eq!(idx1, 0);
     assert_eq!(idx2, 1);
-    assert_eq!(state.active_tab_index, 1);
+    assert_eq!(state.focused_tab_index(), 1);
 }
 
 #[test]
@@ -154,7 +153,7 @@ fn app_state_open_file_switches_to_existing() {
     state.open_file("/other.rs".into(), "other".into());
     let idx = state.open_file("/common.rs".into(), "code".into());
     assert_eq!(idx, 0);
-    assert_eq!(state.active_tab_index, 0);
+    assert_eq!(state.focused_tab_index(), 0);
 }
 
 #[test]
@@ -163,7 +162,8 @@ fn app_state_close_tab_removes() {
     state.new_tab();
     state.new_tab();
     assert_eq!(state.tabs.len(), 2);
-    state.close_tab(1);
+    let pane_id = state.focused_pane_id;
+    state.close_tab(1, pane_id);
     assert_eq!(state.tabs.len(), 1);
 }
 
@@ -171,7 +171,8 @@ fn app_state_close_tab_removes() {
 fn app_state_close_last_tab_closes() {
     let mut state = AppState::new();
     state.new_tab();
-    state.close_tab(0);
+    let pane_id = state.focused_pane_id;
+    state.close_tab(0, pane_id);
     assert_eq!(state.tabs.len(), 0);
 }
 
@@ -179,9 +180,10 @@ fn app_state_close_last_tab_closes() {
 fn app_state_close_all_tabs_empties() {
     let mut state = AppState::new();
     state.new_tab();
-    state.close_tab(0);
+    let pane_id = state.focused_pane_id;
+    state.close_tab(0, pane_id);
     assert!(state.tabs.is_empty());
-    assert_eq!(state.active_tab_index, 0);
+    assert_eq!(state.focused_tab_index(), 0);
 }
 
 #[test]
@@ -190,9 +192,13 @@ fn app_state_close_tab_adjusts_active_index_down() {
     state.new_tab();
     state.new_tab();
     state.new_tab();
-    state.active_tab_index = 2;
-    state.close_tab(0);
-    assert_eq!(state.active_tab_index, 1);
+    {
+        let pane = state.get_focused_pane_mut();
+        pane.active_tab_index = 2;
+    }
+    let pane_id = state.focused_pane_id;
+    state.close_tab(0, pane_id);
+    assert_eq!(state.focused_tab_index(), 1);
 }
 
 #[test]
@@ -200,9 +206,13 @@ fn app_state_close_tab_clamps_active_index() {
     let mut state = AppState::new();
     state.new_tab();
     state.new_tab();
-    state.active_tab_index = 1;
-    state.close_tab(1);
-    assert_eq!(state.active_tab_index, 0);
+    {
+        let pane = state.get_focused_pane_mut();
+        pane.active_tab_index = 1;
+    }
+    let pane_id = state.focused_pane_id;
+    state.close_tab(1, pane_id);
+    assert_eq!(state.focused_tab_index(), 0);
 }
 
 #[test]
@@ -210,9 +220,10 @@ fn app_state_close_tab_decrements_active_index() {
     let mut state = AppState::new();
     state.new_tab();
     state.new_tab();
-    assert_eq!(state.active_tab_index, 1);
-    state.close_tab(1);
-    assert_eq!(state.active_tab_index, 0);
+    assert_eq!(state.focused_tab_index(), 1);
+    let pane_id = state.focused_pane_id;
+    state.close_tab(1, pane_id);
+    assert_eq!(state.focused_tab_index(), 0);
 }
 
 #[test]
@@ -220,9 +231,13 @@ fn app_state_close_tab_above_active_no_change() {
     let mut state = AppState::new();
     state.new_tab();
     state.new_tab();
-    state.active_tab_index = 0;
-    state.close_tab(1);
-    assert_eq!(state.active_tab_index, 0);
+    {
+        let pane = state.get_focused_pane_mut();
+        pane.active_tab_index = 0;
+    }
+    let pane_id = state.focused_pane_id;
+    state.close_tab(1, pane_id);
+    assert_eq!(state.focused_tab_index(), 0);
 }
 
 #[test]
@@ -306,9 +321,15 @@ fn app_state_editor_id_changes_with_active_tab() {
     let mut state = AppState::new();
     state.new_tab();
     state.new_tab();
-    state.active_tab_index = 0;
+    {
+        let pane = state.get_focused_pane_mut();
+        pane.active_tab_index = 0;
+    }
     let id0 = state.editor_id();
-    state.active_tab_index = 1;
+    {
+        let pane = state.get_focused_pane_mut();
+        pane.active_tab_index = 1;
+    }
     let id1 = state.editor_id();
     assert_ne!(id0, id1);
 }
