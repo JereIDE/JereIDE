@@ -170,7 +170,11 @@ pub fn render_tab_strip(
                     .interact(rect, egui::Id::new(("tab", pane_id, idx)), Sense::click())
                     .on_hover_cursor(egui::CursorIcon::PointingHand);
                 let close_resp = ui
-                    .interact(close_rect, egui::Id::new(("close", pane_id, idx)), Sense::click())
+                    .interact(
+                        close_rect,
+                        egui::Id::new(("close", pane_id, idx)),
+                        Sense::click(),
+                    )
                     .on_hover_cursor(egui::CursorIcon::PointingHand)
                     .on_hover_text("Close Tab");
 
