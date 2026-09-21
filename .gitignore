@@ -3,3 +3,5 @@
 **/.DS_Store
 /deploy/docs/*
 .qoder/
+.freebuff/
+.zed/
