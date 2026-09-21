@@ -34,7 +34,12 @@ fn lock_image() -> egui::Image<'static> {
     egui::Image::from_bytes("lock.png", bytes).max_height(TAB_LOCK_ICON_SIZE)
 }
 
-pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
+pub fn render_tab_strip(
+    state: &mut AppState,
+    ui: &mut egui::Ui,
+    tab_indices: &[usize],
+    pane_id: usize,
+) {
     let sidebar_open = state.sidebar_open;
     let available_w = ui.available_width();
 
@@ -42,10 +47,10 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
     let lock_image = lock_image();
 
     // Layout tabs in content coordinates (starting from x = 0).
-    let mut layouts: Vec<TabLayout> = Vec::with_capacity(state.tabs.len());
+    let mut layouts: Vec<TabLayout> = Vec::with_capacity(tab_indices.len());
     let mut cursor_x = 0.0;
 
-    for idx in 0..state.tabs.len() {
+    for &idx in tab_indices {
         let tab = &state.tabs[idx];
         let name = tab.file_name();
         let galley = ui.fonts_mut(|f| {
@@ -116,7 +121,7 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
     let mut new_tab = false;
 
     egui::ScrollArea::horizontal()
-        .id_salt("tab_strip_scroll")
+        .id_salt(("tab_strip_scroll", pane_id))
         .max_height(TAB_STRIP_HEIGHT)
         .auto_shrink([false, false])
         .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
@@ -129,8 +134,8 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
             let painter = ui.painter();
             painter.rect_filled(content_rect, 0.0, elevated_bg());
 
-            for idx in 0..state.tabs.len() {
-                let l = &layouts[idx];
+            for (layout_idx, &idx) in tab_indices.iter().enumerate() {
+                let l = &layouts[layout_idx];
                 let rect = Rect::from_min_size(origin + l.rect.min.to_vec2(), l.rect.size());
                 let close_rect =
                     Rect::from_min_size(origin + l.close_rect.min.to_vec2(), l.close_rect.size());
@@ -139,7 +144,7 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                 let lock_rect =
                     Rect::from_min_size(origin + l.lock_rect.min.to_vec2(), l.lock_rect.size());
 
-                let is_active = idx == state.active_tab_index;
+                let is_active = idx == state.focused_tab_index();
                 let bg = if is_active {
                     surface_bg()
                 } else {
@@ -162,10 +167,14 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                 }
 
                 let tab_resp = ui
-                    .interact(rect, egui::Id::new(("tab", idx)), Sense::click())
+                    .interact(rect, egui::Id::new(("tab", pane_id, idx)), Sense::click())
                     .on_hover_cursor(egui::CursorIcon::PointingHand);
                 let close_resp = ui
-                    .interact(close_rect, egui::Id::new(("close", idx)), Sense::click())
+                    .interact(
+                        close_rect,
+                        egui::Id::new(("close", pane_id, idx)),
+                        Sense::click(),
+                    )
                     .on_hover_cursor(egui::CursorIcon::PointingHand)
                     .on_hover_text("Close Tab");
 
@@ -217,12 +226,12 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                 }
             }
 
-            for idx in 0..state.tabs.len() {
-                if idx == 0 && sidebar_open {
+            for (layout_idx, _) in tab_indices.iter().enumerate() {
+                if layout_idx == 0 && sidebar_open {
                     continue;
                 }
                 painter.vline(
-                    origin.x + layouts[idx].rect.left(),
+                    origin.x + layouts[layout_idx].rect.left(),
                     egui::Rangef::new(origin.y, origin.y + TAB_STRIP_HEIGHT),
                     Stroke::new(TAB_BORDER_WIDTH, border()),
                 );
@@ -247,17 +256,22 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
                 border(),
             );
 
-            if let Some(active) = layouts.get(state.active_tab_index) {
-                let active_rect =
-                    Rect::from_min_size(origin + active.rect.min.to_vec2(), active.rect.size());
-                painter.rect_filled(
-                    Rect::from_min_size(
-                        Pos2::new(active_rect.left(), active_rect.bottom() - TAB_BORDER_WIDTH),
-                        Vec2::new(active_rect.width(), TAB_BORDER_WIDTH),
-                    ),
-                    0.0,
-                    surface_bg(),
-                );
+            if let Some(active_layout_idx) = tab_indices
+                .iter()
+                .position(|&i| i == state.focused_tab_index())
+            {
+                if let Some(active) = layouts.get(active_layout_idx) {
+                    let active_rect =
+                        Rect::from_min_size(origin + active.rect.min.to_vec2(), active.rect.size());
+                    painter.rect_filled(
+                        Rect::from_min_size(
+                            Pos2::new(active_rect.left(), active_rect.bottom() - TAB_BORDER_WIDTH),
+                            Vec2::new(active_rect.width(), TAB_BORDER_WIDTH),
+                        ),
+                        0.0,
+                        surface_bg(),
+                    );
+                }
             }
 
             if content_resp.double_clicked() {
@@ -272,10 +286,10 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
         if state.tabs[idx].is_modified() {
             state.pending_close_index = Some(idx);
         } else {
-            state.close_tab(idx);
+            state.close_tab(idx, pane_id);
         }
     }
     if let Some(idx) = click_tab {
-        state.active_tab_index = idx;
+        state.get_focused_pane_mut().active_tab_index = idx;
     }
 }

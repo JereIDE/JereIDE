@@ -2,15 +2,187 @@ use eframe::egui;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 static NEXT_TAB_ID: AtomicUsize = AtomicUsize::new(0);
+static NEXT_PANE_ID: AtomicUsize = AtomicUsize::new(0);
+static NEXT_SPLIT_ID: AtomicUsize = AtomicUsize::new(0);
 
 fn next_tab_id() -> usize {
     NEXT_TAB_ID.fetch_add(1, Ordering::Relaxed)
+}
+
+fn next_pane_id() -> usize {
+    NEXT_PANE_ID.fetch_add(1, Ordering::Relaxed)
+}
+
+fn next_split_id() -> usize {
+    NEXT_SPLIT_ID.fetch_add(1, Ordering::Relaxed)
 }
 
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum CurrentView {
     Code,
     Compose,
+}
+
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub enum SplitDirection {
+    Horizontal,
+    Vertical,
+}
+
+#[derive(Clone)]
+pub struct Pane {
+    pub id: usize,
+    pub active_tab_index: usize,
+    pub tab_indices: Vec<usize>,
+}
+
+impl Pane {
+    pub fn new(tab_index: usize) -> Self {
+        Self {
+            id: next_pane_id(),
+            active_tab_index: tab_index,
+            tab_indices: vec![tab_index],
+        }
+    }
+
+    pub fn new_empty() -> Self {
+        Self {
+            id: next_pane_id(),
+            active_tab_index: 0,
+            tab_indices: vec![],
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum PaneLayout {
+    Single(Pane),
+    Split {
+        id: usize,
+        direction: SplitDirection,
+        first: Box<PaneLayout>,
+        second: Box<PaneLayout>,
+        split_ratio: f32,
+    },
+}
+
+impl PaneLayout {
+    pub fn new() -> Self {
+        PaneLayout::Single(Pane::new_empty())
+    }
+
+    pub fn split(&mut self, direction: SplitDirection) {
+        let current = std::mem::replace(self, PaneLayout::new());
+        let current_tab = current.get_active_pane().active_tab_index;
+        let new_pane = Pane::new(current_tab);
+        *self = PaneLayout::Split {
+            id: next_split_id(),
+            direction,
+            first: Box::new(current),
+            second: Box::new(PaneLayout::Single(new_pane)),
+            split_ratio: 0.5,
+        };
+    }
+
+    pub fn close_pane(&mut self, pane_id: usize) -> bool {
+        match self {
+            PaneLayout::Single(pane) if pane.id == pane_id => {
+                return false;
+            }
+            PaneLayout::Split { first, second, .. } => {
+                if first.contains_pane(pane_id) {
+                    if let PaneLayout::Single(_) = **first {
+                        *self = (**second).clone();
+                        return true;
+                    }
+                    return first.close_pane(pane_id);
+                } else if second.contains_pane(pane_id) {
+                    if let PaneLayout::Single(_) = **second {
+                        *self = (**first).clone();
+                        return true;
+                    }
+                    return second.close_pane(pane_id);
+                }
+            }
+            _ => {}
+        }
+        false
+    }
+
+    pub fn contains_pane(&self, pane_id: usize) -> bool {
+        match self {
+            PaneLayout::Single(pane) => pane.id == pane_id,
+            PaneLayout::Split { first, second, .. } => {
+                first.contains_pane(pane_id) || second.contains_pane(pane_id)
+            }
+        }
+    }
+
+    pub fn get_active_pane(&self) -> &Pane {
+        match self {
+            PaneLayout::Single(pane) => pane,
+            PaneLayout::Split { first, .. } => first.get_active_pane(),
+        }
+    }
+
+    pub fn get_active_pane_mut(&mut self) -> &mut Pane {
+        match self {
+            PaneLayout::Single(pane) => pane,
+            PaneLayout::Split { first, .. } => first.get_active_pane_mut(),
+        }
+    }
+
+    pub fn set_focus(&mut self, pane_id: usize) -> bool {
+        match self {
+            PaneLayout::Single(pane) => pane.id == pane_id,
+            PaneLayout::Split { first, second, .. } => {
+                first.set_focus(pane_id) || second.set_focus(pane_id)
+            }
+        }
+    }
+
+    pub fn iter_panes(&self) -> Vec<&Pane> {
+        match self {
+            PaneLayout::Single(pane) => vec![pane],
+            PaneLayout::Split { first, second, .. } => {
+                let mut panes = first.iter_panes();
+                panes.extend(second.iter_panes());
+                panes
+            }
+        }
+    }
+
+    pub fn empty_pane_ids(&self) -> Vec<usize> {
+        self.iter_panes()
+            .iter()
+            .filter(|p| p.tab_indices.is_empty())
+            .map(|p| p.id)
+            .collect()
+    }
+
+    pub fn iter_panes_mut(&mut self) -> Vec<&mut Pane> {
+        match self {
+            PaneLayout::Single(pane) => vec![pane],
+            PaneLayout::Split { first, second, .. } => {
+                let mut panes = first.iter_panes_mut();
+                panes.extend(second.iter_panes_mut());
+                panes
+            }
+        }
+    }
+
+    pub fn set_split_ratio(&mut self, ratio: f32) {
+        if let PaneLayout::Split { split_ratio, .. } = self {
+            *split_ratio = ratio;
+        }
+    }
+
+    pub fn as_split_mut(&mut self) -> Option<(&mut PaneLayout, &mut PaneLayout)> {
+        match self {
+            PaneLayout::Split { first, second, .. } => Some((first, second)),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -92,7 +264,6 @@ pub struct AppState {
     pub find_highlight: Option<FindHighlight>,
     pub pending_find_selection: Option<(usize, usize)>,
     pub go_to_line_scroll_to: Option<usize>,
-    pub active_tab_index: usize,
     pub editor_focused: bool,
     pub current_view: CurrentView,
     pub was_fullscreen: bool,
@@ -117,6 +288,11 @@ pub struct AppState {
     pub pending_open: bool,
     pub pending_open_project: bool,
     pub pending_open_file: Option<String>,
+
+    /// Split pane layout
+    pub pane_layout: PaneLayout,
+    /// Currently focused pane ID
+    pub focused_pane_id: usize,
 }
 
 #[derive(Clone)]
@@ -131,6 +307,8 @@ pub struct FindHighlight {
 /// Starts an AppState with all the default stuff
 impl AppState {
     pub fn new() -> Self {
+        let pane_layout = PaneLayout::new();
+        let focused_pane_id = pane_layout.get_active_pane().id;
         Self {
             tabs: vec![],
             current_project_dir: None,
@@ -138,7 +316,6 @@ impl AppState {
             find_highlight: None,
             pending_find_selection: None,
             go_to_line_scroll_to: None,
-            active_tab_index: 0,
             editor_focused: false,
             current_view: CurrentView::Code,
             was_fullscreen: false,
@@ -155,19 +332,28 @@ impl AppState {
             pending_open: false,
             pending_open_project: false,
             pending_open_file: None,
+            pane_layout,
+            focused_pane_id,
         }
     }
 
     pub fn current_tab(&self) -> &Tab {
-        &self.tabs[self.active_tab_index]
+        let active_pane = self.get_focused_pane();
+        &self.tabs[active_pane.active_tab_index]
     }
 
     pub fn editor_id(&self) -> egui::Id {
-        egui::Id::new(("editor", self.tabs[self.active_tab_index].id))
+        let active_pane = self.get_focused_pane();
+        egui::Id::new((
+            "editor",
+            active_pane.id,
+            self.tabs[active_pane.active_tab_index].id,
+        ))
     }
 
     pub fn current_tab_mut(&mut self) -> &mut Tab {
-        &mut self.tabs[self.active_tab_index]
+        let active_tab_index = self.focused_tab_index();
+        &mut self.tabs[active_tab_index]
     }
 
     pub fn is_modified(&self) -> bool {
@@ -176,6 +362,52 @@ impl AppState {
 
     pub fn mark_saved(&mut self) {
         self.current_tab_mut().mark_saved();
+    }
+
+    pub fn get_focused_pane(&self) -> &Pane {
+        self.pane_layout.get_active_pane()
+    }
+
+    pub fn get_focused_pane_mut(&mut self) -> &mut Pane {
+        self.pane_layout.get_active_pane_mut()
+    }
+
+    pub fn focused_tab_index(&self) -> usize {
+        self.get_focused_pane().active_tab_index
+    }
+
+    pub fn get_pane(&self, pane_id: usize) -> Option<&Pane> {
+        self.pane_layout
+            .iter_panes()
+            .into_iter()
+            .find(|p| p.id == pane_id)
+    }
+
+    pub fn get_pane_mut(&mut self, pane_id: usize) -> Option<&mut Pane> {
+        self.pane_layout
+            .iter_panes_mut()
+            .into_iter()
+            .find(|p| p.id == pane_id)
+    }
+
+    pub fn set_focused_pane(&mut self, pane_id: usize) {
+        self.focused_pane_id = pane_id;
+        self.pane_layout.set_focus(pane_id);
+    }
+
+    pub fn split_pane(&mut self, direction: SplitDirection) {
+        self.pane_layout.split(direction);
+    }
+
+    pub fn close_current_pane(&mut self) {
+        let focused_pane_id = self.focused_pane_id;
+        if !self.pane_layout.close_pane(focused_pane_id) {
+            return;
+        }
+
+        if let Some(pane) = self.pane_layout.iter_panes().first() {
+            self.focused_pane_id = pane.id;
+        }
     }
 
     pub fn open_file(&mut self, path: String, content: String) -> usize {
@@ -195,7 +427,11 @@ impl AppState {
                     path,
                     content.chars().count()
                 );
-                self.active_tab_index = i;
+                let pane = self.get_focused_pane_mut();
+                pane.active_tab_index = i;
+                if !pane.tab_indices.contains(&i) {
+                    pane.tab_indices.push(i);
+                }
                 return i;
             }
         }
@@ -207,7 +443,9 @@ impl AppState {
         };
         self.tabs.push(tab);
         let idx = self.tabs.len() - 1;
-        self.active_tab_index = idx;
+        let pane = self.get_focused_pane_mut();
+        pane.active_tab_index = idx;
+        pane.tab_indices.push(idx);
         log::info!(
             "opened {:?} in new tab {idx} ({} tabs, {} chars)",
             path,
@@ -220,7 +458,9 @@ impl AppState {
     pub fn new_tab(&mut self) -> usize {
         self.tabs.push(Tab::new());
         let idx = self.tabs.len() - 1;
-        self.active_tab_index = idx;
+        let pane = self.get_focused_pane_mut();
+        pane.active_tab_index = idx;
+        pane.tab_indices.push(idx);
         log::info!(
             "created new blank tab {idx} ({} tabs total)",
             self.tabs.len()
@@ -228,22 +468,79 @@ impl AppState {
         idx
     }
 
-    pub fn close_tab(&mut self, index: usize) {
+    pub fn close_tab(&mut self, index: usize, pane_id: usize) {
         let path = self.tabs[index].file_path.clone();
-        self.tabs.remove(index);
-        if self.tabs.is_empty() {
-            self.active_tab_index = 0;
-        } else if self.active_tab_index >= self.tabs.len() {
-            self.active_tab_index = self.tabs.len() - 1;
-        } else if index < self.active_tab_index {
-            self.active_tab_index -= 1;
+
+        // Remove the tab index from the closing pane's tab_indices only
+        if let Some(pane) = self.get_pane_mut(pane_id) {
+            pane.tab_indices.retain(|&i| i != index);
         }
+
+        // Check if any pane still references this tab
+        let still_referenced = self
+            .pane_layout
+            .iter_panes()
+            .iter()
+            .any(|p| p.tab_indices.contains(&index));
+
+        if !still_referenced {
+            self.tabs.remove(index);
+
+            // Adjust indices in all panes
+            let new_tab_count = self.tabs.len();
+            for pane in self.pane_layout.iter_panes_mut() {
+                pane.tab_indices.iter_mut().for_each(|i| {
+                    if *i > index {
+                        *i -= 1;
+                    }
+                });
+                if pane.active_tab_index == index {
+                    if new_tab_count == 0 {
+                        pane.active_tab_index = 0;
+                    } else if index >= new_tab_count {
+                        pane.active_tab_index = new_tab_count - 1;
+                    } else {
+                        pane.active_tab_index = index;
+                    }
+                } else if pane.active_tab_index > index {
+                    pane.active_tab_index -= 1;
+                }
+                // Ensure active_tab_index is in tab_indices
+                if !pane.tab_indices.is_empty()
+                    && !pane.tab_indices.contains(&pane.active_tab_index)
+                {
+                    pane.active_tab_index = *pane.tab_indices.last().unwrap_or(&0);
+                }
+            }
+        } else {
+            // Tab is still referenced by other panes; just fix the closing pane
+            if let Some(pane) = self.get_pane_mut(pane_id) {
+                if pane.active_tab_index == index {
+                    if let Some(&last) = pane.tab_indices.last() {
+                        pane.active_tab_index = last;
+                    }
+                } else if pane.active_tab_index > index {
+                    pane.active_tab_index -= 1;
+                }
+            }
+        }
+
         log::info!(
-            "closed tab {index} (was {:?}); now {} tabs, active tab {}",
+            "closed tab {index} from pane {pane_id} (was {:?}); now {} tabs",
             path,
-            self.tabs.len(),
-            self.active_tab_index
+            self.tabs.len()
         );
+
+        // Close any panes that have no tabs left
+        let empty_ids = self.pane_layout.empty_pane_ids();
+        for pid in empty_ids {
+            self.pane_layout.close_pane(pid);
+        }
+
+        // Update focused pane if needed
+        if let Some(pane) = self.pane_layout.iter_panes().first() {
+            self.focused_pane_id = pane.id;
+        }
     }
 
     pub fn first_dirty_tab_index(&self) -> Option<usize> {
