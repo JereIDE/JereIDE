@@ -2,3 +2,4 @@
 /docs/book
 **/.DS_Store
 /deploy/docs/*
+.qoder/
