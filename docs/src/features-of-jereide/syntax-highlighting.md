@@ -15,11 +15,11 @@ Syntax definitions are stored as JSON files in the app's `data` directory. The f
 - Markdown
 - JSON
 
-Other languages are coming, but if you really need support for one look below.
+Other languages are coming, but if you really need support for one right now, look below.
 
 ## Custom Language Support
 
-You could make AI generate a highlighting JSON file based on the four already implemented.
+You could make AI generate a highlighting JSON file based on the ones already implemented.
 
 > [!IMPORTANT]
 > Because some languages have complex syntax and is hard to highlight by plain regex(for example, Markdown and HTML), it would take some code editing to implement for these languages. Make sure your language is completely highlightable by plain regex.

@@ -155,8 +155,10 @@ h6 {
     font-weight: 400;
 }
 
-/* All sidebar items: uniform indent and full-width layout */
-.chapter li a {
+/* All sidebar items: uniform indent and full-width layout
+   (disabled chapters render a bare <span> inside the wrapper instead of an <a>) */
+.chapter li a,
+.chapter li .chapter-link-wrapper > span:not([class]) {
     display: flex;
     align-items: center;
     flex: 1 1 auto;

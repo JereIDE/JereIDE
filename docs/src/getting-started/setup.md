@@ -26,6 +26,6 @@ To open a file, press `Cmd/Ctrl+O` or run `file: open` from the command palette 
 To open a project, run `file: open project` from the command palette and select a folder in the OS dialog. This is an experimental feature; The current directory and its contents will be shown in the sidebar.
 
 > [!TIP]
-> There are many, many ways to invoke commands like this. For example, you can select `Open…` from the `File` menu to open a file, or you could also click the `Open…` button and select `Open File` from the dropdown.
+> There are many, many ways to invoke commands like this. For example, you can select `Open File` from the `File` menu to open a file, or you could also click the `Open…` button and select `Open File` from the dropdown.
 >
 > For opening a project, you can also select `Open Project`from the`File` menu or press Command+Shift+O. And you could also click `Open…` in the title bar and select `Open Project` from the dropdown.

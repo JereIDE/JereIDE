@@ -1,6 +1,6 @@
 # JereIDE
 
-JereIDE is an awesome editor with 67 stars. Even though there are this many stars, somehow it only has 2 users.
+JereIDE is an awesome editor with over 100 stars. Even though there are this many stars, somehow it only has 2 users.
 
 That's why the tagline is "The ready-to-use editor that nobody uses".
 

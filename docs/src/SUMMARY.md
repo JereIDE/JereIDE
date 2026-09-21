@@ -10,5 +10,6 @@
   - [Auto Indent, Bracket Pair Highlighting, and Auto Bracket Pairing](./features-of-jereide/auto-indent-bracket-pair-highlighting-and-auto-bracket-pairing.md)
 - [The File Sidebar](./file-sidebar.md)
 - [The Command Palette](./command-palette.md)
+- [JereIDE Settings]()
 - [Bonus](./bonus.md)
 - [Contact](./contact.md)

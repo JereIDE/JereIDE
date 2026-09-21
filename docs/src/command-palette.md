@@ -64,7 +64,7 @@ Since the command palette is open, this will close it.
 
 ## `view: toggle sidebar`
 
-Shows or hides the sidebar. (Experimental) Also invokable by `Cmd/Ctrl+B`.
+Shows or hides the sidebar or file finder. Also invokable by `Cmd/Ctrl+B`.
 
 ## `view: code`
 
@@ -74,9 +74,13 @@ Switches to the code mode.
 
 Switches to the compose mode.
 
+## `jereide: open settings file`
+
+Opens settings.toml in a new tab. You can also choose "Open Settings File" in the `JereIDE` app menu.
+
 ## `jereide: open settings`
 
-Opens settings.toml in a new tab. Also invokable by App Menu or `Cmd/Ctrl+,`.
+Opens the Settings GUI. Also invokable by `Cmd/Ctrl+,`.
 
 ## `jereide: open docs`
 

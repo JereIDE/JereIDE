@@ -12,7 +12,7 @@ If you are inside a bracket and your cursor is near one of them, both brackets g
 
 ## Auto Bracket Pairing
 
-When you type `{`, `(`, `[`, or `<`, the closing bracket(`}`, `)`, `]`, or `>`) is automatically inserted. If you happen to type the closing bracket yourself by habit, it won't turn into `{}}`. Your cursor would just jump to after the closing bracket, as if auto-bracket-pairing had never happened.
+When you type `{`, `(`, `[` or quote marks, the closing bracket(`}`, `)`, `]` or another quote mark) is automatically inserted. If you happen to type the closing bracket yourself by habit, it won't turn into `{}}`. Your cursor would just jump to after the closing bracket, as if auto-bracket-pairing had never happened.
 
 If you delete the opening bracket of an empty pair, the closing bracket will be deleted too.
 
