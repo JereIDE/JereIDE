@@ -21,6 +21,7 @@ thread_local! {
     static FIND_CACHE: RefCell<HashMap<usize, FindCache>> = RefCell::new(HashMap::new());
     static PREV_TEXT: RefCell<HashMap<usize, String>> = RefCell::new(HashMap::new());
     static EDITOR_STATE_TABS: RefCell<HashSet<usize>> = RefCell::new(HashSet::new());
+    static SCROLL_BY_PATH: RefCell<HashMap<String, f32>> = RefCell::new(HashMap::new());
 }
 
 struct FindCache {
@@ -80,14 +81,16 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
         let mut cache = cache.borrow_mut();
         cache.retain(|id, _| valid_ids.contains(id));
     });
-    EDITOR_STATE_TABS.with(|tabs| {
+    let is_new_tab = EDITOR_STATE_TABS.with(|tabs| {
         let mut tabs = tabs.borrow_mut();
         for &closed in tabs.iter().filter(|id| !valid_ids.contains(id)) {
             let id = egui::Id::new(("editor", closed));
             ctx.data_mut(|d| d.remove::<jereide_editor::TextEditState>(id));
         }
         tabs.retain(|id| valid_ids.contains(id));
+        let is_new = !tabs.contains(&tab_id);
         tabs.insert(tab_id);
+        is_new
     });
 
     let font_id = egui::FontId::monospace(editor_font_size());
@@ -364,6 +367,29 @@ pub fn render_code_view(state: &mut AppState, ui: &mut egui::Ui) {
                     .insert(tab_id, state.tabs[active_idx].text.clone())
             });
         }
+    }
+
+    let file_path = state.tabs[active_idx].file_path.clone();
+
+    if is_new_tab {
+        if let Some(ref path) = file_path {
+            let saved_y = SCROLL_BY_PATH.with(|m| m.borrow().get(path.as_str()).copied());
+            if let Some(saved_y) = saved_y
+                && let Some(mut sa) =
+                    egui::containers::scroll_area::State::load(&ctx, scroll_area_id)
+            {
+                sa.offset.y = saved_y;
+                sa.store(&ctx, scroll_area_id);
+                ctx.request_repaint();
+            }
+        }
+    }
+
+    if let Some(ref path) = file_path {
+        let current_y = egui::containers::scroll_area::State::load(&ctx, scroll_area_id)
+            .map(|s| s.offset.y)
+            .unwrap_or(0.0);
+        SCROLL_BY_PATH.with(|m| m.borrow_mut().insert(path.clone(), current_y));
     }
 
     if !state.editor_focused {
