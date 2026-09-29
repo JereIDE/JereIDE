@@ -387,6 +387,8 @@ impl JereIDEApp {
             }
             "view: code" => self.state.switch_to_view(CurrentView::Code),
             "view: compose" => self.state.switch_to_view(CurrentView::Compose),
+            "view: next tab" => self.state.next_tab(),
+            "view: previous tab" => self.state.previous_tab(),
             "jereide: open settings file" => self.handle_settings(),
             "jereide: quit" => {
                 self.begin_quit(&ctx);
@@ -486,6 +488,8 @@ impl eframe::App for JereIDEApp {
                     cmd && i.key_pressed(egui::Key::F),
                     cmd && i.key_pressed(egui::Key::Comma),
                     cmd && i.key_pressed(egui::Key::G),
+                    i.modifiers.ctrl && !i.modifiers.shift && i.key_pressed(egui::Key::Tab),
+                    i.modifiers.ctrl && i.modifiers.shift && i.key_pressed(egui::Key::Tab),
                 )
             });
             let (
@@ -508,6 +512,8 @@ impl eframe::App for JereIDEApp {
                 want_find_replace,
                 want_open_settings,
                 want_go_to_line,
+                want_next_tab,
+                want_previous_tab,
             ) = input;
             if want_new {
                 self.handle_action("file: new", &ctx, frame);
@@ -577,6 +583,12 @@ impl eframe::App for JereIDEApp {
             }
             if want_go_to_line && !self.settings_window_open {
                 self.toggle_go_to_line();
+            }
+            if want_next_tab && !self.settings_window_open {
+                self.handle_action("view: next tab", &ctx, frame);
+            }
+            if want_previous_tab && !self.settings_window_open {
+                self.handle_action("view: previous tab", &ctx, frame);
             }
             if want_command_palette && !self.settings_window_open {
                 self.state.command_palette_open = !self.state.command_palette_open;

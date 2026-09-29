@@ -1210,7 +1210,7 @@ fn events(
                     pressed: true,
                     modifiers,
                     ..
-                } if multiline => {
+                } if multiline && !modifiers.ctrl && !modifiers.command && !modifiers.alt => {
                     let mut ccursor = text.delete_selected(&cursor_range);
                     if modifiers.shift {
                         // TODO(emilk): support removing indentation over a selection?

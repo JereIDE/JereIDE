@@ -312,3 +312,81 @@ fn app_state_editor_id_changes_with_active_tab() {
     let id1 = state.editor_id();
     assert_ne!(id0, id1);
 }
+
+#[test]
+fn app_state_select_tab_switches_and_refocuses_editor() {
+    let mut state = AppState::new();
+    state.new_tab();
+    state.new_tab();
+    state.editor_focused = true;
+    state.select_tab(0);
+    assert_eq!(state.active_tab_index, 0);
+    assert!(!state.editor_focused);
+}
+
+#[test]
+fn app_state_select_tab_same_index_is_noop() {
+    let mut state = AppState::new();
+    state.new_tab();
+    state.editor_focused = true;
+    state.select_tab(0);
+    assert_eq!(state.active_tab_index, 0);
+    assert!(state.editor_focused);
+}
+
+#[test]
+fn app_state_select_tab_out_of_range_is_noop() {
+    let mut state = AppState::new();
+    state.new_tab();
+    state.editor_focused = true;
+    state.select_tab(5);
+    assert_eq!(state.active_tab_index, 0);
+    assert!(state.editor_focused);
+}
+
+#[test]
+fn app_state_next_tab_wraps_forward() {
+    let mut state = AppState::new();
+    state.new_tab();
+    state.new_tab();
+    state.new_tab();
+    state.active_tab_index = 2;
+    state.next_tab();
+    assert_eq!(state.active_tab_index, 0);
+    state.next_tab();
+    assert_eq!(state.active_tab_index, 1);
+}
+
+#[test]
+fn app_state_previous_tab_wraps_backward() {
+    let mut state = AppState::new();
+    state.new_tab();
+    state.new_tab();
+    state.new_tab();
+    state.active_tab_index = 0;
+    state.previous_tab();
+    assert_eq!(state.active_tab_index, 2);
+    state.previous_tab();
+    assert_eq!(state.active_tab_index, 1);
+}
+
+#[test]
+fn app_state_next_and_previous_tab_on_single_tab_is_noop() {
+    let mut state = AppState::new();
+    state.new_tab();
+    state.editor_focused = true;
+    state.next_tab();
+    state.previous_tab();
+    assert_eq!(state.active_tab_index, 0);
+    assert!(state.editor_focused);
+}
+
+#[test]
+fn app_state_next_and_previous_tab_without_tabs_is_noop() {
+    let mut state = AppState::new();
+    state.next_tab();
+    state.previous_tab();
+    state.select_tab(0);
+    assert_eq!(state.active_tab_index, 0);
+    assert_eq!(state.tabs.len(), 0);
+}

@@ -276,6 +276,6 @@ pub fn render_tab_strip(state: &mut AppState, ui: &mut egui::Ui) {
         }
     }
     if let Some(idx) = click_tab {
-        state.active_tab_index = idx;
+        state.select_tab(idx);
     }
 }

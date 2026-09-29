@@ -228,6 +228,36 @@ impl AppState {
         idx
     }
 
+    pub fn select_tab(&mut self, index: usize) {
+        if self.tabs.is_empty() || index >= self.tabs.len() || index == self.active_tab_index {
+            return;
+        }
+        log::info!(
+            "switched active tab from {} to {}",
+            self.active_tab_index,
+            index
+        );
+        self.active_tab_index = index;
+        self.editor_focused = false;
+    }
+
+    pub fn next_tab(&mut self) {
+        if self.tabs.is_empty() {
+            return;
+        }
+        let next = (self.active_tab_index + 1) % self.tabs.len();
+        self.select_tab(next);
+    }
+
+    pub fn previous_tab(&mut self) {
+        if self.tabs.is_empty() {
+            return;
+        }
+        let len = self.tabs.len();
+        let previous = (self.active_tab_index + len - 1) % len;
+        self.select_tab(previous);
+    }
+
     pub fn close_tab(&mut self, index: usize) {
         let path = self.tabs[index].file_path.clone();
         self.tabs.remove(index);
