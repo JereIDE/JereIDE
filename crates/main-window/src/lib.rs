@@ -407,6 +407,7 @@ impl JereIDEApp {
             "view: compose" => self.state.switch_to_view(CurrentView::Compose),
             "view: next tab" => self.state.next_tab(),
             "view: previous tab" => self.state.previous_tab(),
+            "jereide: open settings" => self.open_settings(ctx),
             "jereide: open settings file" => self.handle_settings(),
             "jereide: quit" => {
                 self.begin_quit(&ctx);
