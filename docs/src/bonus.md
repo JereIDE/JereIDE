@@ -8,4 +8,7 @@ Press `Command/Ctrl+Shift+W` to open the Widget Palette. It was the foundation o
 
 ## The User Menu
 
-A dropdown appears if you click the round avatar button in the far right of the title bar. It says "Username" and "Star us on GitHub". Click the second one, star me! The Username button is not functional.
+A dropdown appears if you click the round avatar button in the far right of the title bar.
+
+It has three menu options: "Username", "Settings…", and "Star Us on GitHub".
+The first option is non-functional, but the second and third work.

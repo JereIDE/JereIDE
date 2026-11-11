@@ -74,13 +74,13 @@ Switches to the code mode.
 
 Switches to the compose mode.
 
+## `jereide: open settings`
+
+Opens the Settings GUI. Also invokable by `Cmd/Ctrl+,` or by the app menu.
+
 ## `jereide: open settings file`
 
 Opens settings.toml in a new tab. You can also choose "Open Settings File" in the `JereIDE` app menu.
-
-## `jereide: open settings`
-
-Opens the Settings GUI. Also invokable by `Cmd/Ctrl+,`.
 
 ## `jereide: open docs`
 
