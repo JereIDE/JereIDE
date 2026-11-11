@@ -156,6 +156,24 @@ impl JereIDEApp {
         }
     }
 
+    fn open_settings(&mut self, ctx: &egui::Context) {
+        if self.settings_window_open {
+            return;
+        }
+        self.settings_window_open = true;
+        ctx.memory_mut(|m| {
+            if let Some(id) = m.focused() {
+                m.surrender_focus(id);
+            }
+        });
+        self.state.command_palette_open = false;
+        self.palette = None;
+        self.widget_palette_open = false;
+        self.find_palette_open = false;
+        self.go_to_line_open = false;
+        self.go_to_line_palette = None;
+    }
+
     fn toggle_find_palette(&mut self) {
         if self.state.tabs.is_empty() {
             return;
@@ -567,18 +585,7 @@ impl eframe::App for JereIDEApp {
                 if self.settings_window_open {
                     self.settings_window_open = false;
                 } else {
-                    self.settings_window_open = true;
-                    ctx.memory_mut(|m| {
-                        if let Some(id) = m.focused() {
-                            m.surrender_focus(id);
-                        }
-                    });
-                    self.state.command_palette_open = false;
-                    self.palette = None;
-                    self.widget_palette_open = false;
-                    self.find_palette_open = false;
-                    self.go_to_line_open = false;
-                    self.go_to_line_palette = None;
+                    self.open_settings(&ctx);
                 }
             }
             if want_go_to_line && !self.settings_window_open {
@@ -603,6 +610,9 @@ impl eframe::App for JereIDEApp {
             } else if self.state.pending_open_project {
                 self.handle_action("file: open project", &ctx, frame);
                 self.state.pending_open_project = false;
+            } else if self.state.pending_open_settings {
+                self.state.pending_open_settings = false;
+                self.open_settings(&ctx);
             }
 
             #[cfg(target_os = "windows")]

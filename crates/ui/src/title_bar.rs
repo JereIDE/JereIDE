@@ -122,6 +122,9 @@ pub fn render_title_bar(state: &mut AppState, ui: &mut egui::Ui, is_fullscreen: 
                     .show(|ui| {
                         ui.vertical(|ui| {
                             let _ = ui.button("Username");
+                            if ui.button("Settings...").clicked() {
+                                state.pending_open_settings = true;
+                            }
                             if ui.button("Star us on GitHub").clicked() {
                                 ui.ctx().open_url(egui::OpenUrl {
                                     url: String::from("https://github.com/jeremy-qian/jereide"),
