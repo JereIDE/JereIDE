@@ -19,10 +19,10 @@ impl AppMenu {
             .append_items(&[
                 &MenuItem::with_id("jereide: about", "About JereIDE", true, None),
                 &PredefinedMenuItem::separator(),
-                &MenuItem::with_id("jereide: open settings", "Settings…", true, None),
+                &MenuItem::with_id("jereide: open settings", "Open Settings…", true, None),
                 &MenuItem::with_id(
                     "jereide: open settings file",
-                    "Open Settings File...",
+                    "Open Settings File…",
                     true,
                     None,
                 ),
